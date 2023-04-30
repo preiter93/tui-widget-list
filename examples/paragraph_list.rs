@@ -12,73 +12,15 @@ use ratatui::{
     Frame, Terminal,
 };
 use std::{error::Error, io};
-use tui_widget_list::{ListableWidget, WidgetList, WidgetListState};
-
-#[derive(Clone)]
-pub struct StatefulWidgetList<T> {
-    pub state: WidgetListState,
-    pub items: Vec<T>,
-}
-
-impl<T> Default for StatefulWidgetList<T> {
-    fn default() -> Self {
-        Self {
-            state: WidgetListState::default(),
-            items: vec![],
-        }
-    }
-}
-
-impl<T: ListableWidget> StatefulWidgetList<T> {
-    pub fn with_items(items: Vec<T>) -> Self {
-        Self {
-            state: WidgetListState::default(),
-            items,
-        }
-    }
-
-    pub fn next(&mut self) {
-        if self.items.is_empty() {
-            return;
-        }
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.items.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    pub fn previous(&mut self) {
-        if self.items.is_empty() {
-            return;
-        }
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.items.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-}
+use tui_widget_list::{ListableWidget, SelectableWidgetList, WidgetList};
 
 #[derive(Debug, Clone)]
-pub struct TestWidget<'a> {
+pub struct ParagraphItem<'a> {
     paragraph: Paragraph<'a>,
     height: u16,
 }
 
-impl TestWidget<'_> {
+impl ParagraphItem<'_> {
     pub fn new(text: &str, height: u16) -> Self {
         let paragraph = Paragraph::new(vec![Spans::from(Span::styled(
             text.to_string(),
@@ -90,20 +32,20 @@ impl TestWidget<'_> {
     }
 }
 
-impl<'a> ListableWidget for TestWidget<'a> {
+impl<'a> Widget for ParagraphItem<'a> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        self.paragraph.render(area, buf);
+    }
+}
+
+impl<'a> ListableWidget for ParagraphItem<'a> {
     fn height(&self) -> u16 {
         self.height
     }
 
-    fn render(&self, area: Rect, buf: &mut Buffer) {
-        self.paragraph.clone().render(area, buf);
-    }
-
-    fn render_selected(&self, area: Rect, buf: &mut Buffer) {
-        self.paragraph
-            .clone()
-            .style(Style::default().bg(Color::White))
-            .render(area, buf);
+    fn highlight(mut self) -> Self {
+        self.paragraph = self.paragraph.style(Style::default().bg(Color::White));
+        self
     }
 }
 
@@ -155,19 +97,28 @@ fn panic_hook() {
 }
 
 pub struct App<'a> {
-    pub list: StatefulWidgetList<TestWidget<'a>>,
+    pub list: SelectableWidgetList<ParagraphItem<'a>>,
 }
 
 impl<'a> App<'a> {
     pub fn new() -> App<'a> {
-        let mut items = vec![];
-        for i in 0..15 {
-            let text = format!("Item: {}", i);
-            let height = i + 3_u16;
-            let item = TestWidget::new(&text, height);
-            items.push(item);
-        }
-        let list = StatefulWidgetList::with_items(items);
+        let items = vec![
+            ParagraphItem::new("Height: 4", 4),
+            ParagraphItem::new("Height: 4", 4),
+            ParagraphItem::new("Height: 5", 5),
+            ParagraphItem::new("Height: 4", 4),
+            ParagraphItem::new("Height: 3", 3),
+            ParagraphItem::new("Height: 3", 3),
+            ParagraphItem::new("Height: 6", 6),
+            ParagraphItem::new("Height: 5", 5),
+            ParagraphItem::new("Height: 7", 7),
+            ParagraphItem::new("Height: 3", 3),
+            ParagraphItem::new("Height: 6", 6),
+            ParagraphItem::new("Height: 9", 9),
+            ParagraphItem::new("Height: 4", 4),
+            ParagraphItem::new("Height: 6", 6),
+        ];
+        let list = SelectableWidgetList::with_items(items);
         App { list }
     }
 }
