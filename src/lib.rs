@@ -1,10 +1,22 @@
-//! # Widget list for TUI
+//! # Widget list implementation for TUI
+//!
+//! # Demo
+//! ```ignore
+//! cargo run --example paragraph_list
+//! ```
+//!
+//! # Usage
+//! Items of [`WidgetList`] or of the convenience class [`SelectableWidgetList`]
+//! must implement the [`ListableWidget`] trait. Then the render() method is available
+//! on the widget list.
+//!
+//! For an implementation example see [`SelectableWidgetList`].
 pub mod widget;
 pub use widget::{ListableWidget, WidgetList, WidgetListState};
 
 /// [`SelectableWidgetList`] is a convenience method for [`WidgetList`].
-/// It provides the methods next and previos to easily choose between
-/// widgets in the list.
+/// It provides the methods next and previous to conveniently select
+/// widgets of the list.
 ///
 /// # Examples
 /// ```
@@ -62,7 +74,8 @@ pub struct SelectableWidgetList<T> {
 impl<T: ListableWidget> SelectableWidgetList<T> {
     /// Returns a [`SelectableWidgetList`]. The items elements
     /// must implement [`ListableWidget`].
-    pub fn with_items(items: Vec<T>) -> Self {
+    #[must_use]
+    pub fn new(items: Vec<T>) -> Self {
         Self {
             state: WidgetListState::default(),
             items,
@@ -72,7 +85,8 @@ impl<T: ListableWidget> SelectableWidgetList<T> {
 
     /// Set circular. When circular is True, the selection continues
     /// from the first item in the list after reaching the last item.
-    pub fn set_circular(mut self, circular: bool) -> Self {
+    #[must_use]
+    pub fn circular(mut self, circular: bool) -> Self {
         self.circular = circular;
         self
     }

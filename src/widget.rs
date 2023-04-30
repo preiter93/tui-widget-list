@@ -16,6 +16,7 @@ pub struct WidgetListState {
 
 impl WidgetListState {
     /// Return the currently selected items index
+    #[must_use]
     pub fn selected(&self) -> Option<usize> {
         self.selected
     }
@@ -91,6 +92,7 @@ pub trait ListableWidget: Widget {
     fn height(&self) -> u16;
 
     /// Highlight the selected widget
+    #[must_use]
     fn highlight(self) -> Self;
 }
 
@@ -106,6 +108,9 @@ pub struct WidgetList<'a, T> {
 }
 
 impl<'a, T: ListableWidget> WidgetList<'a, T> {
+    /// Instantiate a widget list with elements. The Elements must
+    /// implement [`ListableWidget`]
+    #[must_use]
     pub fn new(items: Vec<T>) -> Self {
         Self {
             items,
@@ -114,11 +119,15 @@ impl<'a, T: ListableWidget> WidgetList<'a, T> {
         }
     }
 
+    /// Set the block style which surrounds the whole List.
+    #[must_use]
     pub fn block(mut self, block: Block<'a>) -> Self {
         self.block = Some(block);
         self
     }
 
+    /// Set the base style of the List.
+    #[must_use]
     pub fn style(mut self, style: Style) -> Self {
         self.style = style;
         self
@@ -152,7 +161,7 @@ impl<'a, T: ListableWidget> StatefulWidget for WidgetList<'a, T> {
         let mut y = y0;
 
         // Update the offset which might have changed between two frames
-        state.update_offset(self.items.iter().map(|item| item.height()), max_height);
+        state.update_offset(self.items.iter().map(ListableWidget::height), max_height);
 
         // Iterate over all items
         let mut i = state.offset;
