@@ -2,8 +2,12 @@
 name = "tui-widget-list"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["preiter <phil.reiter93@gmail.com>"]
+description = "Widget List for TUI/Ratatui"
+repository = "https://github.com/preiter93/tui-widget-list"
+keywords = ["tui", "ratatui", "widget", "list", "widgetlist"]
+readme = "README.md"
+license = "MIT"
 
 [dependencies]
 crossterm = "0.26"

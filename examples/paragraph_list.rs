@@ -118,7 +118,7 @@ impl<'a> App<'a> {
             ParagraphItem::new("Height: 4", 4),
             ParagraphItem::new("Height: 6", 6),
         ];
-        let list = SelectableWidgetList::with_items(items);
+        let list = SelectableWidgetList::new(items);
         App { list }
     }
 }
