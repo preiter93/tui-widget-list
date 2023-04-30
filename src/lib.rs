@@ -1,182 +1,125 @@
 //! # Widget list for TUI
-use ratatui::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Style,
-    widgets::{Block, StatefulWidget, Widget},
-};
+pub mod widget;
+pub use widget::{ListableWidget, WidgetList, WidgetListState};
 
-#[derive(Debug, Clone, Default)]
-pub struct WidgetListState {
-    /// The fist item on the screen
-    offset: usize,
+/// [`SelectableWidgetList`] is a convenience method for [`WidgetList`].
+/// It provides the methods next and previos to easily choose between
+/// widgets in the list.
+///
+/// # Examples
+/// ```
+/// use ratatui::buffer::Buffer;
+/// use ratatui::layout::Rect;
+/// use ratatui::style::{Color, Style};
+/// use ratatui::text::Text;
+/// use ratatui::widgets::{Paragraph, Widget};
+/// use tui_widget_list::ListableWidget;
+///
+/// #[derive(Debug, Clone)]
+/// pub struct MyWidgetItem<'a> {
+///     item: Paragraph<'a>,
+///     height: u16,
+/// }
+///
+/// impl MyWidgetItem<'_> {
+///     pub fn new(text: &'static str, height: u16) -> Self {
+///         let item = Paragraph::new(Text::from(text));
+///         Self { item, height }
+///     }
+/// }
+///
+/// impl<'a> Widget for MyWidgetItem<'a> {
+///     fn render(self, area: Rect, buf: &mut Buffer) {
+///         self.item.render(area, buf);
+///     }
+/// }
+///
+/// impl<'a> ListableWidget for MyWidgetItem<'a> {
+///     fn height(&self) -> u16 {
+///         self.height
+///     }
+///
+///     fn highlight(mut self) -> Self {
+///         self.item = self.item.style(Style::default().bg(Color::White));
+///         self
+///     }
+/// }
+/// ```
+#[derive(Clone, Default)]
+pub struct SelectableWidgetList<T> {
+    /// Holds the lists state, i.e. which element is selected.
+    pub state: WidgetListState,
 
-    /// The selected item
-    selected: Option<usize>,
+    /// The items of the list.
+    pub items: Vec<T>,
+
+    /// Whether the selection is circular. If true, calling next on the
+    /// last element returns the first element, and calling previous on
+    /// the first element returns the last element.
+    pub circular: bool,
 }
 
-impl WidgetListState {
-    /// Return the currently selected items index
-    pub fn selected(&self) -> Option<usize> {
-        self.selected
-    }
-
-    /// Select an item by its index
-    pub fn select(&mut self, index: Option<usize>) {
-        self.selected = index;
-        if index.is_none() {
-            self.offset = 0;
+impl<T: ListableWidget> SelectableWidgetList<T> {
+    /// Returns a [`SelectableWidgetList`]. The items elements
+    /// must implement [`ListableWidget`].
+    pub fn with_items(items: Vec<T>) -> Self {
+        Self {
+            state: WidgetListState::default(),
+            items,
+            circular: true,
         }
     }
 
-    /// Here we check and if necessary update the `y_offset` value.
-    /// For this we start with the first item on the screen and iterate
-    /// until we have reached the maximum height. If the selected value
-    /// is within the bounds we do nothing. If the selected value is out
-    /// of bounds, we adjust the offset accordingly.
-    pub fn update_offset<I>(&mut self, heights: I, max_height: u16)
-    where
-        I: Iterator<Item = u16> + ExactSizeIterator + DoubleEndedIterator + Clone,
-    {
-        // We can return early if no value is selected
-        let selected = match self.selected {
-            Some(selected) => selected,
-            None => return,
-        };
-        let heights: Vec<u16> = heights.collect();
-        let offset = self.offset;
+    /// Set circular. When circular is True, the selection continues
+    /// from the first item in the list after reaching the last item.
+    pub fn set_circular(mut self, circular: bool) -> Self {
+        self.circular = circular;
+        self
+    }
 
-        // If the selected value is smaller then the offset, we roll
-        // the offset so that the selected value is at the top
-        if selected < offset {
-            self.offset = selected;
+    /// Selects the next element in the list. If circular is true,
+    /// a call to next on the last element selects the first.
+    pub fn next(&mut self) {
+        if self.items.is_empty() {
             return;
         }
-
-        // The starting pos of the current widget
-        let (mut y, mut i) = (0, offset);
-        for height in heights.iter().skip(offset) {
-            // Out of bounds
-            if y + height > max_height {
-                break;
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.items.len() - 1 {
+                    if self.circular {
+                        0
+                    } else {
+                        i
+                    }
+                } else {
+                    i + 1
+                }
             }
-            // Selected value is within view/bounds
-            if selected <= i {
-                return;
-            }
-            y += height;
-            i += 1;
-        }
-
-        // The selected value is out of bounds. We can determine the first item
-        // that fits on the screen by iterating backwards
-        let (mut y, mut i) = (0, selected);
-        for height in heights.iter().rev().skip(heights.len() - selected - 1) {
-            y += height;
-            i -= 1;
-            // out of bounds
-            if y + height > max_height {
-                break;
-            }
-        }
-
-        // Update the offset
-        self.offset = i + 1;
-    }
-}
-
-pub trait ListableWidget {
-    /// The height of the widget.
-    fn height(&self) -> u16;
-
-    /// Draws the widget.
-    fn render(&self, area: Rect, buf: &mut Buffer);
-
-    /// Draws the widget in its selected state.
-    fn render_selected(&self, area: Rect, buf: &mut Buffer);
-}
-
-pub struct WidgetList<'a, T> {
-    /// The lists items
-    items: Vec<T>,
-
-    /// Style used as a base style for the widget
-    style: Style,
-
-    /// Block surrounding the widget list
-    block: Option<Block<'a>>,
-}
-
-impl<'a, T: ListableWidget> WidgetList<'a, T> {
-    pub fn new(items: Vec<T>) -> Self {
-        Self {
-            items,
-            style: Style::default(),
-            block: None,
-        }
-    }
-
-    pub fn block(mut self, block: Block<'a>) -> Self {
-        self.block = Some(block);
-        self
-    }
-
-    pub fn style(mut self, style: Style) -> Self {
-        self.style = style;
-        self
-    }
-}
-
-impl<'a, T: ListableWidget> StatefulWidget for WidgetList<'a, T> {
-    type State = WidgetListState;
-
-    fn render(mut self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        // Set the base style
-        buf.set_style(area, self.style);
-        let area = match self.block.take() {
-            Some(b) => {
-                let inner_area = b.inner(area);
-                b.render(area, buf);
-                inner_area
-            }
-            None => area,
+            None => 0,
         };
+        self.state.select(Some(i));
+    }
 
-        // Use the full width
-        let width = area.width;
-
-        // Maximum height
-        let max_height = area.height;
-
-        // The starting positions of the current item
-        let x = area.left();
-        let mut y = area.top();
-
-        // Update the offset which might have changed between two frames
-        state.update_offset(self.items.iter().map(|item| item.height()), max_height);
-
-        // Iterate over all items
-        let mut i = state.offset;
-        for item in self.items.iter().skip(state.offset) {
-            // Get the area of the item that we draw
-            let height = item.height();
-            if y + height > max_height {
-                // Out of bounds
-                break;
-            }
-            let area = Rect::new(x, y, width, height);
-
-            // Render the content
-            let is_selected = state.selected().map_or(false, |s| i == s);
-            if is_selected {
-                item.render_selected(area, buf);
-            } else {
-                item.render(area, buf);
-            }
-
-            // Update the vertical offset
-            y += height;
-            i += 1;
+    /// Selects the previous element in the list. If circular is true,
+    /// a call to previous on the first element selects the last.
+    pub fn previous(&mut self) {
+        if self.items.is_empty() {
+            return;
         }
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    if self.circular {
+                        self.items.len() - 1
+                    } else {
+                        i
+                    }
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
     }
 }
