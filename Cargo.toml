@@ -15,3 +15,6 @@ ratatui = "0.20"
 
 [[example]]
 name = "paragraph_list"
+
+[[example]]
+name = "simple_list"

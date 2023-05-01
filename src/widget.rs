@@ -53,14 +53,14 @@ impl WidgetListState {
             return;
         }
 
-        // The starting pos of the current widget
+        // Check if the selected item is in the current view
         let (mut y, mut i) = (0, offset);
         for height in heights.iter().skip(offset) {
             // Out of bounds
             if y + height > max_height {
                 break;
             }
-            // Selected value is within view/bounds
+            // Selected value is within view/bounds, so we are good
             if selected <= i {
                 return;
             }
@@ -68,8 +68,8 @@ impl WidgetListState {
             i += 1;
         }
 
-        // The selected value is out of bounds. We can determine the first item
-        // that fits on the screen by iterating backwards
+        // The selected item is out of bounds. We iterate backwards from the selected
+        // item and determine the first widget that still fits on the screen.
         let (mut y, mut i) = (0, selected);
         let last_elem = heights.len() - 1;
         for height in heights.iter().rev().skip(last_elem - selected) {
