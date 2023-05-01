@@ -21,7 +21,7 @@ Items of [`WidgetList`] or of the convenience class [`SelectableWidgetList`]
 must implement the [`ListableWidget`] trait. Then the render() method is available
 on the widget list.
 
-```
+```rust
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
