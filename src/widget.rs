@@ -29,12 +29,12 @@ impl WidgetListState {
         }
     }
 
-    /// Here we check and if necessary update the `y_offset` value.
+    /// Here we check and if necessary update the viewport.
     /// For this we start with the first item on the screen and iterate
     /// until we have reached the maximum height. If the selected value
     /// is within the bounds we do nothing. If the selected value is out
     /// of bounds, we adjust the offset accordingly.
-    pub fn update_offset<I>(&mut self, heights: I, max_height: u16)
+    fn update_offset<I>(&mut self, heights: I, max_height: u16)
     where
         I: Iterator<Item = u16> + ExactSizeIterator + DoubleEndedIterator + Clone,
     {

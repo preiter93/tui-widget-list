@@ -5,58 +5,63 @@
 //! cargo run --example paragraph_list
 //! ```
 //!
-//! # Usage
+//! # Examples
 //! Items of [`WidgetList`] or of the convenience class [`SelectableWidgetList`]
 //! must implement the [`ListableWidget`] trait. Then the render() method is available
 //! on the widget list.
 //!
-//! For an implementation example see [`SelectableWidgetList`].
+//! ```
+//! use ratatui::buffer::Buffer;
+//! use ratatui::layout::Rect;
+//! use ratatui::style::{Color, Style};
+//! use ratatui::text::Text;
+//! use ratatui::widgets::{Paragraph, Widget};
+//! use tui_widget_list::{ListableWidget, SelectableWidgetList};
+//!
+//! #[derive(Debug, Clone)]
+//! pub struct MyWidgetItem<'a> {
+//!     item: Paragraph<'a>,
+//!     height: u16,
+//! }
+//!
+//! impl MyWidgetItem<'_> {
+//!     pub fn new(text: &'static str, height: u16) -> Self {
+//!         let item = Paragraph::new(Text::from(text));
+//!         Self { item, height }
+//!     }
+//! }
+//!
+//! impl<'a> Widget for MyWidgetItem<'a> {
+//!     fn render(self, area: Rect, buf: &mut Buffer) {
+//!         self.item.render(area, buf);
+//!     }
+//! }
+//!
+//! impl<'a> ListableWidget for MyWidgetItem<'a> {
+//!     fn height(&self) -> u16 {
+//!         self.height
+//!     }
+//!
+//!     fn highlight(mut self) -> Self {
+//!         self.item = self.item.style(Style::default().bg(Color::White));
+//!         self
+//!     }
+//! }
+//!
+//! fn main() {
+//!     let items = vec![
+//!         MyWidgetItem::new("hello", 3),
+//!         MyWidgetItem::new("world", 4),
+//!     ];
+//!     let widget_list = SelectableWidgetList::new(items);
+//! }
+//! ```
 pub mod widget;
 pub use widget::{ListableWidget, WidgetList, WidgetListState};
 
 /// [`SelectableWidgetList`] is a convenience method for [`WidgetList`].
 /// It provides the methods next and previous to conveniently select
 /// widgets of the list.
-///
-/// # Examples
-/// ```
-/// use ratatui::buffer::Buffer;
-/// use ratatui::layout::Rect;
-/// use ratatui::style::{Color, Style};
-/// use ratatui::text::Text;
-/// use ratatui::widgets::{Paragraph, Widget};
-/// use tui_widget_list::ListableWidget;
-///
-/// #[derive(Debug, Clone)]
-/// pub struct MyWidgetItem<'a> {
-///     item: Paragraph<'a>,
-///     height: u16,
-/// }
-///
-/// impl MyWidgetItem<'_> {
-///     pub fn new(text: &'static str, height: u16) -> Self {
-///         let item = Paragraph::new(Text::from(text));
-///         Self { item, height }
-///     }
-/// }
-///
-/// impl<'a> Widget for MyWidgetItem<'a> {
-///     fn render(self, area: Rect, buf: &mut Buffer) {
-///         self.item.render(area, buf);
-///     }
-/// }
-///
-/// impl<'a> ListableWidget for MyWidgetItem<'a> {
-///     fn height(&self) -> u16 {
-///         self.height
-///     }
-///
-///     fn highlight(mut self) -> Self {
-///         self.item = self.item.style(Style::default().bg(Color::White));
-///         self
-///     }
-/// }
-/// ```
 #[derive(Clone, Default)]
 pub struct SelectableWidgetList<T> {
     /// Holds the lists state, i.e. which element is selected.
