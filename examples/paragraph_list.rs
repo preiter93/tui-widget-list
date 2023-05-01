@@ -12,7 +12,7 @@ use ratatui::{
     Frame, Terminal,
 };
 use std::{error::Error, io};
-use tui_widget_list::{ListableWidget, SelectableWidgetList, WidgetList};
+use tui_widget_list::{ListableWidget, SelectableWidgetList};
 
 #[derive(Debug, Clone)]
 pub struct ParagraphItem<'a> {
@@ -30,6 +30,17 @@ impl ParagraphItem<'_> {
         .block(Block::default().borders(Borders::ALL));
         Self { paragraph, height }
     }
+
+    // Render the item differently depending on the selection state
+    fn modify_fn(mut slf: Self, is_selected: Option<bool>) -> Self {
+        if let Some(selected) = is_selected {
+            if selected {
+                let style = Style::default().bg(Color::White);
+                slf.paragraph = slf.paragraph.style(style);
+            }
+        }
+        slf
+    }
 }
 
 impl<'a> Widget for ParagraphItem<'a> {
@@ -41,11 +52,6 @@ impl<'a> Widget for ParagraphItem<'a> {
 impl<'a> ListableWidget for ParagraphItem<'a> {
     fn height(&self) -> u16 {
         self.height
-    }
-
-    fn highlight(mut self) -> Self {
-        self.paragraph = self.paragraph.style(Style::default().bg(Color::White));
-        self
     }
 }
 
@@ -97,7 +103,7 @@ fn panic_hook() {
 }
 
 pub struct App<'a> {
-    pub list: SelectableWidgetList<ParagraphItem<'a>>,
+    pub list: SelectableWidgetList<'a, ParagraphItem<'a>>,
 }
 
 impl<'a> App<'a> {
@@ -118,7 +124,7 @@ impl<'a> App<'a> {
             ParagraphItem::new("Height: 4", 4),
             ParagraphItem::new("Height: 6", 6),
         ];
-        let list = SelectableWidgetList::new(items);
+        let list = SelectableWidgetList::new(items).modify_fn(ParagraphItem::modify_fn);
         App { list }
     }
 }
@@ -146,11 +152,13 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .constraints([Constraint::Min(0)].as_ref())
         .split(f.size());
 
-    let items = &app.list.items;
-
-    let widget = WidgetList::new(items.clone())
+    let widget = app
+        .list
+        .content
+        .clone()
+        .style(Style::default().bg(Color::Black))
         .block(Block::default().borders(Borders::ALL))
-        .style(Style::default().bg(Color::Black));
+        .modify_fn(ParagraphItem::modify_fn);
 
     f.render_stateful_widget(widget, chunks[0], &mut app.list.state);
 }

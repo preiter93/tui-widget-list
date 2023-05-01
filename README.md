@@ -40,6 +40,17 @@ impl MyWidgetItem<'_> {
         let item = Paragraph::new(Text::from(text));
         Self { item, height }
     }
+
+    // Render the item differently depending on the selection state
+    fn modify_fn(mut slf: Self, is_selected: Option<bool>) -> Self {
+        if let Some(selected) = is_selected {
+            if selected {
+                let style = Style::default().bg(Color::White);
+                slf.item = slf.item.style(style);
+            }
+        }
+        slf
+    }
 }
 
 impl<'a> Widget for MyWidgetItem<'a> {
@@ -52,20 +63,14 @@ impl<'a> ListableWidget for MyWidgetItem<'a> {
     fn height(&self) -> u16 {
         self.height
     }
-
-    fn highlight(mut self) -> Self {
-        self.item = self.item.style(Style::default().bg(Color::White));
-        self
-    }
 }
 
-fn main() {
-    let items = vec![
-        MyWidgetItem::new("hello", 3),
-        MyWidgetItem::new("world", 4),
-    ];
-    let widget_list = SelectableWidgetList::new(items);
-}
+
+let items = vec![
+    MyWidgetItem::new("hello", 3),
+    MyWidgetItem::new("world", 4),
+];
+let widget_list = SelectableWidgetList::new(items).modify_fn(MyWidgetItem::modify_fn);
 ```
 
 ![](img/screenshot.png)

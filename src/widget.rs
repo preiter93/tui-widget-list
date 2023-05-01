@@ -91,11 +91,26 @@ pub trait ListableWidget: Widget {
     /// The height of the widget.
     fn height(&self) -> u16;
 
-    /// Highlight the selected widget
-    #[must_use]
-    fn highlight(self) -> Self;
+    // /// Highlight the selected widget
+    // #[must_use]
+    // fn highlight(self) -> Self;
 }
 
+/// `ModifyFn` is a callback function that takes in the widget
+/// and the current selection state and returns the (modified)
+/// widget.
+///
+/// A selection state of None indicates that no other element
+/// is selected. If the selection state is true, it indicates
+/// that the current item is selected.
+pub type ModifyFn<T> = fn(T, Option<bool>) -> T;
+
+/// Default implementation of `modify_fn`. Does nothing to T.
+fn default_modify_fn<T>(slf: T, _: Option<bool>) -> T {
+    slf
+}
+
+#[derive(Clone)]
 pub struct WidgetList<'a, T> {
     /// The lists items
     items: Vec<T>,
@@ -105,6 +120,21 @@ pub struct WidgetList<'a, T> {
 
     /// Block surrounding the widget list
     block: Option<Block<'a>>,
+
+    /// A callback function that can be used to style an item
+    /// based on its selection state.
+    modify_fn: ModifyFn<T>,
+}
+
+impl<'a, T> Default for WidgetList<'a, T> {
+    fn default() -> Self {
+        Self {
+            items: vec![],
+            style: Style::default(),
+            block: None,
+            modify_fn: default_modify_fn,
+        }
+    }
 }
 
 impl<'a, T: ListableWidget> WidgetList<'a, T> {
@@ -116,6 +146,7 @@ impl<'a, T: ListableWidget> WidgetList<'a, T> {
             items,
             style: Style::default(),
             block: None,
+            modify_fn: default_modify_fn,
         }
     }
 
@@ -131,6 +162,26 @@ impl<'a, T: ListableWidget> WidgetList<'a, T> {
     pub fn style(mut self, style: Style) -> Self {
         self.style = style;
         self
+    }
+
+    /// Set a callback that can be used to modify the widget item
+    /// based on the selection state.
+    #[must_use]
+    pub fn modify_fn(mut self, modify_fn: ModifyFn<T>) -> Self {
+        self.modify_fn = modify_fn;
+        self
+    }
+
+    /// Whether the widget list is empty
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
+    /// Returns the length of the widget list
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.items.len()
     }
 }
 
@@ -175,13 +226,9 @@ impl<'a, T: ListableWidget> StatefulWidget for WidgetList<'a, T> {
             let area = Rect::new(x, y, width, height);
 
             // Render the widget
-            let mut widget = item;
-            if let Some(selected) = state.selected() {
-                if selected == i {
-                    widget = widget.highlight();
-                }
-            }
-            widget.render(area, buf);
+            let widget = item;
+            let is_selected = state.selected().map(|selected| selected == i);
+            (self.modify_fn)(widget, is_selected).render(area, buf);
 
             // Update the vertical offset
             y += height;

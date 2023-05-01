@@ -12,7 +12,7 @@ use ratatui::{
     Frame, Terminal,
 };
 use std::{error::Error, io};
-use tui_widget_list::{ListableWidget, SelectableWidgetList, WidgetList};
+use tui_widget_list::{ListableWidget, SelectableWidgetList};
 
 #[derive(Debug, Clone)]
 pub struct ListItem<'a> {
@@ -22,11 +22,7 @@ pub struct ListItem<'a> {
     /// The items style
     style: Style,
 
-    /// Symbol in front of the selected item
-    highlight_symbol: Option<&'a str>,
-
-    /// The current prefix. Usually matches the `highligh_symbol`
-    /// for the selected item.
+    /// The current prefix. Changes when the item is selected.
     prefix: Option<&'a str>,
 }
 
@@ -38,7 +34,6 @@ impl<'a> ListItem<'a> {
         Self {
             text: text.into(),
             style: Style::default(),
-            highlight_symbol: Some(">>"),
             prefix: None,
         }
     }
@@ -61,6 +56,19 @@ impl<'a> ListItem<'a> {
         };
         Paragraph::new(text).style(self.style)
     }
+
+    // Renders the items differently depending on the selection state
+    fn modify_fn(mut slf: Self, is_selected: Option<bool>) -> Self {
+        if let Some(selected) = is_selected {
+            if selected {
+                slf.prefix = Some(">>");
+                slf.style = Style::default().bg(Color::Cyan);
+            } else {
+                slf.prefix = Some("  ");
+            }
+        }
+        slf
+    }
 }
 
 impl<'a> Widget for ListItem<'a> {
@@ -73,24 +81,6 @@ impl<'a> ListableWidget for ListItem<'a> {
     fn height(&self) -> u16 {
         1
     }
-
-    fn highlight(mut self) -> Self {
-        self.style = Style::default().bg(Color::Cyan);
-        self.prefix = self.highlight_symbol;
-        self
-    }
-}
-
-fn prefix_text<'a>(text: Text<'a>, prefix: &'a str) -> Text<'a> {
-    let lines = text
-        .lines
-        .into_iter()
-        .map(|mut line| {
-            line.0.insert(0, Span::from(prefix));
-            line
-        })
-        .collect();
-    Text { lines }
 }
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
@@ -141,7 +131,7 @@ fn panic_hook() {
 }
 
 pub struct App<'a> {
-    pub list: SelectableWidgetList<ListItem<'a>>,
+    pub list: SelectableWidgetList<'a, ListItem<'a>>,
 }
 
 impl<'a> App<'a> {
@@ -179,11 +169,25 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .constraints([Constraint::Min(0)].as_ref())
         .split(f.size());
 
-    let items = &app.list.items;
-
-    let widget = WidgetList::new(items.clone())
+    let widget = app
+        .list
+        .content
+        .clone()
+        .style(Style::default().bg(Color::Black))
         .block(Block::default().borders(Borders::ALL))
-        .style(Style::default().bg(Color::Black));
+        .modify_fn(ListItem::modify_fn);
 
     f.render_stateful_widget(widget, chunks[0], &mut app.list.state);
+}
+
+fn prefix_text<'a>(text: Text<'a>, prefix: &'a str) -> Text<'a> {
+    let lines = text
+        .lines
+        .into_iter()
+        .map(|mut line| {
+            line.0.insert(0, Span::from(prefix));
+            line
+        })
+        .collect();
+    Text { lines }
 }

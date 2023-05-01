@@ -29,6 +29,17 @@
 //!         let item = Paragraph::new(Text::from(text));
 //!         Self { item, height }
 //!     }
+//!
+//!     // Render the item differently depending on the selection state
+//!     fn modify_fn(mut slf: Self, is_selected: Option<bool>) -> Self {
+//!         if let Some(selected) = is_selected {
+//!             if selected {
+//!                 let style = Style::default().bg(Color::White);
+//!                 slf.item = slf.item.style(style);
+//!             }
+//!         }
+//!         slf
+//!     }
 //! }
 //!
 //! impl<'a> Widget for MyWidgetItem<'a> {
@@ -41,11 +52,6 @@
 //!     fn height(&self) -> u16 {
 //!         self.height
 //!     }
-//!
-//!     fn highlight(mut self) -> Self {
-//!         self.item = self.item.style(Style::default().bg(Color::White));
-//!         self
-//!     }
 //! }
 //!
 //!
@@ -53,22 +59,23 @@
 //!     MyWidgetItem::new("hello", 3),
 //!     MyWidgetItem::new("world", 4),
 //! ];
-//! let widget_list = SelectableWidgetList::new(items);
+//! let widget_list = SelectableWidgetList::new(items).modify_fn(MyWidgetItem::modify_fn);
 //!
 //! ```
 pub mod widget;
-pub use widget::{ListableWidget, WidgetList, WidgetListState};
+use ratatui::{style::Style, widgets::Block};
+pub use widget::{ListableWidget, ModifyFn, WidgetList, WidgetListState};
 
 /// [`SelectableWidgetList`] is a convenience method for [`WidgetList`].
 /// It provides the methods next and previous to conveniently select
 /// widgets of the list.
 #[derive(Clone, Default)]
-pub struct SelectableWidgetList<T> {
+pub struct SelectableWidgetList<'a, T> {
     /// Holds the lists state, i.e. which element is selected.
     pub state: WidgetListState,
 
-    /// The items of the list.
-    pub items: Vec<T>,
+    /// A list of widgets.
+    pub content: WidgetList<'a, T>,
 
     /// Whether the selection is circular. If true, calling next on the
     /// last element returns the first element, and calling previous on
@@ -76,14 +83,14 @@ pub struct SelectableWidgetList<T> {
     circular: bool,
 }
 
-impl<T: ListableWidget> SelectableWidgetList<T> {
+impl<'a, T: ListableWidget> SelectableWidgetList<'a, T> {
     /// Returns a [`SelectableWidgetList`]. The items elements
     /// must implement [`ListableWidget`].
     #[must_use]
     pub fn new(items: Vec<T>) -> Self {
         Self {
             state: WidgetListState::default(),
-            items,
+            content: WidgetList::new(items),
             circular: true,
         }
     }
@@ -96,15 +103,37 @@ impl<T: ListableWidget> SelectableWidgetList<T> {
         self
     }
 
+    /// Set the block style which surrounds the whole List.
+    #[must_use]
+    pub fn block(mut self, block: Block<'a>) -> Self {
+        self.content = self.content.block(block);
+        self
+    }
+
+    /// Set the base style of the List.
+    #[must_use]
+    pub fn style(mut self, style: Style) -> Self {
+        self.content = self.content.style(style);
+        self
+    }
+
+    /// Set a callback that can be used to modify the widget item
+    /// based on the selection state.
+    #[must_use]
+    pub fn modify_fn(mut self, modify_fn: ModifyFn<T>) -> Self {
+        self.content = self.content.modify_fn(modify_fn);
+        self
+    }
+
     /// Selects the next element in the list. If circular is true,
     /// calling next on the last element selects the first.
     pub fn next(&mut self) {
-        if self.items.is_empty() {
+        if self.content.is_empty() {
             return;
         }
         let i = match self.state.selected() {
             Some(i) => {
-                if i >= self.items.len() - 1 {
+                if i >= self.content.len() - 1 {
                     if self.circular {
                         0
                     } else {
@@ -122,14 +151,14 @@ impl<T: ListableWidget> SelectableWidgetList<T> {
     /// Selects the previous element in the list. If circular is true,
     /// calling previous on the first element selects the last.
     pub fn previous(&mut self) {
-        if self.items.is_empty() {
+        if self.content.is_empty() {
             return;
         }
         let i = match self.state.selected() {
             Some(i) => {
                 if i == 0 {
                     if self.circular {
-                        self.items.len() - 1
+                        self.content.len() - 1
                     } else {
                         i
                     }
