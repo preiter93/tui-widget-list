@@ -58,16 +58,16 @@ impl<'a> ListItem<'a> {
     }
 
     // Renders the items differently depending on the selection state
-    fn modify_fn(mut slf: Self, is_selected: Option<bool>) -> Self {
+    fn modify_fn(mut self, is_selected: Option<bool>) -> Self {
         if let Some(selected) = is_selected {
             if selected {
-                slf.prefix = Some(">>");
-                slf.style = Style::default().bg(Color::Cyan);
+                self.prefix = Some(">>");
+                self.style = Style::default().bg(Color::Cyan);
             } else {
-                slf.prefix = Some("  ");
+                self.prefix = Some("  ");
             }
         }
-        slf
+        self
     }
 }
 

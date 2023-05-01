@@ -48,14 +48,14 @@ impl MyWidgetItem<'_> {
     }
 
     // Render the item differently depending on the selection state
-    fn modify_fn(mut slf: Self, is_selected: Option<bool>) -> Self {
+    fn modify_fn(mut self, is_selected: Option<bool>) -> Self {
         if let Some(selected) = is_selected {
             if selected {
                 let style = Style::default().bg(Color::White);
-                slf.item = slf.item.style(style);
+                self.item = self.item.style(style);
             }
         }
-        slf
+        self
     }
 }
 
