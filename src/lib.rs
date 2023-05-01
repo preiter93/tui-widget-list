@@ -48,13 +48,13 @@
 //!     }
 //! }
 //!
-//! fn main() {
-//!     let items = vec![
-//!         MyWidgetItem::new("hello", 3),
-//!         MyWidgetItem::new("world", 4),
-//!     ];
-//!     let widget_list = SelectableWidgetList::new(items);
-//! }
+//!
+//! let items = vec![
+//!     MyWidgetItem::new("hello", 3),
+//!     MyWidgetItem::new("world", 4),
+//! ];
+//! let widget_list = SelectableWidgetList::new(items);
+//!
 //! ```
 pub mod widget;
 pub use widget::{ListableWidget, WidgetList, WidgetListState};
@@ -73,7 +73,7 @@ pub struct SelectableWidgetList<T> {
     /// Whether the selection is circular. If true, calling next on the
     /// last element returns the first element, and calling previous on
     /// the first element returns the last element.
-    pub circular: bool,
+    circular: bool,
 }
 
 impl<T: ListableWidget> SelectableWidgetList<T> {
@@ -88,8 +88,8 @@ impl<T: ListableWidget> SelectableWidgetList<T> {
         }
     }
 
-    /// Set circular. When circular is True, the selection continues
-    /// from the first item in the list after reaching the last item.
+    /// Use circular selection. When circular is True, the selection continues
+    /// from the last item to the first, and vice versa.
     #[must_use]
     pub fn circular(mut self, circular: bool) -> Self {
         self.circular = circular;
@@ -97,7 +97,7 @@ impl<T: ListableWidget> SelectableWidgetList<T> {
     }
 
     /// Selects the next element in the list. If circular is true,
-    /// a call to next on the last element selects the first.
+    /// calling next on the last element selects the first.
     pub fn next(&mut self) {
         if self.items.is_empty() {
             return;
@@ -120,7 +120,7 @@ impl<T: ListableWidget> SelectableWidgetList<T> {
     }
 
     /// Selects the previous element in the list. If circular is true,
-    /// a call to previous on the first element selects the last.
+    /// calling previous on the first element selects the last.
     pub fn previous(&mut self) {
         if self.items.is_empty() {
             return;
