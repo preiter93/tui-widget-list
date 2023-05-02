@@ -81,6 +81,10 @@ let items = vec![
     MyListItem::new("world", 4),
 ];
 let widget_list = SelectableWidgetList::new(items);
+
+// widget_list can be rendered like any other widget in TUI. Note that
+// we pass it as mutable reference in order to not lose the state.
+// f.render_widget(&mut widget_list, area);
 ```
 
 ![](img/screenshot.png)

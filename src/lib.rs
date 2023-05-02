@@ -62,6 +62,10 @@
 //!     MyListItem::new("world", 4),
 //! ];
 //! let widget_list = SelectableWidgetList::new(items);
+//!
+//! // widget_list can be rendered like any other widget in TUI. Note that
+//! // we pass it as mutable reference in order to not lose the state.
+//! // f.render_widget(&mut widget_list, area);
 //! ```
 pub mod widget;
 use ratatui::{
@@ -93,11 +97,15 @@ pub struct SelectableWidgetList<'a, T> {
     /// last element returns the first element, and calling previous on
     /// the first element returns the last element.
     circular: bool,
+
+    /// If truncate is true, the widget list will render over the full-screen.
+    /// In this case the first/last widget might be truncated.
+    truncate: bool,
 }
 
 impl<'a, T> SelectableWidgetList<'a, T>
 where
-    T: Widget + Into<WidgetListItem<T>>,
+    T: Widget + Into<WidgetListItem<T>> + Clone,
 {
     /// `items` must implement [`Widget`] and should be castable into [`WidgetListItem`].
     #[must_use]
@@ -108,6 +116,7 @@ where
             style: Style::default(),
             block: None,
             circular: true,
+            truncate: true,
         }
     }
 
@@ -130,6 +139,14 @@ where
     #[must_use]
     pub fn circular(mut self, circular: bool) -> Self {
         self.circular = circular;
+        self
+    }
+
+    /// If truncate is true, the widget list will render over the full-screen.
+    /// In this case the first/last widget might be truncated.
+    #[must_use]
+    pub fn truncate(mut self, truncate: bool) -> Self {
+        self.truncate = truncate;
         self
     }
 
@@ -180,16 +197,19 @@ where
     }
 }
 
-impl<T> Widget for SelectableWidgetList<'_, T>
+impl<T> Widget for &mut SelectableWidgetList<'_, T>
 where
-    T: Widget + Into<WidgetListItem<T>>,
+    T: Widget + Into<WidgetListItem<T>> + Clone,
 {
-    fn render(mut self, area: Rect, buf: &mut Buffer) {
-        let mut widget = WidgetList::new(self.items.into_iter().map(Into::into).collect());
-        widget = widget.style(self.style);
-        if let Some(block) = self.block {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let items = self.items.iter().map(|x| x.clone().into()).collect();
+        let mut widget = WidgetList::new(items)
+            .style(self.style)
+            .truncate(self.truncate);
+        if let Some(block) = self.block.clone() {
             widget = widget.block(block);
         }
+
         widget.render(area, buf, &mut self.state);
     }
 }

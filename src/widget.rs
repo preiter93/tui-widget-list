@@ -7,8 +7,11 @@ use ratatui::{
 
 #[derive(Debug, Clone, Default)]
 pub struct WidgetListState {
-    /// The fist item on the screen
+    /// The index of the fist item on the screen
     offset: usize,
+
+    /// The widgets rendered heights.
+    view_heights: Vec<u16>,
 
     /// The selected item
     selected: Option<usize>,
@@ -34,55 +37,71 @@ impl WidgetListState {
     /// until we have reached the maximum height. If the selected value
     /// is within the bounds we do nothing. If the selected value is out
     /// of bounds, we adjust the offset accordingly.
-    fn update_offset<I>(&mut self, heights: I, max_height: u16)
+    fn update_offset<I>(&mut self, heights: I, max_height: u16, truncate: bool)
     where
         I: Iterator<Item = u16> + ExactSizeIterator + DoubleEndedIterator + Clone,
     {
-        // We can return early if no value is selected
-        let selected = match self.selected {
-            Some(selected) => selected,
-            None => return,
-        };
         let heights: Vec<u16> = heights.collect();
-        let offset = self.offset;
+
+        // Select the first element if none is selected
+        let selected = self.selected.unwrap_or(0);
 
         // If the selected value is smaller then the offset, we roll
         // the offset so that the selected value is at the top
-        if selected < offset {
+        if selected < self.offset {
             self.offset = selected;
-            return;
         }
 
+        // The items heights on the viewport will be calculated on the fly.
+        self.view_heights.clear();
+
         // Check if the selected item is in the current view
-        let (mut y, mut i) = (0, offset);
-        for height in heights.iter().skip(offset) {
+        let (mut y, mut i) = (0, self.offset);
+        let mut found = false;
+        for height in heights.iter().skip(self.offset) {
             // Out of bounds
             if y + height > max_height {
+                if found {
+                    if truncate {
+                        // Truncate the last widget to fit into the view
+                        self.view_heights.push(max_height - y);
+                    }
+                    return;
+                }
                 break;
             }
             // Selected value is within view/bounds, so we are good
-            if selected <= i {
-                return;
+            if selected == i {
+                found = true;
             }
             y += height;
             i += 1;
+            self.view_heights.push(*height);
         }
 
         // The selected item is out of bounds. We iterate backwards from the selected
         // item and determine the first widget that still fits on the screen.
+        self.view_heights.clear();
         let (mut y, mut i) = (0, selected);
         let last_elem = heights.len() - 1;
         for height in heights.iter().rev().skip(last_elem - selected) {
             // out of bounds
             if y + height > max_height {
+                if truncate {
+                    // Currently this will truncate the bottom of the first item from. This
+                    // looks a bit strange, but I have not figured out how to truncate a
+                    // widget from the top.
+                    self.view_heights.insert(0, max_height - y);
+                    self.offset = i;
+                } else {
+                    self.offset = i + 1;
+                }
                 break;
             }
+            self.view_heights.insert(0, *height);
             y += height;
             i -= 1;
         }
-
-        // Update the offset
-        self.offset = i + 1;
     }
 }
 
@@ -149,6 +168,9 @@ pub struct WidgetList<'a, T> {
 
     /// Block surrounding the widget list
     block: Option<Block<'a>>,
+
+    /// Truncate widgets to fill full screen. Defaults to true.
+    truncate: bool,
 }
 
 impl<'a, T> Default for WidgetList<'a, T> {
@@ -157,6 +179,7 @@ impl<'a, T> Default for WidgetList<'a, T> {
             items: vec![],
             style: Style::default(),
             block: None,
+            truncate: true,
         }
     }
 }
@@ -170,6 +193,7 @@ impl<'a, T: Widget> WidgetList<'a, T> {
             items,
             style: Style::default(),
             block: None,
+            truncate: true,
         }
     }
 
@@ -184,6 +208,15 @@ impl<'a, T: Widget> WidgetList<'a, T> {
     #[must_use]
     pub fn style(mut self, style: Style) -> Self {
         self.style = style;
+        self
+    }
+
+    /// If truncate is true, the list fills the full screen
+    /// and truncates the first or last item of the list.
+    /// It is true by default.
+    #[must_use]
+    pub fn truncate(mut self, truncate: bool) -> Self {
+        self.truncate = truncate;
         self
     }
 
@@ -227,26 +260,41 @@ impl<'a, T: Widget> StatefulWidget for WidgetList<'a, T> {
         let mut y = y0;
 
         // Update the offset which might have changed between two frames
-        state.update_offset(self.items.iter().map(|item| item.height), max_height);
+        state.update_offset(
+            self.items.iter().map(|item| item.height),
+            max_height,
+            self.truncate,
+        );
 
         // Iterate over all items
-        let mut i = state.offset;
-        for item in self.items.into_iter().skip(state.offset) {
-            // Get the area of the item that we draw
-            let height = item.height;
-            if y - y0 + height > max_height {
-                // Out of bounds
-                break;
-            }
-            let area = Rect::new(x, y, width, height);
+        let first = state.offset;
+        let n = state.view_heights.len();
+        for (i, item) in self.items.into_iter().skip(first).take(n).enumerate() {
+            // Set the drawing area of the current item
+            let height = state.view_heights.get(i).unwrap();
+            let area = Rect::new(x, y, width, *height);
 
-            // Render the widget
-            let is_selected = state.selected().map(|selected| selected == i);
+            // Render the item
+            let is_selected = state.selected().map(|selected| selected == i + first);
             (item.modify_fn)(item, is_selected).render(area, buf);
 
-            // Update the vertical offset
+            // Update the offset
             y += height;
-            i += 1;
         }
     }
 }
+
+// use std::fs::OpenOptions;
+// use std::io::Write;
+// fn debug(text: &str) {
+//     // Open a file with append option
+//     let mut data_file = OpenOptions::new()
+//         .append(true)
+//         .open("data.txt")
+//         .expect("cannot open file");
+//
+//     // Write to a file
+//     data_file
+//         .write(format!("{}\n", text).as_bytes())
+//         .expect("write failed");
+// }
