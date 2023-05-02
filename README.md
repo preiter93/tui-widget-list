@@ -11,17 +11,6 @@ This library provides an extension to render a list of arbitrary widgets.
 
 The documentation can be found on [docs.rs.](https://docs.rs/tui-widget-list)
 
-### Demo
-Simple List, similar to TUIs List widget
-```
-cargo run --example simple_list
-```
-
-List with differently sized Paragraphs
-```
-cargo run --example paragraph_list
-```
-
 ### Usage
 Use a custom widget with [`SelectableWidgetList`]. The render method is
 available on `wiget_list`.
@@ -85,6 +74,18 @@ let widget_list = SelectableWidgetList::new(items);
 // widget_list can be rendered like any other widget in TUI. Note that
 // we pass it as mutable reference in order to not lose the state.
 // f.render_widget(&mut widget_list, area);
+```
+
+
+### Demo
+Simple List, similar to TUIs List widget
+```
+cargo run --example simple_list
+```
+
+List with differently sized Paragraphs
+```
+cargo run --example paragraph_list
 ```
 
 ![](img/screenshot.png)
