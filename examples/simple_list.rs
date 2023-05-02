@@ -12,7 +12,7 @@ use ratatui::{
     Frame, Terminal,
 };
 use std::{error::Error, io};
-use tui_widget_list::{ListableWidget, SelectableWidgetList};
+use tui_widget_list::{SelectableWidgetList, WidgetListItem};
 
 #[derive(Debug, Clone)]
 pub struct ListItem<'a> {
@@ -48,7 +48,7 @@ impl<'a> ListItem<'a> {
         self
     }
 
-    fn paragraph(self) -> Paragraph<'a> {
+    fn get_paragraph(self) -> Paragraph<'a> {
         let text = if let Some(prefix) = self.prefix {
             prefix_text(self.text, prefix)
         } else {
@@ -57,29 +57,29 @@ impl<'a> ListItem<'a> {
         Paragraph::new(text).style(self.style)
     }
 
-    // Renders the items differently depending on the selection state
-    fn modify_fn(mut self, is_selected: Option<bool>) -> Self {
-        if let Some(selected) = is_selected {
+    fn modify_fn(mut item: WidgetListItem<Self>, selected: Option<bool>) -> WidgetListItem<Self> {
+        if let Some(selected) = selected {
             if selected {
-                self.prefix = Some(">>");
-                self.style = Style::default().bg(Color::Cyan);
+                item.content.prefix = Some(">>");
+                item.content.style = Style::default().bg(Color::Cyan);
             } else {
-                self.prefix = Some("  ");
+                item.content.prefix = Some("  ");
             }
         }
-        self
+        item
+    }
+}
+
+impl<'a> From<ListItem<'a>> for WidgetListItem<ListItem<'a>> {
+    fn from(val: ListItem<'a>) -> Self {
+        let height = val.text.height() as u16;
+        Self::new(val, height).modify_fn(ListItem::modify_fn)
     }
 }
 
 impl<'a> Widget for ListItem<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        self.paragraph().render(area, buf);
-    }
-}
-
-impl<'a> ListableWidget for ListItem<'a> {
-    fn height(&self) -> u16 {
-        1
+        self.get_paragraph().render(area, buf);
     }
 }
 
@@ -141,7 +141,9 @@ impl<'a> App<'a> {
             ListItem::new(Text::from("Item 2")),
             ListItem::new(Text::from("Item 3")),
         ];
-        let list = SelectableWidgetList::new(items);
+        let list = SelectableWidgetList::new(items)
+            .style(Style::default().bg(Color::Black))
+            .block(Block::default().borders(Borders::ALL));
         App { list }
     }
 }
@@ -169,15 +171,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .constraints([Constraint::Min(0)].as_ref())
         .split(f.size());
 
-    let widget = app
-        .list
-        .content
-        .clone()
-        .style(Style::default().bg(Color::Black))
-        .block(Block::default().borders(Borders::ALL))
-        .modify_fn(ListItem::modify_fn);
-
-    f.render_stateful_widget(widget, chunks[0], &mut app.list.state);
+    f.render_widget(app.list.clone(), chunks[0]);
 }
 
 fn prefix_text<'a>(text: Text<'a>, prefix: &'a str) -> Text<'a> {
