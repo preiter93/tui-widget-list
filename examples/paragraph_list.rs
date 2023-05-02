@@ -24,7 +24,7 @@ impl ParagraphItem<'_> {
     pub fn new(text: &str, height: u16) -> Self {
         let paragraph = Paragraph::new(vec![Spans::from(Span::styled(
             text.to_string(),
-            Style::default().fg(Color::Magenta),
+            Style::default().fg(Color::Cyan),
         ))])
         .style(Style::default().bg(Color::Black))
         .block(Block::default().borders(Borders::ALL).title("Inner block"));
@@ -111,7 +111,7 @@ impl<'a> App<'a> {
     pub fn new() -> App<'a> {
         let items = vec![
             ParagraphItem::new("Height: 4", 4),
-            ParagraphItem::new("Height: 4", 4),
+            ParagraphItem::new("Height: 6", 6),
             ParagraphItem::new("Height: 5", 5),
             ParagraphItem::new("Height: 4", 4),
             ParagraphItem::new("Height: 3", 3),
@@ -127,7 +127,8 @@ impl<'a> App<'a> {
         ];
         let list = SelectableWidgetList::new(items)
             .style(Style::default().bg(Color::Black))
-            .block(Block::default().borders(Borders::ALL).title("Outer block"));
+            .block(Block::default().borders(Borders::ALL).title("Outer block"))
+            .truncate(true);
         App { list }
     }
 }
@@ -155,5 +156,5 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .constraints([Constraint::Min(0)].as_ref())
         .split(f.size());
 
-    f.render_widget(app.list.clone(), chunks[0]);
+    f.render_widget(&mut app.list, chunks[0]);
 }

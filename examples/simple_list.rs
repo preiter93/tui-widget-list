@@ -171,7 +171,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .constraints([Constraint::Min(0)].as_ref())
         .split(f.size());
 
-    f.render_widget(app.list.clone(), chunks[0]);
+    f.render_widget(&mut app.list, chunks[0]);
 }
 
 fn prefix_text<'a>(text: Text<'a>, prefix: &'a str) -> Text<'a> {
