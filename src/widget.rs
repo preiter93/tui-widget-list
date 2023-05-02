@@ -61,13 +61,6 @@ impl WidgetListState {
         for height in heights.iter().skip(self.offset) {
             // Out of bounds
             if y + height > max_height {
-                if found {
-                    if truncate {
-                        // Truncate the last widget to fit into the view
-                        self.view_heights.push(max_height - y);
-                    }
-                    return;
-                }
                 break;
             }
             // Selected value is within view/bounds, so we are good
@@ -77,6 +70,13 @@ impl WidgetListState {
             y += height;
             i += 1;
             self.view_heights.push(*height);
+        }
+        if found {
+            if truncate {
+                // Truncate the last widget to fit into the view
+                self.view_heights.push(max_height - y);
+            }
+            return;
         }
 
         // The selected item is out of bounds. We iterate backwards from the selected
