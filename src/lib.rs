@@ -85,7 +85,7 @@ pub use widget::{WidgetList, WidgetListItem, WidgetListState};
 
 /// [`SelectableWidgetList`] is a convenience method for [`WidgetList`].
 /// It provides the next and previous method to select items and it
-/// implements the `Widget` trait.
+/// implements the [`Widget`] trait.
 #[derive(Clone, Default)]
 pub struct SelectableWidgetList<'a, T> {
     /// Holds the lists state, i.e. which element is selected.
@@ -201,6 +201,22 @@ where
             None => 0,
         };
         self.state.select(Some(i));
+    }
+
+    /// Returns a reference to the selected item.
+    #[must_use]
+    pub fn get_selected(&self) -> Option<&T> {
+        self.state
+            .selected()
+            .and_then(|index| self.items.get(index))
+    }
+
+    /// Returns a mutable reference to the selected item.
+    #[must_use]
+    pub fn get_selected_mut(&mut self) -> Option<&mut T> {
+        self.state
+            .selected()
+            .and_then(|index| self.items.get_mut(index))
     }
 }
 
