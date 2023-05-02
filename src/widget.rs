@@ -88,7 +88,8 @@ impl WidgetListState {
             // out of bounds
             if y + height > max_height {
                 if truncate {
-                    // Currently this will truncate the bottom of the first item from. This
+                    // Truncate the first widget to fit into the view.
+                    // At the moment this will truncate the bottom of the first item, which
                     // looks a bit strange, but I have not figured out how to truncate a
                     // widget from the top.
                     self.view_heights.insert(0, max_height - y);
@@ -283,18 +284,3 @@ impl<'a, T: Widget> StatefulWidget for WidgetList<'a, T> {
         }
     }
 }
-
-// use std::fs::OpenOptions;
-// use std::io::Write;
-// fn debug(text: &str) {
-//     // Open a file with append option
-//     let mut data_file = OpenOptions::new()
-//         .append(true)
-//         .open("data.txt")
-//         .expect("cannot open file");
-//
-//     // Write to a file
-//     data_file
-//         .write(format!("{}\n", text).as_bytes())
-//         .expect("write failed");
-// }
