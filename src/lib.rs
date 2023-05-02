@@ -1,9 +1,16 @@
 //! # Widget list implementation for TUI
 //!
-//! # Demo
+//! ## Configurations
+//! The [`SelectableWidgetList`] can be modified
+//! - **style**: The base style of the list.
+//! - **block**: An optional outer block around the list.
+//! - **circular**: Whether the selection is circular, i.e. if true the first element will be selected after the last. True by default.
+//! - **truncate**: If truncate is true, the first and last element will be truncated to fill the full-screen. True by default.
+//!
+//! ## Demos
 //! See `examples/paragraph_list` and `examples/simple_list` in [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
 //!
-//! # Examples
+//! ## Examples
 //! Use a custom widget within a [`SelectableWidgetList`].
 //! ```
 //! use ratatui::buffer::Buffer;

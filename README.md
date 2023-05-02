@@ -11,7 +11,14 @@ This library provides an extension to render a list of arbitrary widgets.
 
 The documentation can be found on [docs.rs.](https://docs.rs/tui-widget-list)
 
-### Usage
+### Configurations
+The [`SelectableWidgetList`] can be modified
+- **style**: The base style of the list. Can be used to set a background behind the items.
+- **block**: An optional outer block around the list.
+- **circular**: Whether the selection is circular, i.e. if true the first element will be selected after the last. True by default.
+- **truncate**: If truncate is true, the first and last element will be truncated to fill the full-screen. True by default.
+
+### Example
 Use a custom widget with [`SelectableWidgetList`]. The render method is
 available on `wiget_list`.
 
