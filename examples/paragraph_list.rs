@@ -12,7 +12,7 @@ use ratatui::{
     Frame, Terminal,
 };
 use std::{error::Error, io};
-use tui_widget_list::{ListableWidget, SelectableWidgetList};
+use tui_widget_list::{SelectableWidgetList, WidgetListItem};
 
 #[derive(Debug, Clone)]
 pub struct ParagraphItem<'a> {
@@ -24,34 +24,35 @@ impl ParagraphItem<'_> {
     pub fn new(text: &str, height: u16) -> Self {
         let paragraph = Paragraph::new(vec![Spans::from(Span::styled(
             text.to_string(),
-            Style::default().fg(Color::Magenta),
+            Style::default().fg(Color::Cyan),
         ))])
         .style(Style::default().bg(Color::Black))
-        .block(Block::default().borders(Borders::ALL));
+        .block(Block::default().borders(Borders::ALL).title("Inner block"));
         Self { paragraph, height }
     }
 
     // Render the item differently depending on the selection state
-    fn modify_fn(mut self, is_selected: Option<bool>) -> Self {
-        if let Some(selected) = is_selected {
+    fn modify_fn(mut item: WidgetListItem<Self>, selected: Option<bool>) -> WidgetListItem<Self> {
+        if let Some(selected) = selected {
             if selected {
                 let style = Style::default().bg(Color::White);
-                self.paragraph = self.paragraph.style(style);
+                item.content.paragraph = item.content.paragraph.style(style);
             }
         }
-        self
+        item
+    }
+}
+
+impl<'a> From<ParagraphItem<'a>> for WidgetListItem<ParagraphItem<'a>> {
+    fn from(val: ParagraphItem<'a>) -> Self {
+        let height = val.height.to_owned();
+        Self::new(val, height).modify_fn(ParagraphItem::modify_fn)
     }
 }
 
 impl<'a> Widget for ParagraphItem<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         self.paragraph.render(area, buf);
-    }
-}
-
-impl<'a> ListableWidget for ParagraphItem<'a> {
-    fn height(&self) -> u16 {
-        self.height
     }
 }
 
@@ -110,7 +111,7 @@ impl<'a> App<'a> {
     pub fn new() -> App<'a> {
         let items = vec![
             ParagraphItem::new("Height: 4", 4),
-            ParagraphItem::new("Height: 4", 4),
+            ParagraphItem::new("Height: 6", 6),
             ParagraphItem::new("Height: 5", 5),
             ParagraphItem::new("Height: 4", 4),
             ParagraphItem::new("Height: 3", 3),
@@ -124,7 +125,10 @@ impl<'a> App<'a> {
             ParagraphItem::new("Height: 4", 4),
             ParagraphItem::new("Height: 6", 6),
         ];
-        let list = SelectableWidgetList::new(items).modify_fn(ParagraphItem::modify_fn);
+        let list = SelectableWidgetList::new(items)
+            .style(Style::default().bg(Color::Black))
+            .block(Block::default().borders(Borders::ALL).title("Outer block"))
+            .truncate(true);
         App { list }
     }
 }
@@ -152,13 +156,5 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .constraints([Constraint::Min(0)].as_ref())
         .split(f.size());
 
-    let widget = app
-        .list
-        .content
-        .clone()
-        .style(Style::default().bg(Color::Black))
-        .block(Block::default().borders(Borders::ALL))
-        .modify_fn(ParagraphItem::modify_fn);
-
-    f.render_stateful_widget(widget, chunks[0], &mut app.list.state);
+    f.render_widget(&mut app.list, chunks[0]);
 }
