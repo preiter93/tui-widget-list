@@ -10,7 +10,7 @@ pub struct WidgetListState {
     /// The index of the fist item on the screen
     offset: usize,
 
-    /// The widgets rendered heights.
+    /// The height of each visible item.
     view_heights: Vec<u16>,
 
     /// The selected item
