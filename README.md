@@ -11,6 +11,9 @@ This library provides an extension to render a list of arbitrary widgets.
 
 The documentation can be found on [docs.rs.](https://docs.rs/tui-widget-list)
 
+The package can be found on [crates.io](https://crates.io/crates/tui-widget-list)
+
+
 ### Configurations
 The [`SelectableWidgetList`] can be modified
 - **style**: The base style of the list. Can be used to set a background behind the items.
