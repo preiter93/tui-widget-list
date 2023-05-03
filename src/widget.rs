@@ -10,9 +10,6 @@ pub struct WidgetListState {
     /// The index of the fist item on the screen
     offset: usize,
 
-    /// The height of each visible item.
-    view_heights: Vec<u16>,
-
     /// The selected item
     selected: Option<usize>,
 }
@@ -37,14 +34,14 @@ impl WidgetListState {
     /// until we have reached the maximum height. If the selected value
     /// is within the bounds we do nothing. If the selected value is out
     /// of bounds, we adjust the offset accordingly.
-    fn update_offset(&mut self, heights: &[u16], max_height: u16, truncate: bool) {
+    fn update_view_port(&mut self, heights: &[u16], max_height: u16, truncate: bool) -> Vec<u16> {
         // The items heights on the viewport will be calculated on the fly.
-        self.view_heights.clear();
+        let mut view_heights: Vec<u16> = Vec::new();
 
         // Select the first element if none is selected
         let selected = self.selected.unwrap_or(0);
 
-        // If the selected value is smaller then the offset, we roll
+        // If the selected value is smaller than the offset, we roll
         // the offset so that the selected value is at the top
         if selected < self.offset {
             self.offset = selected;
@@ -56,48 +53,50 @@ impl WidgetListState {
         for height in heights.iter().skip(self.offset) {
             // Out of bounds
             if y + height > max_height {
+                if truncate {
+                    // Truncate the last widget
+                    view_heights.push(max_height - y);
+                }
                 break;
             }
             // Selected value is within view/bounds, so we are good
+            // but we keep iterating to collect the view heights
             if selected == i {
                 found = true;
             }
             y += height;
             i += 1;
-            self.view_heights.push(*height);
+            view_heights.push(*height);
         }
         if found {
-            if truncate {
-                // Truncate the last widget to fit into the view
-                self.view_heights.push(max_height - y);
-            }
-            return;
+            return view_heights;
         }
 
         // The selected item is out of bounds. We iterate backwards from the selected
         // item and determine the first widget that still fits on the screen.
-        self.view_heights.clear();
+        view_heights.clear();
         let (mut y, mut i) = (0, selected);
-        let last_elem = heights.len() - 1;
+        let last_elem = heights.len().saturating_sub(1);
         for height in heights.iter().rev().skip(last_elem - selected) {
             // out of bounds
-            if y + height > max_height {
+            if y + height >= max_height {
                 if truncate {
-                    // Truncate the first widget to fit into the view.
+                    // Truncate the first widget.
                     // At the moment this will truncate the bottom of the first item, which
                     // looks a bit strange, but I have not figured out how to truncate a
                     // widget from the top.
-                    self.view_heights.insert(0, max_height - y);
+                    view_heights.insert(0, max_height - y);
                     self.offset = i;
                 } else {
                     self.offset = i + 1;
                 }
                 break;
             }
-            self.view_heights.insert(0, *height);
+            view_heights.insert(0, *height);
             y += height;
             i -= 1;
         }
+        view_heights
     }
 }
 
@@ -275,15 +274,15 @@ impl<'a, T: Widget> StatefulWidget for WidgetList<'a, T> {
             .unzip();
 
         // Determine which widgets to render and how much space they are assigned to.
-        state.update_offset(&raw_heights, max_height, self.truncate);
+        let view_heights = state.update_view_port(&raw_heights, max_height, self.truncate);
 
         // Iterate over all items
         let first = state.offset;
-        let n = state.view_heights.len();
+        let n = view_heights.len();
         for (i, item) in modified_items.into_iter().skip(first).take(n).enumerate() {
             // Set the drawing area of the current item
-            let height = state.view_heights.get(i).unwrap();
-            let area = Rect::new(x, y, width, *height);
+            let height = view_heights[i];
+            let area = Rect::new(x, y, width, height);
 
             // Render the item
             let is_selected = state.selected().map(|selected| selected == i + first);
@@ -292,5 +291,53 @@ impl<'a, T: Widget> StatefulWidget for WidgetList<'a, T> {
             // Update the offset
             y += height;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    macro_rules! update_view_port_tests {
+        ($($name:ident:
+        [
+           $given_offset:expr,
+           $given_selected:expr,
+           $given_heights:expr,
+           $given_max_height:expr
+        ],
+        [
+           $expected_offset:expr,
+           $expected_heights:expr
+        ],)*) => {
+        $(
+            #[test]
+            fn $name() {
+                // given
+                let mut given_state = WidgetListState {
+                    offset: $given_offset,
+                    selected: $given_selected,
+                };
+
+                //when
+                let heights = given_state.update_view_port(&$given_heights, $given_max_height, true);
+                let offset = given_state.offset;
+
+                // then
+                assert_eq!(offset, $expected_offset);
+                assert_eq!(heights, $expected_heights);
+                assert_eq!(offset, $expected_offset);
+            }
+        )*
+        }
+    }
+
+    update_view_port_tests! {
+        happy_path: [0, Some(0), vec![2_u16, 3_u16], 6_u16], [0, vec![2_u16, 3_u16]],
+        empty_list: [0, None, vec![], 4_u16], [0, vec![]],
+        update_offset_down: [0, Some(2), vec![2_u16, 3_u16, 3_u16], 6_u16], [1, vec![3_u16, 3_u16]],
+        update_offset_up: [1, Some(0), vec![2_u16, 3_u16, 3_u16], 6_u16], [0, vec![2_u16, 3_u16, 1_u16]],
+        truncate_bottom: [0, Some(0), vec![2_u16, 3_u16], 4_u16], [0, vec![2_u16, 2_u16]],
+        truncate_top: [0, Some(1), vec![2_u16, 3_u16], 4_u16], [0, vec![1_u16, 3_u16]],
     }
 }
