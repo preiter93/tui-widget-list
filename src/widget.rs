@@ -29,11 +29,10 @@ impl WidgetListState {
         }
     }
 
-    /// Here we check and if necessary update the viewport.
-    /// For this we start with the first item on the screen and iterate
-    /// until we have reached the maximum height. If the selected value
-    /// is within the bounds we do nothing. If the selected value is out
-    /// of bounds, we adjust the offset accordingly.
+    /// Here we check and if necessary update the viewport. For this we start with the first item
+    /// on the screen and iterate until we have reached the maximum height. If the selected value
+    /// is within the bounds we do nothing. If the selected value is out of bounds, we adjust the
+    /// offset accordingly.
     fn update_view_port(&mut self, heights: &[u16], max_height: u16, truncate: bool) -> Vec<u16> {
         // The items heights on the viewport will be calculated on the fly.
         let mut view_heights: Vec<u16> = Vec::new();
@@ -261,7 +260,7 @@ impl<'a, T: Widget> StatefulWidget for WidgetList<'a, T> {
 
         // Modify the widgets based on their selection state. Split out their heights for
         // efficiency as we have to iterate over the heights back and forth to determine
-        // which widget is shown on the veiwport.
+        // which widget is shown on the viewport.
         let (raw_heights, modified_items): (Vec<_>, Vec<_>) = self
             .items
             .into_iter()
