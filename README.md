@@ -53,6 +53,8 @@ impl MyListItem<'_> {
             if selected {
                 let style = Style::default().bg(Color::White);
                 item.content = item.content.style(style);
+                // You can also change the height of the selected item
+                // item.height = 5_u16;
             }
         }
         item
