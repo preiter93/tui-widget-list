@@ -37,11 +37,9 @@ impl WidgetListState {
     /// until we have reached the maximum height. If the selected value
     /// is within the bounds we do nothing. If the selected value is out
     /// of bounds, we adjust the offset accordingly.
-    fn update_offset<I>(&mut self, heights: I, max_height: u16, truncate: bool)
-    where
-        I: Iterator<Item = u16> + ExactSizeIterator + DoubleEndedIterator + Clone,
-    {
-        let heights: Vec<u16> = heights.collect();
+    fn update_offset(&mut self, heights: &[u16], max_height: u16, truncate: bool) {
+        // The items heights on the viewport will be calculated on the fly.
+        self.view_heights.clear();
 
         // Select the first element if none is selected
         let selected = self.selected.unwrap_or(0);
@@ -51,9 +49,6 @@ impl WidgetListState {
         if selected < self.offset {
             self.offset = selected;
         }
-
-        // The items heights on the viewport will be calculated on the fly.
-        self.view_heights.clear();
 
         // Check if the selected item is in the current view
         let (mut y, mut i) = (0, self.offset);
@@ -249,6 +244,11 @@ impl<'a, T: Widget> StatefulWidget for WidgetList<'a, T> {
             None => area,
         };
 
+        // List is empty
+        if self.is_empty() {
+            return;
+        }
+
         // Use the full width
         let width = area.width;
 
@@ -260,17 +260,27 @@ impl<'a, T: Widget> StatefulWidget for WidgetList<'a, T> {
         let y0 = area.top();
         let mut y = y0;
 
-        // Update the offset which might have changed between two frames
-        state.update_offset(
-            self.items.iter().map(|item| item.height),
-            max_height,
-            self.truncate,
-        );
+        // Modify the widgets based on their selection state. Split out their heights for
+        // efficiency as we have to iterate over the heights back and forth to determine
+        // which widget is shown on the veiwport.
+        let (raw_heights, modified_items): (Vec<_>, Vec<_>) = self
+            .items
+            .into_iter()
+            .enumerate()
+            .map(|(i, item)| {
+                let is_selected = state.selected().map(|selected| selected == i);
+                let item = (item.modify_fn)(item, is_selected);
+                (item.height, item)
+            })
+            .unzip();
+
+        // Determine which widgets to render and how much space they are assigned to.
+        state.update_offset(&raw_heights, max_height, self.truncate);
 
         // Iterate over all items
         let first = state.offset;
         let n = state.view_heights.len();
-        for (i, item) in self.items.into_iter().skip(first).take(n).enumerate() {
+        for (i, item) in modified_items.into_iter().skip(first).take(n).enumerate() {
             // Set the drawing area of the current item
             let height = state.view_heights.get(i).unwrap();
             let area = Rect::new(x, y, width, *height);
