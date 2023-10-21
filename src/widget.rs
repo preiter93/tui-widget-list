@@ -275,19 +275,19 @@ impl<'a, T: Widget> StatefulWidget for WidgetList<'a, T> {
         // Determine which widgets to render and how much space they are assigned to.
         let view_heights = state.update_view_port(&raw_heights, max_height, self.truncate);
 
-        // Iterate over all items
+        // Iterate over the modified items
         let first = state.offset;
         let n = view_heights.len();
-        for (i, item) in modified_items.into_iter().skip(first).take(n).enumerate() {
-            // Set the drawing area of the current item
-            let height = view_heights[i];
+        for (item, height) in modified_items
+            .into_iter()
+            .skip(first)
+            .take(n)
+            .zip(view_heights)
+        {
             let area = Rect::new(x, y, width, height);
 
-            // Render the item
-            let is_selected = state.selected().map(|selected| selected == i + first);
-            (item.modify_fn)(item, is_selected).render(area, buf);
+            item.render(area, buf);
 
-            // Update the offset
             y += height;
         }
     }
