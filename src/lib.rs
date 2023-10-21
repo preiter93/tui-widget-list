@@ -1,7 +1,7 @@
 //! # Widget list implementation for TUI
 //!
 //! ## Configurations
-//! The [`SelectableWidgetList`] can be modified
+//! The [`WidgetList`] can be modified
 //! - **style**: The base style of the list.
 //! - **block**: An optional outer block around the list.
 //! - **circular**: Whether the selection is circular, i.e. if true the first element will be selected after the last. True by default.
@@ -11,14 +11,13 @@
 //! See `examples/paragraph_list` and `examples/simple_list` in [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
 //!
 //! ## Examples
-//! Use a custom widget within a [`SelectableWidgetList`].
 //! ```
 //! use ratatui::buffer::Buffer;
 //! use ratatui::layout::Rect;
 //! use ratatui::style::{Color, Style};
 //! use ratatui::text::Text;
 //! use ratatui::widgets::{Paragraph, Widget};
-//! use tui_widget_list::{WidgetListItem, SelectableWidgetList};
+//! use tui_widget_list::{WidgetList, WidgetItem};
 //!
 //! #[derive(Debug, Clone)]
 //! pub struct MyListItem<'a> {
@@ -36,51 +35,30 @@
 //!         self.content = self.content.style(style);
 //!         self
 //!     }
-//!
-//!     // Render the item differently depending on the selection state
-//!     fn modify_fn(mut item: WidgetListItem<Self>, selected: Option<bool>) -> WidgetListItem<Self> {
-//!         if let Some(selected) = selected {
-//!             if selected {
-//!                 let style = Style::default().bg(Color::White);
-//!                 item.content = item.content.style(style);
-//!                 // You can also change the height of the selected item
-//!                 // item.height = 5_u16;
-//!             }
-//!         }
-//!         item
-//!     }
 //! }
 //!
-//! /// Must implement the `Widget` trait.
-//! impl<'a> Widget for MyListItem<'a> {
-//!     fn render(self, area: Rect, buf: &mut Buffer) {
-//!         self.content.render(area, buf);
+//! impl<'a> WidgetItem for MyListItem<'a> {
+//!     fn height(&self) -> usize {
+//!         self.height
+//!     }
+//!
+//!     fn highlighted(&self) -> Self {
+//!         let mut highlighted = self.clone();
+//!         highlighted.style = Style::default().bg(Color::Cyan);
+//!         highlighted
+//!     }
+//!
+//!     fn render(&self, area: Rect, buf: &mut Buffer) {
+//!         self.clone().paragraph.render(area, buf);
 //!     }
 //! }
-//!
-//! /// Define a method to cast to a `WidgetListItem`
-//! impl<'a> From<MyListItem<'a>> for WidgetListItem<MyListItem<'a>> {
-//!     fn from(val: MyListItem<'a>) -> Self {
-//!         let height = 1_u16; // Assume we have a one line paragraph
-//!         Self::new(val, height).modify_fn(MyListItem::modify_fn)
-//!     }
-//! }
-//!
-//! let items = vec![
-//!     MyListItem::new("hello", 3),
-//!     MyListItem::new("world", 4),
-//! ];
-//! let widget_list = SelectableWidgetList::new(items);
-//!
 //! // widget_list can be rendered like any other widget in TUI. Note that
 //! // we pass it as mutable reference in order to not lose the state.
 //! // f.render_widget(&mut widget_list, area);
 //! ```
-pub mod selectable;
 pub mod state;
 pub mod traits;
 pub mod widget;
-pub use selectable::SelectableWidgetList;
 pub use state::WidgetListState;
 pub use traits::WidgetItem;
-pub use widget::{WidgetList, WidgetListItem};
+pub use widget::WidgetList;
