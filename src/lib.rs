@@ -77,6 +77,10 @@
 //! // f.render_widget(&mut widget_list, area);
 //! ```
 pub mod selectable;
+pub mod state;
+pub mod traits;
 pub mod widget;
 pub use selectable::SelectableWidgetList;
-pub use widget::{WidgetList, WidgetListItem, WidgetListState};
+pub use state::WidgetListState;
+pub use traits::WidgetItem;
+pub use widget::{WidgetList, WidgetListItem};
