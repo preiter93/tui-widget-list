@@ -7,7 +7,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
-    text::{Span, Spans},
+    text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Widget},
     Frame, Terminal,
 };
@@ -22,7 +22,7 @@ pub struct ParagraphItem<'a> {
 
 impl ParagraphItem<'_> {
     pub fn new(text: &str, height: u16) -> Self {
-        let paragraph = Paragraph::new(vec![Spans::from(Span::styled(
+        let paragraph = Paragraph::new(vec![Line::from(Span::styled(
             text.to_string(),
             Style::default().fg(Color::Cyan),
         ))])
