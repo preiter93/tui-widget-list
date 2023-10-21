@@ -1,3 +1,4 @@
+use crate::{WidgetList, WidgetListItem, WidgetListState};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
@@ -5,9 +6,7 @@ use ratatui::{
     widgets::{Block, StatefulWidget, Widget},
 };
 
-use crate::{WidgetList, WidgetListItem, WidgetListState};
-
-/// [`SelectableWidgetList`] is a convenience method for [`WidgetList`].
+/// [`SelectableList`] is a convenience method for [`WidgetList`].
 /// It provides the next and previous method to select items and it
 /// implements the [`Widget`] trait.
 #[derive(Clone, Default)]
