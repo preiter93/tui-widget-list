@@ -191,9 +191,10 @@ fn prefix_text<'a>(text: Text<'a>, prefix: &'a str) -> Text<'a> {
     let lines = text
         .lines
         .into_iter()
-        .map(|mut line| {
-            line.0.insert(0, Span::from(prefix));
-            line
+        .map(|line| {
+            let mut spans = line.spans;
+            spans.insert(0, Span::from(prefix));
+            ratatui::text::Line::from(spans)
         })
         .collect();
     Text { lines }
