@@ -1,10 +1,10 @@
 #[derive(Debug, Clone, Default)]
 pub struct WidgetListState {
+    /// The selected item. If none, no item is selected.
+    pub selected: Option<usize>,
+
     /// The index of the fist item on the screen
     pub(crate) offset: usize,
-
-    /// The selected item
-    pub selected: Option<usize>,
 }
 
 impl WidgetListState {
@@ -28,14 +28,14 @@ impl WidgetListState {
     /// offset accordingly.
     pub(crate) fn update_view_port(
         &mut self,
-        heights: &[u16],
-        max_height: u16,
+        heights: &[usize],
+        max_height: usize,
         truncate: bool,
-    ) -> Vec<u16> {
+    ) -> Vec<usize> {
         // The items heights on the viewport will be calculated on the fly.
-        let mut view_heights: Vec<u16> = Vec::new();
+        let mut view_heights: Vec<usize> = Vec::new();
 
-        // Select the first element if none is selected
+        // If none is selected, the first item should be show on top of the viewport.
         let selected = self.selected.unwrap_or(0);
 
         // If the selected value is smaller than the offset, we roll
@@ -136,11 +136,11 @@ mod tests {
     }
 
     update_view_port_tests! {
-        happy_path: [0, Some(0), vec![2_u16, 3_u16], 6_u16], [0, vec![2_u16, 3_u16]],
-        empty_list: [0, None, vec![], 4_u16], [0, vec![]],
-        update_offset_down: [0, Some(2), vec![2_u16, 3_u16, 3_u16], 6_u16], [1, vec![3_u16, 3_u16]],
-        update_offset_up: [1, Some(0), vec![2_u16, 3_u16, 3_u16], 6_u16], [0, vec![2_u16, 3_u16, 1_u16]],
-        truncate_bottom: [0, Some(0), vec![2_u16, 3_u16], 4_u16], [0, vec![2_u16, 2_u16]],
-        truncate_top: [0, Some(1), vec![2_u16, 3_u16], 4_u16], [0, vec![1_u16, 3_u16]],
+        happy_path: [0, Some(0), vec![2, 3], 6], [0, vec![2, 3]],
+        empty_list: [0, None, vec![], 4], [0, vec![]],
+        update_offset_down: [0, Some(2), vec![2, 3, 3], 6], [1, vec![3, 3]],
+        update_offset_up: [1, Some(0), vec![2, 3, 3], 6], [0, vec![2, 3, 1]],
+        truncate_bottom: [0, Some(0), vec![2, 3], 4], [0, vec![2, 2]],
+        truncate_top: [0, Some(1), vec![2, 3], 4], [0, vec![1, 3]],
     }
 }

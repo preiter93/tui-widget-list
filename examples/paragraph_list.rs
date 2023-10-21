@@ -12,7 +12,7 @@ use ratatui::{
     Frame, Terminal,
 };
 use std::{error::Error, io};
-use tui_widget_list::{SelectableWidgetList, WidgetListItem};
+use tui_widget_list::{WidgetItem, WidgetList};
 
 #[derive(Debug, Clone)]
 pub struct ParagraphItem<'a> {
@@ -30,29 +30,22 @@ impl ParagraphItem<'_> {
         .block(Block::default().borders(Borders::ALL).title("Inner block"));
         Self { paragraph, height }
     }
-
-    // Render the item differently depending on the selection state
-    fn modify_fn(mut item: WidgetListItem<Self>, selected: Option<bool>) -> WidgetListItem<Self> {
-        if let Some(selected) = selected {
-            if selected {
-                let style = Style::default().bg(Color::White);
-                item.content.paragraph = item.content.paragraph.style(style);
-            }
-        }
-        item
-    }
 }
 
-impl<'a> From<ParagraphItem<'a>> for WidgetListItem<ParagraphItem<'a>> {
-    fn from(val: ParagraphItem<'a>) -> Self {
-        let height = val.height.to_owned();
-        Self::new(val, height).modify_fn(ParagraphItem::modify_fn)
+impl<'a> WidgetItem for ParagraphItem<'a> {
+    fn height(&self) -> usize {
+        self.height as usize
     }
-}
 
-impl<'a> Widget for ParagraphItem<'a> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        self.paragraph.render(area, buf);
+    fn highlighted(&self) -> Self {
+        let mut highlighted = self.clone();
+        let style = Style::default().bg(Color::White);
+        highlighted.paragraph = highlighted.paragraph.style(style);
+        highlighted
+    }
+
+    fn render(&self, area: Rect, buf: &mut Buffer) {
+        self.clone().paragraph.render(area, buf);
     }
 }
 
@@ -104,7 +97,7 @@ fn panic_hook() {
 }
 
 pub struct App<'a> {
-    pub list: SelectableWidgetList<'a, ParagraphItem<'a>>,
+    pub list: WidgetList<'a, ParagraphItem<'a>>,
 }
 
 impl<'a> App<'a> {
@@ -125,7 +118,7 @@ impl<'a> App<'a> {
             ParagraphItem::new("Height: 4", 4),
             ParagraphItem::new("Height: 6", 6),
         ];
-        let list = SelectableWidgetList::new(items)
+        let list = WidgetList::new(items)
             .style(Style::default().bg(Color::Black))
             .block(Block::default().borders(Borders::ALL).title("Outer block"))
             .truncate(true);
