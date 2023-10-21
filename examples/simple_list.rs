@@ -8,7 +8,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
     text::{Span, Text},
-    widgets::{Block, Borders, Paragraph, Widget},
+    widgets::{Block, BorderType, Borders, Paragraph, Widget},
     Frame, Terminal,
 };
 use std::{error::Error, io};
@@ -140,10 +140,23 @@ impl<'a> App<'a> {
             ListItem::new(Text::from("Item 1")),
             ListItem::new(Text::from("Item 2")),
             ListItem::new(Text::from("Item 3")),
+            ListItem::new(Text::from("Item 1")),
+            ListItem::new(Text::from("Item 1")),
+            ListItem::new(Text::from("Item 1")),
+            ListItem::new(Text::from("Item 2")),
+            ListItem::new(Text::from("Item 3")),
+            ListItem::new(Text::from("Item 2")),
+            ListItem::new(Text::from("Item 3")),
+            ListItem::new(Text::from("Item 2")),
+            ListItem::new(Text::from("Item 3")),
         ];
+        let block = Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Double)
+            .title(Span::styled("Selection", Style::default()));
         let list = SelectableWidgetList::new(items)
             .style(Style::default().bg(Color::Black))
-            .block(Block::default().borders(Borders::ALL));
+            .block(block);
         App { list }
     }
 }
