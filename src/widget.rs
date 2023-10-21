@@ -1,193 +1,49 @@
 use ratatui::{
-    buffer::Buffer,
-    layout::Rect,
+    prelude::{Buffer, Rect},
     style::Style,
-    widgets::{Block, StatefulWidget, Widget},
+    widgets::{Block, Widget},
 };
 
-#[derive(Debug, Clone, Default)]
-pub struct WidgetListState {
-    /// The index of the fist item on the screen
-    offset: usize,
+use crate::{WidgetItem, WidgetListState};
 
-    /// The selected item
-    selected: Option<usize>,
-}
-
-impl WidgetListState {
-    /// Return the currently selected items index
-    #[must_use]
-    pub fn selected(&self) -> Option<usize> {
-        self.selected
-    }
-
-    /// Select an item by its index
-    pub fn select(&mut self, index: Option<usize>) {
-        self.selected = index;
-        if index.is_none() {
-            self.offset = 0;
-        }
-    }
-
-    /// Here we check and if necessary update the viewport. For this we start with the first item
-    /// on the screen and iterate until we have reached the maximum height. If the selected value
-    /// is within the bounds we do nothing. If the selected value is out of bounds, we adjust the
-    /// offset accordingly.
-    fn update_view_port(&mut self, heights: &[u16], max_height: u16, truncate: bool) -> Vec<u16> {
-        // The items heights on the viewport will be calculated on the fly.
-        let mut view_heights: Vec<u16> = Vec::new();
-
-        // Select the first element if none is selected
-        let selected = self.selected.unwrap_or(0);
-
-        // If the selected value is smaller than the offset, we roll
-        // the offset so that the selected value is at the top
-        if selected < self.offset {
-            self.offset = selected;
-        }
-
-        // Check if the selected item is in the current view
-        let (mut y, mut i) = (0, self.offset);
-        let mut found = false;
-        for height in heights.iter().skip(self.offset) {
-            // Out of bounds
-            if y + height > max_height {
-                if truncate {
-                    // Truncate the last widget
-                    view_heights.push(max_height - y);
-                }
-                break;
-            }
-            // Selected value is within view/bounds, so we are good
-            // but we keep iterating to collect the view heights
-            if selected == i {
-                found = true;
-            }
-            y += height;
-            i += 1;
-            view_heights.push(*height);
-        }
-        if found {
-            return view_heights;
-        }
-
-        // The selected item is out of bounds. We iterate backwards from the selected
-        // item and determine the first widget that still fits on the screen.
-        view_heights.clear();
-        let (mut y, mut i) = (0, selected);
-        let last_elem = heights.len().saturating_sub(1);
-        for height in heights.iter().rev().skip(last_elem - selected) {
-            // out of bounds
-            if y + height >= max_height {
-                if truncate {
-                    // Truncate the first widget.
-                    // At the moment this will truncate the bottom of the first item, which
-                    // looks a bit strange, but I have not figured out how to truncate a
-                    // widget from the top.
-                    view_heights.insert(0, max_height - y);
-                    self.offset = i;
-                } else {
-                    self.offset = i + 1;
-                }
-                break;
-            }
-            view_heights.insert(0, *height);
-            y += height;
-            i -= 1;
-        }
-        view_heights
-    }
-}
-
-/// `WidgetListItem` holds the widget and the height of the widget.
+/// A [`WidgetList`] is a widget that can be used in Ratatui to
+/// render an arbitrary list of widgets. It is generic over
+/// T, where each T should implement the [`WidgetItem`] trait.
 #[derive(Clone)]
-pub struct WidgetListItem<T> {
-    /// The widget.
-    pub content: T,
+pub struct WidgetList<'a, T: WidgetItem> {
+    /// The lists items.
+    pub items: Vec<T>,
 
-    /// The height of the widget.
-    pub height: u16,
+    /// The lists state.
+    pub state: WidgetListState,
 
-    /// A callback function that can be used to style an item
-    /// based on its selection state.
-    modify_fn: ModifyFn<Self>,
-}
-
-impl<T: Widget> WidgetListItem<T> {
-    /// Constructs a new item given the widget and its height
-    pub fn new(content: T, height: u16) -> Self {
-        Self {
-            content,
-            height,
-            modify_fn: default_modify_fn,
-        }
-    }
-
-    /// Set a callback that can be used to modify the widget item
-    /// based on the selection state.
-    #[must_use]
-    pub fn modify_fn(mut self, modify_fn: ModifyFn<Self>) -> Self {
-        self.modify_fn = modify_fn;
-        self
-    }
-}
-
-impl<T: Widget> Widget for WidgetListItem<T> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        self.content.render(area, buf);
-    }
-}
-
-/// `ModifyFn` is a callback function that takes in the widget
-/// and the current selection state and returns the (modified)
-/// widget.
-///
-/// A selection state of None indicates that no other element
-/// is selected. If the selection state is true, it indicates
-/// that the current item is selected.
-pub type ModifyFn<T> = fn(T, Option<bool>) -> T;
-
-/// Default implementation of `modify_fn`. Does nothing to T.
-fn default_modify_fn<T>(slf: T, _: Option<bool>) -> T {
-    slf
-}
-
-#[derive(Clone)]
-pub struct WidgetList<'a, T> {
-    /// The lists items
-    items: Vec<WidgetListItem<T>>,
-
-    /// Style used as a base style for the widget
+    /// Style used as a base style for the widget.
     style: Style,
 
-    /// Block surrounding the widget list
+    /// Block surrounding the widget list.
     block: Option<Block<'a>>,
 
     /// Truncate widgets to fill full screen. Defaults to true.
     truncate: bool,
+
+    /// Whether the selection is circular. If true, calling next on the
+    /// last element returns the first element, and calling previous on
+    /// the first element returns the last element.
+    circular: bool,
 }
 
-impl<'a, T> Default for WidgetList<'a, T> {
-    fn default() -> Self {
-        Self {
-            items: vec![],
-            style: Style::default(),
-            block: None,
-            truncate: true,
-        }
-    }
-}
-
-impl<'a, T: Widget> WidgetList<'a, T> {
+impl<'a, T: WidgetItem> WidgetList<'a, T> {
     /// Instantiate a widget list with elements. The Elements must
-    /// implement the [`Widget`] trait.
+    /// implement the [`WidgetItem`] trait.
     #[must_use]
-    pub fn new(items: Vec<WidgetListItem<T>>) -> Self {
+    pub fn new(items: Vec<T>) -> Self {
         Self {
             items,
             style: Style::default(),
             block: None,
             truncate: true,
+            circular: true,
+            state: WidgetListState::default(),
         }
     }
 
@@ -214,6 +70,16 @@ impl<'a, T: Widget> WidgetList<'a, T> {
         self
     }
 
+    /// If circular is True, the selection continues from the
+    /// last item to the first when going down, and from the
+    /// first item to the last when going up.
+    /// It is true by default.
+    #[must_use]
+    pub fn circular(mut self, circular: bool) -> Self {
+        self.circular = circular;
+        self
+    }
+
     /// Whether the widget list is empty
     #[must_use]
     pub fn is_empty(&self) -> bool {
@@ -225,18 +91,71 @@ impl<'a, T: Widget> WidgetList<'a, T> {
     pub fn len(&self) -> usize {
         self.items.len()
     }
+
+    /// Selects the next element of the list. If circular is true,
+    /// calling next on the last element selects the first.
+    pub fn next(&mut self) {
+        if self.items.is_empty() {
+            return;
+        }
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.items.len() - 1 {
+                    if self.circular {
+                        0
+                    } else {
+                        i
+                    }
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    /// Selects the previous element of the list. If circular is true,
+    /// calling previous on the first element selects the last.
+    pub fn previous(&mut self) {
+        if self.items.is_empty() {
+            return;
+        }
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    if self.circular {
+                        self.items.len() - 1
+                    } else {
+                        i
+                    }
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
 }
 
-impl<'a, T: Widget> StatefulWidget for WidgetList<'a, T> {
-    type State = WidgetListState;
+impl<'a, T: WidgetItem> From<Vec<T>> for WidgetList<'a, T> {
+    /// Instantiates a [`WidgetList`] from a vector of elements implementing
+    /// the [`WidgetList`] trait.
+    fn from(items: Vec<T>) -> Self {
+        Self::new(items)
+    }
+}
 
-    fn render(mut self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
+impl<'a, T: WidgetItem> Widget for &mut WidgetList<'a, T> {
+    // Renders a mutable reference to a widget list
+    fn render(self, area: Rect, buf: &mut Buffer) {
         // Set the base style
         buf.set_style(area, self.style);
-        let area = match self.block.take() {
+        let area = match self.block.as_ref() {
             Some(b) => {
                 let inner_area = b.inner(area);
-                b.render(area, buf);
+                b.clone().render(area, buf);
                 inner_area
             }
             None => area,
@@ -251,7 +170,7 @@ impl<'a, T: Widget> StatefulWidget for WidgetList<'a, T> {
         let width = area.width;
 
         // Maximum height
-        let max_height = area.height;
+        let max_height = area.height as usize;
 
         // The starting positions of the current item
         let x = area.left();
@@ -261,82 +180,38 @@ impl<'a, T: Widget> StatefulWidget for WidgetList<'a, T> {
         // Modify the widgets based on their selection state. Split out their heights for
         // efficiency as we have to iterate over the heights back and forth to determine
         // which widget is shown on the viewport.
-        let (raw_heights, modified_items): (Vec<_>, Vec<_>) = self
+        let mut highlighted_item: Option<T> = None;
+        let raw_heights: Vec<_> = self
             .items
-            .into_iter()
+            .iter_mut()
             .enumerate()
             .map(|(i, item)| {
-                let is_selected = state.selected().map(|selected| selected == i);
-                let item = (item.modify_fn)(item, is_selected);
-                (item.height, item)
+                if self.state.selected().is_some_and(|s| s == i) {
+                    let item = item.highlighted();
+                    let height = item.height();
+                    highlighted_item = Some(item);
+                    height
+                } else {
+                    item.height()
+                }
             })
-            .unzip();
+            .collect();
 
-        // Determine which widgets to render and how much space they are assigned to.
-        let view_heights = state.update_view_port(&raw_heights, max_height, self.truncate);
+        // Determine which widgets to render and how much space they get assigned to.
+        let view_heights = self
+            .state
+            .update_view_port(&raw_heights, max_height, self.truncate);
 
         // Iterate over the modified items
-        let first = state.offset;
-        let n = view_heights.len();
-        for (item, height) in modified_items
-            .into_iter()
-            .skip(first)
-            .take(n)
-            .zip(view_heights)
-        {
-            let area = Rect::new(x, y, width, height);
-
-            item.render(area, buf);
-
-            y += height;
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    macro_rules! update_view_port_tests {
-        ($($name:ident:
-        [
-           $given_offset:expr,
-           $given_selected:expr,
-           $given_heights:expr,
-           $given_max_height:expr
-        ],
-        [
-           $expected_offset:expr,
-           $expected_heights:expr
-        ],)*) => {
-        $(
-            #[test]
-            fn $name() {
-                // given
-                let mut given_state = WidgetListState {
-                    offset: $given_offset,
-                    selected: $given_selected,
-                };
-
-                //when
-                let heights = given_state.update_view_port(&$given_heights, $given_max_height, true);
-                let offset = given_state.offset;
-
-                // then
-                assert_eq!(offset, $expected_offset);
-                assert_eq!(heights, $expected_heights);
-                assert_eq!(offset, $expected_offset);
+        let offset = self.state.offset;
+        for (i, height) in view_heights.into_iter().enumerate() {
+            let area = Rect::new(x, y, width, height as u16);
+            let selected = self.state.selected().is_some_and(|s| s == i + offset);
+            match (selected, highlighted_item.as_ref()) {
+                (true, Some(item)) => item.render(area, buf),
+                _ => self.items[i + offset].render(area, buf),
             }
-        )*
+            y += height as u16;
         }
-    }
-
-    update_view_port_tests! {
-        happy_path: [0, Some(0), vec![2_u16, 3_u16], 6_u16], [0, vec![2_u16, 3_u16]],
-        empty_list: [0, None, vec![], 4_u16], [0, vec![]],
-        update_offset_down: [0, Some(2), vec![2_u16, 3_u16, 3_u16], 6_u16], [1, vec![3_u16, 3_u16]],
-        update_offset_up: [1, Some(0), vec![2_u16, 3_u16, 3_u16], 6_u16], [0, vec![2_u16, 3_u16, 1_u16]],
-        truncate_bottom: [0, Some(0), vec![2_u16, 3_u16], 4_u16], [0, vec![2_u16, 2_u16]],
-        truncate_top: [0, Some(1), vec![2_u16, 3_u16], 4_u16], [0, vec![1_u16, 3_u16]],
     }
 }

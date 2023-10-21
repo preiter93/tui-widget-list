@@ -12,14 +12,15 @@ use ratatui::{
     Frame, Terminal,
 };
 use std::{error::Error, io};
-use tui_widget_list::{SelectableWidgetList, WidgetListItem};
+use tui_widget_list::{widget::WidgetList, WidgetItem};
 
+/// A simple list text item.
 #[derive(Debug, Clone)]
 pub struct ListItem<'a> {
-    /// The items text
+    /// The text
     text: Text<'a>,
 
-    /// The items style
+    /// The style
     style: Style,
 
     /// The current prefix. Changes when the item is selected.
@@ -56,30 +57,22 @@ impl<'a> ListItem<'a> {
         };
         Paragraph::new(text).style(self.style)
     }
-
-    fn modify_fn(mut item: WidgetListItem<Self>, selected: Option<bool>) -> WidgetListItem<Self> {
-        if let Some(selected) = selected {
-            if selected {
-                item.content.prefix = Some(">>");
-                item.content.style = Style::default().bg(Color::Cyan);
-            } else {
-                item.content.prefix = Some("  ");
-            }
-        }
-        item
-    }
 }
 
-impl<'a> From<ListItem<'a>> for WidgetListItem<ListItem<'a>> {
-    fn from(val: ListItem<'a>) -> Self {
-        let height = val.text.height() as u16;
-        Self::new(val, height).modify_fn(ListItem::modify_fn)
+impl<'a> WidgetItem for ListItem<'a> {
+    fn height(&self) -> usize {
+        self.text.height()
     }
-}
 
-impl<'a> Widget for ListItem<'a> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        self.get_paragraph().render(area, buf);
+    fn highlighted(&self) -> Self {
+        let mut highlighted = self.clone();
+        highlighted.prefix = Some(">>");
+        highlighted.style = Style::default().bg(Color::Cyan);
+        highlighted
+    }
+
+    fn render(&self, area: Rect, buf: &mut Buffer) {
+        self.clone().get_paragraph().render(area, buf);
     }
 }
 
@@ -131,7 +124,7 @@ fn panic_hook() {
 }
 
 pub struct App<'a> {
-    pub list: SelectableWidgetList<'a, ListItem<'a>>,
+    pub list: WidgetList<'a, ListItem<'a>>,
 }
 
 impl<'a> App<'a> {
@@ -154,9 +147,8 @@ impl<'a> App<'a> {
             .borders(Borders::ALL)
             .border_type(BorderType::Double)
             .title(Span::styled("Selection", Style::default()));
-        let list = SelectableWidgetList::new(items)
-            .style(Style::default().bg(Color::Black))
-            .block(block);
+        let mut list: WidgetList<ListItem> = items.into();
+        list = list.block(block);
         App { list }
     }
 }
@@ -191,9 +183,10 @@ fn prefix_text<'a>(text: Text<'a>, prefix: &'a str) -> Text<'a> {
     let lines = text
         .lines
         .into_iter()
-        .map(|mut line| {
-            line.0.insert(0, Span::from(prefix));
-            line
+        .map(|line| {
+            let mut spans = line.spans;
+            spans.insert(0, Span::from(prefix));
+            ratatui::text::Line::from(spans)
         })
         .collect();
     Text { lines }
