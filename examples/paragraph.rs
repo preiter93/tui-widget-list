@@ -4,12 +4,8 @@ use crossterm::{
 };
 use ratatui::{
     backend::{Backend, CrosstermBackend},
-    buffer::Buffer,
-    layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Style},
-    text::{Line, Span},
+    prelude::*,
     widgets::{Block, Borders, Paragraph, Widget},
-    Frame, Terminal,
 };
 use std::{error::Error, io};
 use tui_widget_list::{WidgetItem, WidgetList};
@@ -30,6 +26,11 @@ impl ParagraphItem<'_> {
         .block(Block::default().borders(Borders::ALL).title("Inner block"));
         Self { paragraph, height }
     }
+
+    pub fn style(mut self, style: Style) -> Self {
+        self.paragraph = self.paragraph.set_style(style);
+        self
+    }
 }
 
 impl<'a> WidgetItem for ParagraphItem<'a> {
@@ -37,11 +38,9 @@ impl<'a> WidgetItem for ParagraphItem<'a> {
         self.height as usize
     }
 
-    fn highlighted(&self) -> Self {
-        let mut highlighted = self.clone();
+    fn highlighted(&self) -> Option<Self> {
         let style = Style::default().bg(Color::White);
-        highlighted.paragraph = highlighted.paragraph.style(style);
-        highlighted
+        Some(self.clone().style(style))
     }
 
     fn render(&self, area: Rect, buf: &mut Buffer) {

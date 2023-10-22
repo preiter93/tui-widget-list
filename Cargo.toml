@@ -10,11 +10,14 @@ readme = "README.md"
 license = "MIT"
 
 [dependencies]
-crossterm = "0.27"
-ratatui = "0.23"
+crossterm = "0.*"
+ratatui = "0.*"
 
 [[example]]
-name = "paragraph_list"
+name = "simple"
 
 [[example]]
-name = "simple_list"
+name = "paragraph"
+
+[[example]]
+name = "mixed"
