@@ -87,23 +87,6 @@ impl<'a> WidgetItem for TabItem {
     }
 }
 
-// impl TabItem {
-// pub fn new(text: &str, height: u16) -> Self {
-//     let paragraph = Paragraph::new(vec![Line::from(Span::styled(
-//         text.to_string(),
-//         Style::default().fg(Color::Cyan),
-//     ))])
-//     .style(Style::default().bg(Color::Black))
-//     .block(Block::default().borders(Borders::ALL).title("Inner block"));
-//     Self { paragraph, height }
-// }
-//
-// pub fn style(mut self, style: Style) -> Self {
-//     self.paragraph = self.paragraph.set_style(style);
-//     self
-// }
-// }
-
 enum ListElements<'a> {
     TabItem(TabItem),
     ParagraphItem(ParagraphItem<'a>),
