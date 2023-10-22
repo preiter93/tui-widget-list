@@ -22,11 +22,11 @@
 //! #[derive(Debug, Clone)]
 //! pub struct MyListItem<'a> {
 //!     content: Paragraph<'a>,
-//!     height: u16,
+//!     height: usize,
 //! }
 //!
 //! impl MyListItem<'_> {
-//!     pub fn new(text: &'static str, height: u16) -> Self {
+//!     pub fn new(text: &'static str, height: usize) -> Self {
 //!         let content = Paragraph::new(Text::from(text));
 //!         Self { content, height }
 //!     }
@@ -44,12 +44,11 @@
 //!
 //!     fn highlighted(&self) -> Self {
 //!         let mut highlighted = self.clone();
-//!         highlighted.style = Style::default().bg(Color::Cyan);
-//!         highlighted
+//!         highlighted.style(Style::default().bg(Color::Cyan))
 //!     }
 //!
 //!     fn render(&self, area: Rect, buf: &mut Buffer) {
-//!         self.clone().paragraph.render(area, buf);
+//!         self.clone().content.render(area, buf);
 //!     }
 //! }
 //! // widget_list can be rendered like any other widget in TUI. Note that

@@ -73,8 +73,8 @@ impl WidgetListState {
         // item and determine the first widget that still fits on the screen.
         view_heights.clear();
         let (mut y, mut i) = (0, selected);
-        let last_elem = heights.len().saturating_sub(1);
-        for height in heights.iter().rev().skip(last_elem - selected) {
+        let last = heights.len().saturating_sub(1);
+        for height in heights.iter().rev().skip(last.saturating_sub(selected)) {
             // out of bounds
             if y + height >= max_height {
                 if truncate {
