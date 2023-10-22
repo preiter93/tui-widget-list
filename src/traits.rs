@@ -5,9 +5,15 @@ pub trait WidgetItem {
     /// Returns the height of the item.
     fn height(&self) -> usize;
 
-    /// Highlight the selected widget. Optional.
+    /// Highlight the selected widget. Optional. If None, no highlighting
+    /// is applied.
     #[must_use]
-    fn highlighted(&self) -> Self;
+    fn highlighted(&self) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        None
+    }
 
     // Render the item. Similar to ratatui's widget trait, but here the
     // render trait should be implemented on the reference of the class.

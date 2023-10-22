@@ -187,10 +187,13 @@ impl<'a, T: WidgetItem> Widget for &mut WidgetList<'a, T> {
             .enumerate()
             .map(|(i, item)| {
                 if self.state.selected().is_some_and(|s| s == i) {
-                    let item = item.highlighted();
-                    let height = item.height();
-                    highlighted_item = Some(item);
-                    height
+                    if let Some(highlighted) = item.highlighted() {
+                        let height = highlighted.height();
+                        highlighted_item = Some(highlighted);
+                        height
+                    } else {
+                        item.height()
+                    }
                 } else {
                     item.height()
                 }

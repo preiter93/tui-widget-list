@@ -64,11 +64,12 @@ impl<'a> WidgetItem for ListItem<'a> {
         self.text.height()
     }
 
-    fn highlighted(&self) -> Self {
-        let mut highlighted = self.clone();
-        highlighted.prefix = Some(">>");
-        highlighted.style = Style::default().bg(Color::Cyan);
-        highlighted
+    fn highlighted(&self) -> Option<Self> {
+        Some(
+            self.clone()
+                .prefix(Some(">>"))
+                .style(Style::default().bg(Color::Cyan)),
+        )
     }
 
     fn render(&self, area: Rect, buf: &mut Buffer) {
