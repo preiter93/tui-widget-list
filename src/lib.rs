@@ -42,9 +42,9 @@
 //!         self.height
 //!     }
 //!
-//!     fn highlighted(&self) -> Self {
+//!     fn highlighted(&self) -> Option<Self> {
 //!         let mut highlighted = self.clone();
-//!         highlighted.style(Style::default().bg(Color::Cyan))
+//!         Some(highlighted.style(Style::default().bg(Color::Cyan)))
 //!     }
 //!
 //!     fn render(&self, area: Rect, buf: &mut Buffer) {
