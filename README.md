@@ -1,16 +1,10 @@
 # tui-widget-list
 
-## Widget list implementation for TUI
+## A versatile list implementation for Ratatui
 
-### Configurations
-The [`WidgetList`] can be modified
-- **style**: The base style of the list.
-- **block**: An optional outer block around the list.
-- **circular**: Whether the selection is circular, i.e. if true the first element will be selected after the last. True by default.
-- **truncate**: If truncate is true, the first and last element will be truncated to fill the full-screen. True by default.
-
-### Demos
-See `examples/paragraph_list` and `examples/simple_list` in [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
+This crate offers a stateful widget list implementation [`List`] for `Ratatui` that allows to
+work with any list of widgets that implement to the [`Listable`] trait. The associated selection state
+is [`ListState`] which offers methods like next and previous.
 
 ### Examples
 ```rust
@@ -19,7 +13,7 @@ use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 use ratatui::text::Text;
 use ratatui::widgets::{Paragraph, Widget};
-use tui_widget_list::{WidgetList, WidgetItem};
+use tui_widget_list::{List, Listable};
 
 #[derive(Debug, Clone)]
 pub struct MyListItem<'a> {
@@ -39,23 +33,36 @@ impl MyListItem<'_> {
     }
 }
 
-impl<'a> WidgetItem for MyListItem<'a> {
+impl Listable for MyListItem<'_> {
     fn height(&self) -> usize {
         self.height
     }
 
-    fn highlighted(&self) -> Option<Self> {
-        let mut highlighted = self.clone();
-        Some(highlighted.style(Style::default().bg(Color::Cyan)))
+    fn highlight(self) -> Option<Self> {
+        Some(self.style(Style::default().bg(Color::Cyan)))
     }
+ }
 
-    fn render(&self, area: Rect, buf: &mut Buffer) {
-        self.clone().content.render(area, buf);
+impl Widget for MyListItem<'_> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        self.content.render(area, buf);
     }
 }
 // widget_list can be rendered like any other widget in TUI. Note that
 // we pass it as mutable reference in order to not lose the state.
-// f.render_widget(&mut widget_list, area);
+// f.render_stateful_widget(list, area, &mut state);
 ```
+
+For more examples see `examples/simple`, `examples/paragraph` or `examples/mixed` in
+[tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
+
+### Configuration
+The appearance of [`List`] can be modified
+- **style**: The base style of the list.
+- **block**: An optional outer block around the list.
+- **truncate**: If truncate is true, the first and last elements are truncated to fill the entire screen. True by default.
+
+The behaviour of [`ListState`] can be modified
+- **circular**: Whether the selection is circular, i.e. if true, the first item is selected after the last. True by default.
 
 License: MIT
