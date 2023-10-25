@@ -1,13 +1,38 @@
 #[derive(Debug, Clone, Default)]
-pub struct WidgetListState {
+pub struct ListState {
     /// The selected item. If none, no item is selected.
     pub selected: Option<usize>,
 
     /// The index of the fist item on the screen
     pub(crate) offset: usize,
+
+    /// The number of elements of the list. This is necessary to correctly
+    /// wrap the selection of items.
+    pub(crate) num_elements: usize,
+
+    /// Whether the selection is circular. If circular, calling next on the
+    /// last element returns the first element, and calling previous on
+    /// the first element returns the last element.
+    non_circular: bool,
 }
 
-impl WidgetListState {
+impl ListState {
+    /// Update the number of elements to be expected in the
+    /// selection.
+    pub fn set_num_elements(&mut self, num_elements: usize) {
+        self.num_elements = num_elements;
+    }
+
+    /// If circular is True, the selection continues from the
+    /// last item to the first when going down, and from the
+    /// first item to the last when going up.
+    /// It is true by default.
+    #[must_use]
+    pub fn circular(mut self, circular: bool) -> Self {
+        self.non_circular = !circular;
+        self
+    }
+
     /// Return the currently selected items index
     #[must_use]
     pub fn selected(&self) -> Option<usize> {
@@ -20,6 +45,52 @@ impl WidgetListState {
         if index.is_none() {
             self.offset = 0;
         }
+    }
+
+    /// Selects the next element of the list. If circular is true,
+    /// calling next on the last element selects the first.
+    pub fn next(&mut self) {
+        if self.num_elements == 0 {
+            return;
+        }
+        let i = match self.selected() {
+            Some(i) => {
+                if i >= self.num_elements - 1 {
+                    if self.non_circular {
+                        i
+                    } else {
+                        0
+                    }
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.select(Some(i));
+    }
+
+    /// Selects the previous element of the list. If circular is true,
+    /// calling previous on the first element selects the last.
+    pub fn previous(&mut self) {
+        if self.num_elements == 0 {
+            return;
+        }
+        let i = match self.selected() {
+            Some(i) => {
+                if i == 0 {
+                    if self.non_circular {
+                        i
+                    } else {
+                        self.num_elements - 1
+                    }
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.select(Some(i));
     }
 
     /// Here we check and if necessary update the viewport. For this we start with the first item
@@ -117,9 +188,11 @@ mod tests {
             #[test]
             fn $name() {
                 // given
-                let mut given_state = WidgetListState {
+                let mut given_state = ListState {
                     offset: $given_offset,
                     selected: $given_selected,
+                    num_elements: $given_heights.len(),
+                    non_circular: false,
                 };
 
                 //when
@@ -137,7 +210,7 @@ mod tests {
 
     update_view_port_tests! {
         happy_path: [0, Some(0), vec![2, 3], 6], [0, vec![2, 3]],
-        empty_list: [0, None, vec![], 4], [0, vec![]],
+        empty_list: [0, None, Vec::<usize>::new(), 4], [0, vec![]],
         update_offset_down: [0, Some(2), vec![2, 3, 3], 6], [1, vec![3, 3]],
         update_offset_up: [1, Some(0), vec![2, 3, 3], 6], [0, vec![2, 3, 1]],
         truncate_bottom: [0, Some(0), vec![2, 3], 4], [0, vec![2, 2]],

@@ -1,21 +1,18 @@
 use ratatui::{
     prelude::{Buffer, Rect},
     style::Style,
-    widgets::{Block, Widget},
+    widgets::{Block, StatefulWidget, Widget},
 };
 
-use crate::{WidgetItem, WidgetListState};
+use crate::{ListState, Listable};
 
-/// A [`WidgetList`] is a widget that can be used in Ratatui to
+/// A [`List`] is a widget that can be used in Ratatui to
 /// render an arbitrary list of widgets. It is generic over
-/// T, where each T should implement the [`WidgetItem`] trait.
+/// T, where each T should implement the [`Listable`] trait.
 #[derive(Clone)]
-pub struct WidgetList<'a, T: WidgetItem> {
+pub struct List<'a, T: Listable> {
     /// The lists items.
     pub items: Vec<T>,
-
-    /// The lists state.
-    pub state: WidgetListState,
 
     /// Style used as a base style for the widget.
     style: Style,
@@ -25,14 +22,9 @@ pub struct WidgetList<'a, T: WidgetItem> {
 
     /// Truncate widgets to fill full screen. Defaults to true.
     truncate: bool,
-
-    /// Whether the selection is circular. If true, calling next on the
-    /// last element returns the first element, and calling previous on
-    /// the first element returns the last element.
-    circular: bool,
 }
 
-impl<'a, T: WidgetItem> WidgetList<'a, T> {
+impl<'a, T: Listable> List<'a, T> {
     /// Instantiate a widget list with elements. The Elements must
     /// implement the [`WidgetItem`] trait.
     #[must_use]
@@ -42,8 +34,6 @@ impl<'a, T: WidgetItem> WidgetList<'a, T> {
             style: Style::default(),
             block: None,
             truncate: true,
-            circular: true,
-            state: WidgetListState::default(),
         }
     }
 
@@ -70,16 +60,6 @@ impl<'a, T: WidgetItem> WidgetList<'a, T> {
         self
     }
 
-    /// If circular is True, the selection continues from the
-    /// last item to the first when going down, and from the
-    /// first item to the last when going up.
-    /// It is true by default.
-    #[must_use]
-    pub fn circular(mut self, circular: bool) -> Self {
-        self.circular = circular;
-        self
-    }
-
     /// Whether the widget list is empty
     #[must_use]
     pub fn is_empty(&self) -> bool {
@@ -91,78 +71,37 @@ impl<'a, T: WidgetItem> WidgetList<'a, T> {
     pub fn len(&self) -> usize {
         self.items.len()
     }
-
-    /// Selects the next element of the list. If circular is true,
-    /// calling next on the last element selects the first.
-    pub fn next(&mut self) {
-        if self.items.is_empty() {
-            return;
-        }
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.items.len() - 1 {
-                    if self.circular {
-                        0
-                    } else {
-                        i
-                    }
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    /// Selects the previous element of the list. If circular is true,
-    /// calling previous on the first element selects the last.
-    pub fn previous(&mut self) {
-        if self.items.is_empty() {
-            return;
-        }
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    if self.circular {
-                        self.items.len() - 1
-                    } else {
-                        i
-                    }
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
 }
 
-impl<'a, T: WidgetItem> From<Vec<T>> for WidgetList<'a, T> {
-    /// Instantiates a [`WidgetList`] from a vector of elements implementing
-    /// the [`WidgetList`] trait.
+impl<'a, T: Listable> From<Vec<T>> for List<'a, T> {
+    /// Instantiates a [`List`] from a vector of elements implementing
+    /// the [`Listable`] trait.
     fn from(items: Vec<T>) -> Self {
         Self::new(items)
     }
 }
 
-impl<'a, T: WidgetItem> Widget for &mut WidgetList<'a, T> {
+impl<'a, T: Listable> StatefulWidget for List<'a, T> {
+    type State = ListState;
     // Renders a mutable reference to a widget list
-    fn render(self, area: Rect, buf: &mut Buffer) {
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
+        let mut items = self.items;
+        let mut block = self.block;
+        state.set_num_elements(items.len());
+
         // Set the base style
         buf.set_style(area, self.style);
-        let area = match self.block.as_ref() {
+        let area = match block.take() {
             Some(b) => {
                 let inner_area = b.inner(area);
-                b.clone().render(area, buf);
+                b.render(area, buf);
                 inner_area
             }
             None => area,
         };
 
         // List is empty
-        if self.is_empty() {
+        if items.is_empty() {
             return;
         }
 
@@ -177,42 +116,49 @@ impl<'a, T: WidgetItem> Widget for &mut WidgetList<'a, T> {
         let y0 = area.top();
         let mut y = y0;
 
-        // Modify the widgets based on their selection state. Split out their heights for
-        // efficiency as we have to iterate over the heights back and forth to determine
-        // which widget is shown on the viewport.
-        let mut highlighted_item: Option<T> = None;
-        let raw_heights: Vec<_> = self
-            .items
-            .iter_mut()
-            .enumerate()
-            .map(|(i, item)| {
-                if self.state.selected().is_some_and(|s| s == i) {
-                    if let Some(highlighted) = item.highlighted() {
-                        let height = highlighted.height();
-                        highlighted_item = Some(highlighted);
-                        height
-                    } else {
-                        item.height()
-                    }
-                } else {
-                    item.height()
-                }
-            })
-            .collect();
+        // Split out the highlighted item
+        let mut highlighted: Option<T> = None;
+        if let Some(index) = state.selected() {
+            if index < items.len() {
+                highlighted = Some(items.remove(index));
+            }
+        }
 
-        // Determine which widgets to render and how much space they get assigned to.
-        let view_heights = self
-            .state
-            .update_view_port(&raw_heights, max_height, self.truncate);
+        // Modify the widgets based on their selection state. Split out their heights
+        // for efficiency as we have to iterate over the heights back and forth to
+        // determine which widget is shown on the viewport.
+        let mut raw_heights: Vec<_> = items.iter().map(Listable::height).collect();
+
+        // Insert the height of the highlighted item back in
+        if let (Some(index), Some(h)) = (state.selected, &highlighted) {
+            raw_heights.insert(index, h.height());
+        }
+
+        // Determine which widgets to show on the viewport and how much space they
+        // get assigned to. The number of elements in `view_heights` is less than
+        // the number of elements in `raw_heights` if not all widgets are shown
+        // on the viewport.
+        let view_heights = state.update_view_port(&raw_heights, max_height, self.truncate);
+
+        // Drain out elements that are shown on the view port from the vector of
+        // all elements.
+        let first = state.offset;
+        let mut last = view_heights.len() + first;
+        if highlighted.is_some() {
+            last = last.saturating_sub(1);
+        }
+        let mut view_items = items.drain(first..last);
 
         // Iterate over the modified items
-        let offset = self.state.offset;
+        let offset = state.offset;
         for (i, height) in view_heights.into_iter().enumerate() {
             let area = Rect::new(x, y, width, height as u16);
-            let selected = self.state.selected().is_some_and(|s| s == i + offset);
-            match (selected, highlighted_item.as_ref()) {
-                (true, Some(item)) => item.render(area, buf),
-                _ => self.items[i + offset].render(area, buf),
+            if state.selected().is_some_and(|s| s == i + offset) {
+                if let Some(item) = highlighted.take().and_then(Listable::highlight) {
+                    item.render(area, buf);
+                }
+            } else if let Some(item) = view_items.next() {
+                item.render(area, buf);
             }
             y += height as u16;
         }
