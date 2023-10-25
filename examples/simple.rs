@@ -4,15 +4,11 @@ use crossterm::{
 };
 use ratatui::{
     backend::{Backend, CrosstermBackend},
-    buffer::Buffer,
-    layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Style},
-    text::{Span, Text},
+    prelude::*,
     widgets::{Block, BorderType, Borders, Paragraph, Widget},
-    Frame, Terminal,
 };
 use std::{error::Error, io};
-use tui_widget_list::{widget::WidgetList, WidgetItem};
+use tui_widget_list::{widget::List, ListState, Listable};
 
 /// A simple list text item.
 #[derive(Debug, Clone)]
@@ -59,21 +55,22 @@ impl<'a> ListItem<'a> {
     }
 }
 
-impl<'a> WidgetItem for ListItem<'a> {
+impl Listable for ListItem<'_> {
     fn height(&self) -> usize {
         self.text.height()
     }
 
-    fn highlighted(&self) -> Option<Self> {
+    fn highlight(self) -> Option<Self> {
         Some(
-            self.clone()
-                .prefix(Some(">>"))
+            self.prefix(Some(">>"))
                 .style(Style::default().bg(Color::Cyan)),
         )
     }
+}
 
-    fn render(&self, area: Rect, buf: &mut Buffer) {
-        self.clone().get_paragraph().render(area, buf);
+impl Widget for ListItem<'_> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        self.get_paragraph().render(area, buf);
     }
 }
 
@@ -125,7 +122,8 @@ fn panic_hook() {
 }
 
 pub struct App<'a> {
-    pub list: WidgetList<'a, ListItem<'a>>,
+    list: List<'a, ListItem<'a>>,
+    state: ListState,
 }
 
 impl<'a> App<'a> {
@@ -148,9 +146,10 @@ impl<'a> App<'a> {
             .borders(Borders::ALL)
             .border_type(BorderType::Double)
             .title(Span::styled("Selection", Style::default()));
-        let mut list: WidgetList<ListItem> = items.into();
+        let mut list: List<ListItem> = items.into();
         list = list.block(block);
-        App { list }
+        let state = ListState::default();
+        App { list, state }
     }
 }
 
@@ -162,8 +161,8 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Resu
             if key.kind == KeyEventKind::Press {
                 match key.code {
                     KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Up => app.list.previous(),
-                    KeyCode::Down => app.list.next(),
+                    KeyCode::Up => app.state.previous(),
+                    KeyCode::Down => app.state.next(),
                     _ => {}
                 }
             }
@@ -171,13 +170,9 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Resu
     }
 }
 
-pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
-    let chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Min(0)].as_ref())
-        .split(f.size());
-
-    f.render_widget(&mut app.list, chunks[0]);
+pub fn ui(f: &mut Frame, app: &mut App) {
+    let list = app.list.clone();
+    f.render_stateful_widget(list, f.size(), &mut app.state);
 }
 
 fn prefix_text<'a>(text: Text<'a>, prefix: &'a str) -> Text<'a> {

@@ -8,7 +8,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Widget},
 };
 use std::{error::Error, io};
-use tui_widget_list::{WidgetItem, WidgetList};
+use tui_widget_list::{List, ListState, Listable};
 
 #[derive(Debug, Clone)]
 pub struct ParagraphItem<'a> {
@@ -33,18 +33,20 @@ impl ParagraphItem<'_> {
     }
 }
 
-impl<'a> WidgetItem for ParagraphItem<'a> {
+impl Listable for ParagraphItem<'_> {
     fn height(&self) -> usize {
         self.height as usize
     }
 
-    fn highlighted(&self) -> Option<Self> {
+    fn highlight(self) -> Option<Self> {
         let style = Style::default().bg(Color::White);
-        Some(self.clone().style(style))
+        Some(self.style(style))
     }
+}
 
-    fn render(&self, area: Rect, buf: &mut Buffer) {
-        self.clone().paragraph.render(area, buf);
+impl Widget for ParagraphItem<'_> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        self.paragraph.render(area, buf);
     }
 }
 
@@ -96,7 +98,8 @@ fn panic_hook() {
 }
 
 pub struct App<'a> {
-    pub list: WidgetList<'a, ParagraphItem<'a>>,
+    pub list: List<'a, ParagraphItem<'a>>,
+    pub state: ListState,
 }
 
 impl<'a> App<'a> {
@@ -117,11 +120,12 @@ impl<'a> App<'a> {
             ParagraphItem::new("Height: 4", 4),
             ParagraphItem::new("Height: 6", 6),
         ];
-        let list = WidgetList::new(items)
+        let list = List::new(items)
             .style(Style::default().bg(Color::Black))
             .block(Block::default().borders(Borders::ALL).title("Outer block"))
             .truncate(true);
-        App { list }
+        let state = ListState::default();
+        App { list, state }
     }
 }
 
@@ -133,8 +137,8 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Resu
             if key.kind == KeyEventKind::Press {
                 match key.code {
                     KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Up => app.list.previous(),
-                    KeyCode::Down => app.list.next(),
+                    KeyCode::Up => app.state.previous(),
+                    KeyCode::Down => app.state.next(),
                     _ => {}
                 }
             }
@@ -142,11 +146,7 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Resu
     }
 }
 
-pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
-    let chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Min(0)].as_ref())
-        .split(f.size());
-
-    f.render_widget(&mut app.list, chunks[0]);
+pub fn ui(f: &mut Frame, app: &mut App) {
+    let list = app.list.clone();
+    f.render_stateful_widget(list, f.size(), &mut app.state);
 }
