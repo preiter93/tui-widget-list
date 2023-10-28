@@ -38,9 +38,9 @@ impl Listable for ParagraphItem<'_> {
         self.height as usize
     }
 
-    fn highlight(self) -> Option<Self> {
+    fn highlight(self) -> Self {
         let style = Style::default().bg(Color::White);
-        Some(self.style(style))
+        self.style(style)
     }
 }
 

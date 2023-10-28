@@ -120,7 +120,7 @@ impl<'a, T: Listable> StatefulWidget for List<'a, T> {
         let mut highlighted: Option<T> = None;
         if let Some(index) = state.selected() {
             if index < items.len() {
-                highlighted = Some(items.remove(index));
+                highlighted = Some(items.remove(index).highlight());
             }
         }
 
@@ -130,7 +130,7 @@ impl<'a, T: Listable> StatefulWidget for List<'a, T> {
         let mut raw_heights: Vec<_> = items.iter().map(Listable::height).collect();
 
         // Insert the height of the highlighted item back in
-        if let (Some(index), Some(h)) = (state.selected, &highlighted) {
+        if let (Some(index), Some(h)) = (state.selected, &mut highlighted) {
             raw_heights.insert(index, h.height());
         }
 
@@ -154,7 +154,7 @@ impl<'a, T: Listable> StatefulWidget for List<'a, T> {
         for (i, height) in view_heights.into_iter().enumerate() {
             let area = Rect::new(x, y, width, height as u16);
             if state.selected().is_some_and(|s| s == i + offset) {
-                if let Some(item) = highlighted.take().and_then(Listable::highlight) {
+                if let Some(item) = highlighted.take() {
                     item.render(area, buf);
                 }
             } else if let Some(item) = view_items.next() {

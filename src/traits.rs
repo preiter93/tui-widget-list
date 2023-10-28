@@ -5,13 +5,12 @@ pub trait Listable: Widget {
     /// Returns the height of the item.
     fn height(&self) -> usize;
 
-    /// Highlight the selected widget. Optional. If None, no highlighting
-    /// is applied.
+    /// Highlight the selected widget. Optional.
     #[must_use]
-    fn highlight(self) -> Option<Self>
+    fn highlight(self) -> Self
     where
         Self: Sized,
     {
-        None
+        self
     }
 }
