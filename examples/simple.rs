@@ -60,11 +60,9 @@ impl Listable for ListItem<'_> {
         self.text.height()
     }
 
-    fn highlight(self) -> Option<Self> {
-        Some(
-            self.prefix(Some(">>"))
-                .style(Style::default().bg(Color::Cyan)),
-        )
+    fn highlight(self) -> Self {
+        self.prefix(Some(">>"))
+            .style(Style::default().bg(Color::Cyan))
     }
 }
 

@@ -38,9 +38,9 @@ impl Listable for ParagraphItem<'_> {
         self.height as usize
     }
 
-    fn highlight(self) -> Option<Self> {
+    fn highlight(self) -> Self {
         let style = Style::default().bg(Color::White);
-        Some(self.style(style))
+        self.style(style)
     }
 }
 
@@ -70,11 +70,11 @@ impl Listable for TabItem {
         3
     }
 
-    fn highlight(self) -> Option<Self> {
-        Some(Self {
+    fn highlight(self) -> Self {
+        Self {
             titles: self.titles,
             selected: true,
-        })
+        }
     }
 }
 
@@ -105,10 +105,10 @@ impl Listable for ListElements<'_> {
         }
     }
 
-    fn highlight(self) -> Option<Self> {
+    fn highlight(self) -> Self {
         match self {
-            Self::TabItem(inner) => inner.highlight().map(Self::TabItem),
-            Self::ParagraphItem(inner) => inner.highlight().map(Self::ParagraphItem),
+            Self::TabItem(inner) => Self::TabItem(inner.highlight()),
+            Self::ParagraphItem(inner) => Self::ParagraphItem(inner.highlight()),
         }
     }
 }

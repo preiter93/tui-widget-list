@@ -13,48 +13,60 @@ use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 use ratatui::text::Text;
 use ratatui::widgets::{Paragraph, Widget};
-use tui_widget_list::{List, Listable};
+use ratatui::Frame;
+use tui_widget_list::{List, ListState, Listable};
 
 #[derive(Debug, Clone)]
-pub struct MyListItem<'a> {
-    content: Paragraph<'a>,
+pub struct MyListItem {
+    text: String,
+    style: Style,
     height: usize,
 }
 
-impl MyListItem<'_> {
-    pub fn new(text: &'static str, height: usize) -> Self {
-        let content = Paragraph::new(Text::from(text));
-        Self { content, height }
+impl MyListItem {
+    pub fn new(text: &str, height: usize) -> Self {
+        Self {
+            text: text.to_string(),
+            style: Style::default(),
+            height,
+        }
     }
 
     pub fn style(mut self, style: Style) -> Self {
-        self.content = self.content.style(style);
+        self.style = style;
         self
     }
 }
 
-impl Listable for MyListItem<'_> {
+impl Listable for MyListItem {
     fn height(&self) -> usize {
         self.height
     }
 
-    fn highlight(self) -> Option<Self> {
-        Some(self.style(Style::default().bg(Color::Cyan)))
-    }
- }
-
-impl Widget for MyListItem<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        self.content.render(area, buf);
+    fn highlight(self) -> Self {
+        self.style(Style::default().bg(Color::Cyan))
     }
 }
-// widget_list can be rendered like any other widget in TUI. Note that
-// we pass it as mutable reference in order to not lose the state.
-// f.render_stateful_widget(list, area, &mut state);
+
+impl Widget for MyListItem {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        Paragraph::new(Text::from(self.text))
+            .style(self.style)
+            .render(area, buf);
+    }
+}
+
+pub fn render(f: &mut Frame) {
+    let list = List::new(vec![
+        MyListItem::new("hello", 1),
+        MyListItem::new("world", 2),
+    ]);
+    let mut state = ListState::default();
+    f.render_stateful_widget(list, f.size(), &mut state);
+}
 ```
 
-For more examples see `examples/simple`, `examples/paragraph` or `examples/mixed` in
-[tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
+For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
 
 ### Configuration
 The appearance of [`List`] can be modified
@@ -64,5 +76,7 @@ The appearance of [`List`] can be modified
 
 The behaviour of [`ListState`] can be modified
 - **circular**: Whether the selection is circular, i.e. if true, the first item is selected after the last. True by default.
+
+![](img/demo.gif)
 
 License: MIT
