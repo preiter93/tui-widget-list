@@ -4,7 +4,8 @@ Released
 0.5.0 - 28 October 2023
 ===================
 **Breaking Changes**
-- Interface changed of Listable traig
+- Change of Listable trait Interface returning Self instead of Option
+  
 **Bugfix**
 - Selected widgets height is correctly calculated
 
