@@ -1,6 +1,11 @@
 Released
 --------
 
+0.6.0 - 23 December 2023
+===================
+- Bump ratatui to version 0.25
+- Move crossterm from dependency to dev-dependency
+
 0.5.0 - 28 October 2023
 ===================
 **Breaking Changes**
