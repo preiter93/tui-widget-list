@@ -1,7 +1,7 @@
 //! # A versatile list implementation for Ratatui
 //!
-//! This crate offers a stateful widget list implementation [`List`] for `Ratatui` that allows to
-//! work with any list of widgets that implement to the [`Listable`] trait. The associated selection state
+//! This crate offers a stateful widget list implementation [`List`] for `Ratatui` that allows to work
+//! with any list of widgets that implement the [`Listable`] trait. The associated selection state
 //! is [`ListState`] which offers methods like next and previous.
 //!
 //! ## Examples
