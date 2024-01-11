@@ -149,10 +149,6 @@ impl ListState {
             // out of bounds
             if y + height >= max_height {
                 if truncate {
-                    // Truncate the first widget.
-                    // At the moment this will truncate the bottom of the first item, which
-                    // looks a bit strange, but I have not figured out how to truncate a
-                    // widget from the top.
                     view_heights.insert(0, max_height - y);
                     self.offset = i;
                 } else {
