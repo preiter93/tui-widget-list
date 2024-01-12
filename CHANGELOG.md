@@ -1,13 +1,10 @@
-Unreleased
+Released
 --------
 
 0.6.1 - 12 January 2024
 ===================
 **Bugfix**
 - Correct truncation of the top element, see issues/6
-
-Released
---------
 
 0.6.0 - 23 December 2023
 ===================
