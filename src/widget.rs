@@ -151,24 +151,25 @@ impl<'a, T: Listable> StatefulWidget for List<'a, T> {
 
         // Iterate over the modified items
         let offset = state.offset;
+        let num_items = view_heights.len();
         for (i, height) in view_heights.into_iter().enumerate() {
             let area = Rect::new(x, y, width, height as u16);
             if state.selected().is_some_and(|s| s == i + offset) {
                 if let Some(item) = highlighted.take() {
-                    render_item(item, area, buf, i);
+                    render_item(item, area, buf, i, num_items);
                 }
             } else if let Some(item) = view_items.next() {
-                render_item(item, area, buf, i);
+                render_item(item, area, buf, i, num_items);
             }
             y += height as u16;
         }
     }
 }
 
-fn render_item<T: Listable>(item: T, area: Rect, buf: &mut Buffer, pos: usize) {
+fn render_item<T: Listable>(item: T, area: Rect, buf: &mut Buffer, pos: usize, num_items: usize) {
     // Check if the first element is truncated and needs special handling
-    if pos == 0 && (area.height as usize) < item.height() {
-        let item_height = item.height() as u16;
+    let item_height = item.height() as u16;
+    if pos == 0 && num_items > 1 && area.height < item_height {
         // Create an intermediate buffer for rendering the truncated element
         let mut hidden_buffer = Buffer::empty(Rect {
             x: area.left(),
