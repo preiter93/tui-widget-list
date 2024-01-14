@@ -215,7 +215,6 @@ mod tests {
                 // then
                 assert_eq!(offset, $expected_offset);
                 assert_eq!(heights, $expected_heights);
-                assert_eq!(offset, $expected_offset);
             }
         )*
         }
