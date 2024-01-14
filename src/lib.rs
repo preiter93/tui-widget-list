@@ -8,45 +8,43 @@
 //! ```
 //! use ratatui::buffer::Buffer;
 //! use ratatui::layout::Rect;
-//! use ratatui::style::{Color, Style};
+//! use ratatui::style::{Color, Style, Stylize};
 //! use ratatui::text::Text;
 //! use ratatui::widgets::{Paragraph, Widget};
 //! use ratatui::Frame;
 //! use tui_widget_list::{List, ListState, Listable};
 //!
 //! #[derive(Debug, Clone)]
-//! pub struct MyListItem {
+//! pub struct CustomItem {
 //!     text: String,
 //!     style: Style,
 //!     height: usize,
 //! }
 //!
-//! impl MyListItem {
-//!     pub fn new(text: &str, height: usize) -> Self {
+//! impl CustomItem {
+//!     pub fn new<T: Into<String>>(text: T, height: usize) -> Self {
 //!         Self {
-//!             text: text.to_string(),
+//!             text: text.into(),
 //!             style: Style::default(),
 //!             height,
 //!         }
 //!     }
-//!
-//!     pub fn style(mut self, style: Style) -> Self {
-//!         self.style = style;
-//!         self
-//!     }
 //! }
 //!
-//! impl Listable for MyListItem {
+//! impl Listable for CustomItem {
 //!     fn height(&self) -> usize {
 //!         self.height
 //!     }
 //!
 //!     fn highlight(self) -> Self {
-//!         self.style(Style::default().bg(Color::Cyan))
+//!         Self {
+//!             style: self.style.reversed(),
+//!             ..self
+//!         }
 //!     }
 //! }
 //!
-//! impl Widget for MyListItem {
+//! impl Widget for CustomItem {
 //!     fn render(self, area: Rect, buf: &mut Buffer) {
 //!         Paragraph::new(Text::from(self.text))
 //!             .style(self.style)
@@ -56,8 +54,8 @@
 //!
 //! pub fn render(f: &mut Frame) {
 //!     let list = List::new(vec![
-//!         MyListItem::new("hello", 1),
-//!         MyListItem::new("world", 2),
+//!         CustomItem::new("hello", 1),
+//!         CustomItem::new("world", 2),
 //!     ]);
 //!     let mut state = ListState::default();
 //!     f.render_stateful_widget(list, f.size(), &mut state);

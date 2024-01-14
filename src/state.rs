@@ -1,31 +1,25 @@
 #[derive(Debug, Clone, Default)]
 pub struct ListState {
-    /// The selected item. If none, no item is selected.
+    /// The selected item. If `None`, no item is currently selected.
     pub selected: Option<usize>,
 
-    /// The index of the fist item on the screen
+    /// The index of the first item displayed on the screen.
     pub(crate) offset: usize,
 
-    /// The number of elements of the list. This is necessary to correctly
-    /// wrap the selection of items.
+    /// The total number of elements in the list. This is necessary to correctly
+    /// handle item selection.
     pub(crate) num_elements: usize,
 
-    /// Whether the selection is circular. If circular, calling next on the
-    /// last element returns the first element, and calling previous on
+    /// Determines whether the selection is circular. If circular, calling `next`
+    /// on the last element returns the first element, and calling `previous` on
     /// the first element returns the last element.
     non_circular: bool,
 }
 
 impl ListState {
-    /// Update the number of elements to be expected in the
-    /// selection.
-    pub fn set_num_elements(&mut self, num_elements: usize) {
-        self.num_elements = num_elements;
-    }
-
-    /// If circular is True, the selection continues from the
-    /// last item to the first when going down, and from the
-    /// first item to the last when going up.
+    /// Sets whether the selection is circular. If circular is true, the
+    /// selection continues from the last item to the first when going
+    /// down, and from the first item to the last when going up.
     /// It is true by default.
     #[must_use]
     pub fn circular(mut self, circular: bool) -> Self {
@@ -33,13 +27,13 @@ impl ListState {
         self
     }
 
-    /// Return the currently selected items index
+    /// Returns the index of the currently selected item, if any.
     #[must_use]
     pub fn selected(&self) -> Option<usize> {
         self.selected
     }
 
-    /// Select an item by its index
+    /// Selects an item by its index.
     pub fn select(&mut self, index: Option<usize>) {
         self.selected = index;
         if index.is_none() {
@@ -49,6 +43,15 @@ impl ListState {
 
     /// Selects the next element of the list. If circular is true,
     /// calling next on the last element selects the first.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use tui_widget_list::ListState;
+    ///
+    /// let mut list_state = ListState::default();
+    /// list_state.next();
+    /// ```
     pub fn next(&mut self) {
         if self.num_elements == 0 {
             return;
@@ -72,6 +75,15 @@ impl ListState {
 
     /// Selects the previous element of the list. If circular is true,
     /// calling previous on the first element selects the last.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use tui_widget_list::ListState;
+    ///
+    /// let mut list_state = ListState::default();
+    /// list_state.previous();
+    /// ```
     pub fn previous(&mut self) {
         if self.num_elements == 0 {
             return;
@@ -91,6 +103,11 @@ impl ListState {
             None => 0,
         };
         self.select(Some(i));
+    }
+
+    /// Updates the number of elements that are present in the list.
+    pub(crate) fn set_num_elements(&mut self, num_elements: usize) {
+        self.num_elements = num_elements;
     }
 
     /// Here we check and if necessary update the viewport. For this we start with the first item
