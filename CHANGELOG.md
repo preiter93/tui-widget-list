@@ -4,6 +4,7 @@ Unreleased
 main
 ====
 - Improved Documentation
+- Make set_num_elements of the ListState private:
 
 Released
 --------
