@@ -6,12 +6,12 @@ use ratatui::{
 
 use crate::{ListState, Listable};
 
-/// A [`List`] is a widget that can be used in Ratatui to
-/// render an arbitrary list of widgets. It is generic over
-/// T, where each T should implement the [`Listable`] trait.
+/// A [`List`] is a widget for Ratatui that can render an arbitrary list of widgets.
+/// It is generic over `T`, where each widget `T` should implement the [`Listable`]
+/// trait.
 #[derive(Clone)]
 pub struct List<'a, T: Listable> {
-    /// The lists items.
+    /// The list's items.
     pub items: Vec<T>,
 
     /// Style used as a base style for the widget.
@@ -20,13 +20,16 @@ pub struct List<'a, T: Listable> {
     /// Block surrounding the widget list.
     block: Option<Block<'a>>,
 
-    /// Truncate widgets to fill full screen. Defaults to true.
+    /// Truncate widgets to fill the full screen. Defaults to true.
     truncate: bool,
 }
 
 impl<'a, T: Listable> List<'a, T> {
-    /// Instantiate a widget list with elements. The Elements must
-    /// implement the [`WidgetItem`] trait.
+    /// Instantiates a widget list with elements.
+    ///
+    /// # Arguments
+    ///
+    /// * `items` - A vector of elements implementing the [`Listable`] trait.
     #[must_use]
     pub fn new(items: Vec<T>) -> Self {
         Self {
@@ -37,7 +40,7 @@ impl<'a, T: Listable> List<'a, T> {
         }
     }
 
-    /// Set the block style which surrounds the whole List.
+    /// Sets the block style that surrounds the whole List.
     #[must_use]
     pub fn block(mut self, block: Block<'a>) -> Self {
         self.block = Some(block);
@@ -51,22 +54,21 @@ impl<'a, T: Listable> List<'a, T> {
         self
     }
 
-    /// If truncate is true, the list fills the full screen
-    /// and truncates the first or last item of the list.
-    /// It is true by default.
+    /// If `truncate` is true, the list fills the full screen and truncates
+    /// the first or last item of the list. It is true by default.
     #[must_use]
     pub fn truncate(mut self, truncate: bool) -> Self {
         self.truncate = truncate;
         self
     }
 
-    /// Whether the widget list is empty
+    /// Checks whether the widget list is empty.
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.items.is_empty()
     }
 
-    /// Returns the length of the widget list
+    /// Returns the length of the widget list.
     #[must_use]
     pub fn len(&self) -> usize {
         self.items.len()
