@@ -75,6 +75,6 @@ The appearance of [`List`] can be modified
 The behaviour of [`ListState`] can be modified
 - **circular**: Whether the selection is circular, i.e. if true, the first item is selected after the last. True by default.
 
-![](img/demo.gif)
+![](resources/demo.gif)
 
 License: MIT

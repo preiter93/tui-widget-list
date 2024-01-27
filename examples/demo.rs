@@ -148,27 +148,50 @@ pub fn run<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
 }
 
 pub fn ui(f: &mut Frame, app: &mut App) {
-    let todos1: Vec<String> = vec![
+    let monday: Vec<String> = vec![
         String::from("1. Exercise for 30 minutes"),
-        String::from("2. Have a breakfast"),
-        String::from("3. Work on the project for 2 hours"),
-        String::from("4. Read a book for 1 hour"),
-        String::from("5. Cook dinner"),
+        String::from("2. Work on the project for 2 hours"),
+        String::from("3. Read a book for 1 hour"),
+        String::from("4. Cook dinner"),
     ];
-    let todos2: Vec<String> = vec![
+    let tuesday: Vec<String> = vec![
         String::from("1. Attend a team meeting at 10 AM"),
         String::from("2. Reply to emails"),
         String::from("3. Prepare lunch"),
-        String::from("4. Go running for 1 hour"),
+    ];
+    let wednesday: Vec<String> = vec![
+        String::from("1. Update work tasks"),
+        String::from("2. Conduct code review"),
+        String::from("3. Attend a training"),
+    ];
+    let thursday: Vec<String> = vec![
+        String::from("1. Brainstorm for an upcoming project"),
+        String::from("2. Document ideas and refine tasks"),
+    ];
+    let friday: Vec<String> = vec![
+        String::from("1. Have a one-on-one with a team lead"),
+        String::from("2. Attent demo talk"),
+        String::from("3. Go running for 1 hour"),
+    ];
+    let saturday: Vec<String> = vec![
+        String::from("1. Work on a personal coding project for 2 hours"),
+        String::from("2. Read a chapter from a book"),
+        String::from("3. Go for a short walk"),
+    ];
+    let sunday: Vec<String> = vec![
+        String::from("1. Plan and outline goals for the upcoming week"),
+        String::from("2. Attend an online workshop"),
+        String::from("3. Go to dinner with friends"),
+        String::from("4. Watch a movie"),
     ];
     let list = List::new(vec![
-        MyListItem::new("Monday", todos1.clone()),
-        MyListItem::new("Tuesday", todos2.clone()),
-        MyListItem::new("Wednesday", todos1.clone()),
-        MyListItem::new("Thursday", todos2.clone()),
-        MyListItem::new("Friday", todos1.clone()),
-        MyListItem::new("Saturday", todos2),
-        MyListItem::new("Sunday", todos1),
+        MyListItem::new("Monday", monday),
+        MyListItem::new("Tuesday", tuesday),
+        MyListItem::new("Wednesday", wednesday),
+        MyListItem::new("Thursday", thursday),
+        MyListItem::new("Friday", friday),
+        MyListItem::new("Saturday", saturday),
+        MyListItem::new("Sunday", sunday),
     ])
     .style(THEME.root);
     f.render_stateful_widget(list, f.size(), &mut app.state);
@@ -186,6 +209,6 @@ pub const THEME: Theme = Theme {
     selection: Style::new().bg(DARK_PURPLE).fg(LIGHT_GRAY),
 };
 
-const DARK_BLUE: Color = Color::Rgb(16, 24, 48);
-const DARK_PURPLE: Color = Color::Indexed(55);
-const LIGHT_GRAY: Color = Color::Indexed(250);
+const DARK_BLUE: Color = Color::Rgb(15, 23, 42);
+const DARK_PURPLE: Color = Color::Rgb(88, 28, 135);
+const LIGHT_GRAY: Color = Color::Rgb(248, 250, 252);
