@@ -9,6 +9,10 @@ main
 Released
 --------
 
+0.7.0 - 3 February 2024
+===================
+Bump ratatui to version 0.26
+
 0.6.1 - 12 January 2024
 ===================
 **Bugfix**

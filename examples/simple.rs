@@ -174,7 +174,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 }
 
 fn prefix_text<'a>(text: Text<'a>, prefix: &'a str) -> Text<'a> {
-    let lines = text
+    let lines: Vec<Line> = text
         .lines
         .into_iter()
         .map(|line| {
@@ -183,5 +183,5 @@ fn prefix_text<'a>(text: Text<'a>, prefix: &'a str) -> Text<'a> {
             ratatui::text::Line::from(spans)
         })
         .collect();
-    Text { lines }
+    Text::from(lines)
 }
