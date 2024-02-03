@@ -1,6 +1,3 @@
-use std::error::Error;
-use std::io::{stdout, Stdout};
-
 use crossterm::event::{
     self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind,
 };
@@ -10,9 +7,13 @@ use crossterm::terminal::{
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::prelude::*;
+use ratatui::style::palette::tailwind::PURPLE;
+use ratatui::style::palette::tailwind::SLATE;
 use ratatui::style::{Color, Style};
 use ratatui::widgets::{Paragraph, Widget};
 use ratatui::{Frame, Terminal};
+use std::error::Error;
+use std::io::{stdout, Stdout};
 use tui_widget_list::{List, ListState, Listable};
 
 #[derive(Debug, Clone)]
@@ -209,6 +210,6 @@ pub const THEME: Theme = Theme {
     selection: Style::new().bg(DARK_PURPLE).fg(LIGHT_GRAY),
 };
 
-const DARK_BLUE: Color = Color::Rgb(15, 23, 42);
-const DARK_PURPLE: Color = Color::Rgb(88, 28, 135);
-const LIGHT_GRAY: Color = Color::Rgb(248, 250, 252);
+const DARK_BLUE: Color = SLATE.c900;
+const DARK_PURPLE: Color = PURPLE.c900;
+const LIGHT_GRAY: Color = SLATE.c50;
