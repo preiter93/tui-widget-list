@@ -1,13 +1,10 @@
-Unreleased
---------
-
-main
-====
-- Improved Documentation
-- Make set_num_elements of the ListState private:
 
 Released
 --------
+
+0.7.1 - 10 February 2024
+===================
+- Bugfix: Some cases paniced when the truncated element had a size 0
 
 0.7.0 - 3 February 2024
 ===================

@@ -5,7 +5,7 @@ use crossterm::{
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     prelude::*,
-    widgets::{Block, BorderType, Borders, Paragraph, Widget},
+    widgets::Widget,
 };
 use std::{error::Error, io};
 use tui_widget_list::{widget::List, ListState, Listable};
@@ -13,8 +13,8 @@ use tui_widget_list::{widget::List, ListState, Listable};
 /// A simple list text item.
 #[derive(Debug, Clone)]
 pub struct ListItem<'a> {
-    /// The text
-    text: Text<'a>,
+    /// The line
+    line: Line<'a>,
 
     /// The style
     style: Style,
@@ -24,12 +24,12 @@ pub struct ListItem<'a> {
 }
 
 impl<'a> ListItem<'a> {
-    pub fn new<T>(text: T) -> Self
+    pub fn new<T>(line: T) -> Self
     where
-        T: Into<Text<'a>>,
+        T: Into<Line<'a>>,
     {
         Self {
-            text: text.into(),
+            line: line.into(),
             style: Style::default(),
             prefix: None,
         }
@@ -45,19 +45,19 @@ impl<'a> ListItem<'a> {
         self
     }
 
-    fn get_paragraph(self) -> Paragraph<'a> {
+    fn get_line(self) -> Line<'a> {
         let text = if let Some(prefix) = self.prefix {
-            prefix_text(self.text, prefix)
+            prefix_text(self.line, prefix)
         } else {
-            self.text
+            self.line
         };
-        Paragraph::new(text).style(self.style)
+        Line::from(text).style(self.style)
     }
 }
 
 impl Listable for ListItem<'_> {
     fn height(&self) -> usize {
-        self.text.height()
+        1
     }
 
     fn highlight(self) -> Self {
@@ -68,7 +68,7 @@ impl Listable for ListItem<'_> {
 
 impl Widget for ListItem<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        self.get_paragraph().render(area, buf);
+        self.get_line().render(area, buf);
     }
 }
 
@@ -127,27 +127,42 @@ pub struct App<'a> {
 impl<'a> App<'a> {
     pub fn new() -> App<'a> {
         let items = vec![
-            ListItem::new(Text::from("Item 1")),
-            ListItem::new(Text::from("Item 2")),
-            ListItem::new(Text::from("Item 3")),
-            ListItem::new(Text::from("Item 1")),
-            ListItem::new(Text::from("Item 1")),
-            ListItem::new(Text::from("Item 1")),
-            ListItem::new(Text::from("Item 2")),
-            ListItem::new(Text::from("Item 3")),
-            ListItem::new(Text::from("Item 2")),
-            ListItem::new(Text::from("Item 3")),
-            ListItem::new(Text::from("Item 2")),
-            ListItem::new(Text::from("Item 3")),
+            ListItem::new(Line::from("Item 0")),
+            ListItem::new(Line::from("Item 1")),
+            ListItem::new(Line::from("Item 2")),
+            ListItem::new(Line::from("Item 3")),
+            ListItem::new(Line::from("Item 4")),
+            ListItem::new(Line::from("Item 5")),
+            ListItem::new(Line::from("Item 6")),
+            ListItem::new(Line::from("Item 7")),
+            ListItem::new(Line::from("Item 8")),
+            ListItem::new(Line::from("Item 9")),
+            ListItem::new(Line::from("Item 10")),
+            ListItem::new(Line::from("Item 11")),
+            ListItem::new(Line::from("Item 12")),
+            ListItem::new(Line::from("Item 13")),
+            ListItem::new(Line::from("Item 14")),
+            ListItem::new(Line::from("Item 15")),
+            ListItem::new(Line::from("Item 16")),
+            ListItem::new(Line::from("Item 17")),
+            ListItem::new(Line::from("Item 18")),
+            ListItem::new(Line::from("Item 19")),
+            ListItem::new(Line::from("Item 20")),
+            ListItem::new(Line::from("Item 21")),
+            ListItem::new(Line::from("Item 22")),
+            ListItem::new(Line::from("Item 23")),
+            ListItem::new(Line::from("Item 24")),
+            ListItem::new(Line::from("Item 25")),
+            ListItem::new(Line::from("Item 26")),
+            ListItem::new(Line::from("Item 27")),
+            ListItem::new(Line::from("Item 28")),
+            ListItem::new(Line::from("Item 29")),
         ];
-        let block = Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Double)
-            .title(Span::styled("Selection", Style::default()));
-        let mut list: List<ListItem> = items.into();
-        list = list.block(block);
         let state = ListState::default();
-        App { list, state }
+        App {
+            list: items.into(),
+            state,
+        }
     }
 }
 
@@ -173,15 +188,8 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     f.render_stateful_widget(list, f.size(), &mut app.state);
 }
 
-fn prefix_text<'a>(text: Text<'a>, prefix: &'a str) -> Text<'a> {
-    let lines: Vec<Line> = text
-        .lines
-        .into_iter()
-        .map(|line| {
-            let mut spans = line.spans;
-            spans.insert(0, Span::from(prefix));
-            ratatui::text::Line::from(spans)
-        })
-        .collect();
-    Text::from(lines)
+fn prefix_text<'a>(line: Line<'a>, prefix: &'a str) -> Line<'a> {
+    let mut spans = line.spans;
+    spans.insert(0, Span::from(prefix));
+    ratatui::text::Line::from(spans)
 }
