@@ -140,7 +140,10 @@ impl ListState {
             if y + height > max_height {
                 if truncate {
                     // Truncate the last widget
-                    view_heights.push(max_height - y);
+                    let dy = max_height - y;
+                    if dy > 0 {
+                        view_heights.push(dy);
+                    }
                 }
                 break;
             }
@@ -227,5 +230,6 @@ mod tests {
         update_offset_up: [1, Some(0), vec![2, 3, 3], 6], [0, vec![2, 3, 1]],
         truncate_bottom: [0, Some(0), vec![2, 3], 4], [0, vec![2, 2]],
         truncate_top: [0, Some(1), vec![2, 3], 4], [0, vec![1, 3]],
+        num_elements: [0, None, vec![1, 1, 1, 1, 1], 3], [0, vec![1, 1, 1]],
     }
 }
