@@ -14,7 +14,7 @@ use ratatui::widgets::{Paragraph, Widget};
 use ratatui::{Frame, Terminal};
 use std::error::Error;
 use std::io::{stdout, Stdout};
-use tui_widget_list::{List, ListState, Listable};
+use tui_widget_list::{List, ListState, ListableWidget};
 
 #[derive(Debug, Clone)]
 pub struct MyListItem {
@@ -48,8 +48,8 @@ impl MyListItem {
     }
 }
 
-impl Listable for MyListItem {
-    fn height(&self) -> usize {
+impl ListableWidget for MyListItem {
+    fn main_axis_size(&self) -> usize {
         self.height
     }
 

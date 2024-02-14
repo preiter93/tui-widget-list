@@ -2,6 +2,15 @@
 Released
 --------
 
+0.7.2 - 14 February 2024
+===================
+- Deprecate Listable trait in favor of ListableWidget
+  - Migration: height() becomes main_axis_size()
+  - Listable got deprectated, but old apps still compile
+  - ListableWidget is more descriptive and using
+    main_axis_size allows for reusing the trait 
+    in horizontal lists, which will come in the future
+
 0.7.1 - 10 February 2024
 ===================
 - Bugfix: Some cases paniced when the truncated element had a size 0

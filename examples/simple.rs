@@ -8,7 +8,7 @@ use ratatui::{
     widgets::Widget,
 };
 use std::{error::Error, io};
-use tui_widget_list::{widget::List, ListState, Listable};
+use tui_widget_list::{widget::List, ListState, ListableWidget};
 
 /// A simple list text item.
 #[derive(Debug, Clone)]
@@ -55,8 +55,8 @@ impl<'a> ListItem<'a> {
     }
 }
 
-impl Listable for ListItem<'_> {
-    fn height(&self) -> usize {
+impl ListableWidget for ListItem<'_> {
+    fn main_axis_size(&self) -> usize {
         1
     }
 

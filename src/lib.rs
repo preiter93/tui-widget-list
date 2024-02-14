@@ -12,7 +12,7 @@
 //! use ratatui::text::Text;
 //! use ratatui::widgets::{Paragraph, Widget};
 //! use ratatui::Frame;
-//! use tui_widget_list::{List, ListState, Listable};
+//! use tui_widget_list::{List, ListState, ListableWidget};
 //!
 //! #[derive(Debug, Clone)]
 //! pub struct CustomItem {
@@ -31,8 +31,8 @@
 //!     }
 //! }
 //!
-//! impl Listable for CustomItem {
-//!     fn height(&self) -> usize {
+//! impl ListableWidget for CustomItem {
+//!     fn main_axis_size(&self) -> usize {
 //!         self.height
 //!     }
 //!
@@ -78,5 +78,6 @@ pub mod state;
 pub mod traits;
 pub mod widget;
 pub use state::ListState;
-pub use traits::Listable;
+#[allow(deprecated)]
+pub use traits::{Listable, ListableWidget};
 pub use widget::List;
