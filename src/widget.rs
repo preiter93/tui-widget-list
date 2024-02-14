@@ -4,13 +4,13 @@ use ratatui::{
     widgets::{Block, StatefulWidget, Widget},
 };
 
-use crate::{ListState, Listable};
+use crate::{ListState, ListableWidget};
 
 /// A [`List`] is a widget for Ratatui that can render an arbitrary list of widgets.
 /// It is generic over `T`, where each widget `T` should implement the [`Listable`]
 /// trait.
 #[derive(Clone)]
-pub struct List<'a, T: Listable> {
+pub struct List<'a, T: ListableWidget> {
     /// The list's items.
     pub items: Vec<T>,
 
@@ -24,7 +24,7 @@ pub struct List<'a, T: Listable> {
     truncate: bool,
 }
 
-impl<'a, T: Listable> List<'a, T> {
+impl<'a, T: ListableWidget> List<'a, T> {
     /// Instantiates a widget list with elements.
     ///
     /// # Arguments
@@ -75,7 +75,7 @@ impl<'a, T: Listable> List<'a, T> {
     }
 }
 
-impl<'a, T: Listable> From<Vec<T>> for List<'a, T> {
+impl<'a, T: ListableWidget> From<Vec<T>> for List<'a, T> {
     /// Instantiates a [`List`] from a vector of elements implementing
     /// the [`Listable`] trait.
     fn from(items: Vec<T>) -> Self {
@@ -83,7 +83,7 @@ impl<'a, T: Listable> From<Vec<T>> for List<'a, T> {
     }
 }
 
-impl<'a, T: Listable> StatefulWidget for List<'a, T> {
+impl<'a, T: ListableWidget> StatefulWidget for List<'a, T> {
     type State = ListState;
     // Renders a mutable reference to a widget list
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
@@ -129,11 +129,11 @@ impl<'a, T: Listable> StatefulWidget for List<'a, T> {
         // Modify the widgets based on their selection state. Split out their heights
         // for efficiency as we have to iterate over the heights back and forth to
         // determine which widget is shown on the viewport.
-        let mut raw_heights: Vec<_> = items.iter().map(Listable::height).collect();
+        let mut raw_heights: Vec<_> = items.iter().map(ListableWidget::main_axis_size).collect();
 
         // Insert the height of the highlighted item back in
         if let (Some(index), Some(h)) = (state.selected, &mut highlighted) {
-            raw_heights.insert(index, h.height());
+            raw_heights.insert(index, h.main_axis_size());
         }
 
         // Determine which widgets to show on the viewport and how much space they
@@ -168,9 +168,15 @@ impl<'a, T: Listable> StatefulWidget for List<'a, T> {
     }
 }
 
-fn render_item<T: Listable>(item: T, area: Rect, buf: &mut Buffer, pos: usize, num_items: usize) {
+fn render_item<T: ListableWidget>(
+    item: T,
+    area: Rect,
+    buf: &mut Buffer,
+    pos: usize,
+    num_items: usize,
+) {
     // Check if the first element is truncated and needs special handling
-    let item_height = item.height() as u16;
+    let item_height = item.main_axis_size() as u16;
     if pos == 0 && num_items > 1 && area.height < item_height {
         // Create an intermediate buffer for rendering the truncated element
         let mut hidden_buffer = Buffer::empty(Rect {
