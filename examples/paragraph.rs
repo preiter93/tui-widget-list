@@ -8,7 +8,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Widget},
 };
 use std::{error::Error, io};
-use tui_widget_list::{List, ListState, Listable};
+use tui_widget_list::{List, ListState, ListableWidget};
 
 #[derive(Debug, Clone)]
 pub struct ParagraphItem<'a> {
@@ -33,8 +33,8 @@ impl ParagraphItem<'_> {
     }
 }
 
-impl Listable for ParagraphItem<'_> {
-    fn height(&self) -> usize {
+impl ListableWidget for ParagraphItem<'_> {
+    fn main_axis_size(&self) -> usize {
         self.height as usize
     }
 
