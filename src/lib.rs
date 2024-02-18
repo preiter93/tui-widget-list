@@ -1,7 +1,7 @@
 //! # A versatile list implementation for Ratatui
 //!
 //! This crate offers a stateful widget list implementation [`List`] for `Ratatui` that allows to work
-//! with any list of widgets that implement the [`Listable`] trait. The associated selection state
+//! with any list of widgets that implement the [`ListableWidget`] trait. The associated selection state
 //! is [`ListState`] which offers methods like next and previous.
 //!
 //! ## Examples
@@ -79,5 +79,6 @@ pub mod traits;
 pub mod widget;
 pub use state::ListState;
 #[allow(deprecated)]
-pub use traits::{Listable, ListableWidget};
+pub use traits::Listable;
+pub use traits::ListableWidget;
 pub use widget::List;

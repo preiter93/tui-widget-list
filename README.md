@@ -3,7 +3,7 @@
 ## A versatile list implementation for Ratatui
 
 This crate offers a stateful widget list implementation [`List`] for `Ratatui` that allows to work
-with any list of widgets that implement the [`Listable`] trait. The associated selection state
+with any list of widgets that implement the [`ListableWidget`] trait. The associated selection state
 is [`ListState`] which offers methods like next and previous.
 
 ### Examples
@@ -14,7 +14,7 @@ use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::Text;
 use ratatui::widgets::{Paragraph, Widget};
 use ratatui::Frame;
-use tui_widget_list::{List, ListState, Listable};
+use tui_widget_list::{List, ListState, ListableWidget};
 
 #[derive(Debug, Clone)]
 pub struct CustomItem {
@@ -33,8 +33,8 @@ impl CustomItem {
     }
 }
 
-impl Listable for CustomItem {
-    fn height(&self) -> usize {
+impl ListableWidget for CustomItem {
+    fn main_axis_size(&self) -> usize {
         self.height
     }
 
