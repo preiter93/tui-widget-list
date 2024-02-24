@@ -122,8 +122,7 @@ impl<'a> App<'a> {
         ];
         let list = List::new(items)
             .style(Style::default().bg(Color::Black))
-            .block(Block::default().borders(Borders::ALL).title("Outer block"))
-            .truncate(true);
+            .block(Block::default().borders(Borders::ALL).title("Outer block"));
         let state = ListState::default();
         App { list, state }
     }
