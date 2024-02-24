@@ -10,14 +10,14 @@ use ratatui::prelude::*;
 use ratatui::style::palette::tailwind::PURPLE;
 use ratatui::style::palette::tailwind::SLATE;
 use ratatui::style::{Color, Style};
-use ratatui::widgets::{Paragraph, Widget};
-use ratatui::{Frame, Terminal};
+use ratatui::widgets::{Block, BorderType, Borders, Paragraph, Widget};
+use ratatui::Terminal;
 use std::error::Error;
 use std::io::{stdout, Stdout};
-use tui_widget_list::{List, ListState, ListableWidget};
+use tui_widget_list::{List, ListState, ListableWidget, ScrollAxis};
 
 #[derive(Debug, Clone)]
-pub struct MyListItem {
+pub struct TextContainer {
     title: String,
     content: Vec<String>,
     style: Style,
@@ -25,7 +25,7 @@ pub struct MyListItem {
     expand: bool,
 }
 
-impl MyListItem {
+impl TextContainer {
     pub fn new(title: &str, content: Vec<String>) -> Self {
         Self {
             title: title.to_string(),
@@ -48,8 +48,8 @@ impl MyListItem {
     }
 }
 
-impl ListableWidget for MyListItem {
-    fn main_axis_size(&self) -> usize {
+impl ListableWidget for TextContainer {
+    fn size(&self, _: &ScrollAxis) -> usize {
         self.height
     }
 
@@ -58,7 +58,7 @@ impl ListableWidget for MyListItem {
     }
 }
 
-impl Widget for MyListItem {
+impl Widget for TextContainer {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let mut lines = vec![Line::styled(self.title, self.style)];
         if self.expand {
@@ -73,13 +73,58 @@ impl Widget for MyListItem {
     }
 }
 
+struct ColoredContainer {
+    color: Color,
+    border_style: Style,
+    border_type: BorderType,
+}
+
+impl ColoredContainer {
+    fn new(color: Color) -> Self {
+        Self {
+            color,
+            border_style: Style::default(),
+            border_type: BorderType::Plain,
+        }
+    }
+}
+
+impl Widget for ColoredContainer {
+    fn render(self, area: Rect, buf: &mut Buffer)
+    where
+        Self: Sized,
+    {
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(self.border_style)
+            .border_type(self.border_type)
+            .bg(self.color)
+            .render(area, buf);
+    }
+}
+impl ListableWidget for ColoredContainer {
+    fn size(&self, _: &ScrollAxis) -> usize {
+        15
+    }
+
+    fn highlight(self) -> Self
+    where
+        Self: Sized,
+    {
+        Self {
+            border_style: Style::default().fg(Color::Black),
+            border_type: BorderType::Thick,
+            ..self
+        }
+    }
+}
+
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 fn main() -> Result<()> {
     let mut terminal = init_terminal()?;
 
-    let app = App::new();
-    run(&mut terminal, app).unwrap();
+    App::default().run(&mut terminal).unwrap();
 
     reset_terminal()?;
     terminal.show_cursor()?;
@@ -120,35 +165,77 @@ fn panic_hook() {
     }));
 }
 
+#[derive(Default)]
 pub struct App {
-    pub state: ListState,
+    pub text_list_state: ListState,
+    pub color_list_state: ListState,
 }
 
 impl App {
-    pub fn new() -> App {
-        let state = ListState::default();
-        App { state }
-    }
-}
+    pub fn run<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> Result<()> {
+        loop {
+            self.draw(terminal)?;
 
-pub fn run<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
-    loop {
-        terminal.draw(|f| ui(f, &mut app))?;
-
-        if let Event::Key(key) = event::read()? {
-            if key.kind == KeyEventKind::Press {
-                match key.code {
-                    KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Up | KeyCode::Char('k') => app.state.previous(),
-                    KeyCode::Down | KeyCode::Char('j') => app.state.next(),
-                    _ => {}
+            if let Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press {
+                    match key.code {
+                        KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Up | KeyCode::Char('k') => self.text_list_state.previous(),
+                        KeyCode::Down | KeyCode::Char('j') => self.text_list_state.next(),
+                        KeyCode::Left | KeyCode::Char('h') => self.color_list_state.previous(),
+                        KeyCode::Right | KeyCode::Char('l') => self.color_list_state.next(),
+                        _ => {}
+                    }
                 }
             }
         }
     }
+
+    fn draw(&mut self, terminal: &mut Terminal<impl Backend>) -> Result<()> {
+        terminal.draw(|frame| {
+            frame.render_widget(self, frame.size());
+        })?;
+        Ok(())
+    }
 }
 
-pub fn ui(f: &mut Frame, app: &mut App) {
+// pub fn ui(f: &mut Frame, app: &mut App) {
+//     use Constraint::{Min, Percentage};
+//     let area = f.size();
+//     let [top, bottom] = Layout::vertical([Percentage(75), Min(0)]).areas(area);
+//
+//     f.render_stateful_widget(demo_text_list(), top, &mut app.text_list_state);
+//     f.render_stateful_widget(demo_color_list(), bottom, &mut app.color_list_state);
+// }
+impl Widget for &mut App {
+    fn render(self, area: Rect, buf: &mut Buffer)
+    where
+        Self: Sized,
+    {
+        use Constraint::{Min, Percentage};
+        let [top, bottom] = Layout::vertical([Percentage(75), Min(0)]).areas(area);
+        demo_text_list().render(top, buf, &mut self.text_list_state);
+        demo_color_list().render(bottom, buf, &mut self.color_list_state);
+    }
+}
+
+pub struct Theme {
+    pub root: Style,
+    pub content: Style,
+    pub selection: Style,
+}
+
+pub const THEME: Theme = Theme {
+    root: Style::new().bg(DARK_BLUE),
+    content: Style::new().bg(DARK_BLUE).fg(LIGHT_GRAY),
+    selection: Style::new().bg(DARK_PURPLE).fg(LIGHT_GRAY),
+};
+
+const DARK_BLUE: Color = SLATE.c900;
+const DARK_PURPLE: Color = PURPLE.c900;
+const LIGHT_GRAY: Color = SLATE.c50;
+
+fn demo_text_list() -> List<'static, TextContainer> {
     let monday: Vec<String> = vec![
         String::from("1. Exercise for 30 minutes"),
         String::from("2. Work on the project for 2 hours"),
@@ -185,31 +272,30 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         String::from("3. Go to dinner with friends"),
         String::from("4. Watch a movie"),
     ];
-    let list = List::new(vec![
-        MyListItem::new("Monday", monday),
-        MyListItem::new("Tuesday", tuesday),
-        MyListItem::new("Wednesday", wednesday),
-        MyListItem::new("Thursday", thursday),
-        MyListItem::new("Friday", friday),
-        MyListItem::new("Saturday", saturday),
-        MyListItem::new("Sunday", sunday),
+    List::new(vec![
+        TextContainer::new("Monday", monday),
+        TextContainer::new("Tuesday", tuesday),
+        TextContainer::new("Wednesday", wednesday),
+        TextContainer::new("Thursday", thursday),
+        TextContainer::new("Friday", friday),
+        TextContainer::new("Saturday", saturday),
+        TextContainer::new("Sunday", sunday),
     ])
-    .style(THEME.root);
-    f.render_stateful_widget(list, f.size(), &mut app.state);
+    .style(THEME.root)
 }
 
-pub struct Theme {
-    pub root: Style,
-    pub content: Style,
-    pub selection: Style,
+fn demo_color_list() -> List<'static, ColoredContainer> {
+    List::new(vec![
+        ColoredContainer::new(Color::Rgb(255, 0, 0)),     // Red
+        ColoredContainer::new(Color::Rgb(255, 165, 0)),   // Orange
+        ColoredContainer::new(Color::Rgb(255, 255, 0)),   // Yellow
+        ColoredContainer::new(Color::Rgb(0, 128, 0)),     // Green
+        ColoredContainer::new(Color::Rgb(0, 0, 255)),     // Blue
+        ColoredContainer::new(Color::Rgb(75, 0, 130)),    // Indigo
+        ColoredContainer::new(Color::Rgb(128, 0, 128)),   // Violet
+        ColoredContainer::new(Color::Rgb(255, 20, 147)),  // Pink
+        ColoredContainer::new(Color::Rgb(255, 192, 203)), // Light Pink
+        ColoredContainer::new(Color::Rgb(255, 0, 255)),   // Magenta
+    ])
+    .scroll_direction(ScrollAxis::Horizontal)
 }
-
-pub const THEME: Theme = Theme {
-    root: Style::new().bg(DARK_BLUE),
-    content: Style::new().bg(DARK_BLUE).fg(LIGHT_GRAY),
-    selection: Style::new().bg(DARK_PURPLE).fg(LIGHT_GRAY),
-};
-
-const DARK_BLUE: Color = SLATE.c900;
-const DARK_PURPLE: Color = PURPLE.c900;
-const LIGHT_GRAY: Color = SLATE.c50;
