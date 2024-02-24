@@ -10,7 +10,6 @@
 //! - `scroll_direction`: Specifies whether the list is vertically or horizontally scrollable.
 //! - `style`: Defines the base style of the list.
 //! - `block`: Optional outer block surrounding the list.
-//! - `truncate`: Determines whether the first and last elements are truncated to fit the screen. Enabled by default.
 //!
 //! You can adjust the behavior of [`ListState`] with the following options:
 //! - `circular`: Determines if the selection is circular. When enabled, selecting the last item loops back to the first. Enabled by default.

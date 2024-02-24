@@ -125,12 +125,7 @@ impl ListState {
     /// on the screen and iterate until we have reached the maximum height. If the selected value
     /// is within the bounds we do nothing. If the selected value is out of bounds, we adjust the
     /// offset accordingly.
-    pub(crate) fn update_view_port(
-        &mut self,
-        heights: &[usize],
-        max_height: usize,
-        truncate: bool,
-    ) -> Vec<usize> {
+    pub(crate) fn update_view_port(&mut self, heights: &[usize], max_height: usize) -> Vec<usize> {
         // The items heights on the viewport will be calculated on the fly.
         let mut view_heights: Vec<usize> = Vec::new();
 
@@ -149,12 +144,10 @@ impl ListState {
         for height in heights.iter().skip(self.offset) {
             // Out of bounds
             if y + height > max_height {
-                if truncate {
-                    // Truncate the last widget
-                    let dy = max_height - y;
-                    if dy > 0 {
-                        view_heights.push(dy);
-                    }
+                // Truncate the last widget
+                let dy = max_height - y;
+                if dy > 0 {
+                    view_heights.push(dy);
                 }
                 break;
             }
@@ -179,12 +172,8 @@ impl ListState {
         for height in heights.iter().rev().skip(last.saturating_sub(selected)) {
             // out of bounds
             if y + height >= max_height {
-                if truncate {
-                    view_heights.insert(0, max_height - y);
-                    self.offset = i;
-                } else {
-                    self.offset = i + 1;
-                }
+                view_heights.insert(0, max_height - y);
+                self.offset = i;
                 break;
             }
             view_heights.insert(0, *height);
@@ -223,7 +212,7 @@ mod tests {
                 };
 
                 //when
-                let heights = given_state.update_view_port(&$given_heights, $given_max_height, true);
+                let heights = given_state.update_view_port(&$given_heights, $given_max_height);
                 let offset = given_state.offset;
 
                 // then

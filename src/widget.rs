@@ -21,9 +21,6 @@ pub struct List<'a, T: ListableWidget> {
     /// Block surrounding the widget list.
     block: Option<Block<'a>>,
 
-    /// Truncate widgets to fill the full screen. Defaults to true.
-    truncate: bool,
-
     /// Specifies the scroll direction.
     scroll_direction: ScrollAxis,
 }
@@ -40,7 +37,6 @@ impl<'a, T: ListableWidget> List<'a, T> {
             items,
             style: Style::default(),
             block: None,
-            truncate: true,
             scroll_direction: ScrollAxis::default(),
         }
     }
@@ -56,14 +52,6 @@ impl<'a, T: ListableWidget> List<'a, T> {
     #[must_use]
     pub fn style(mut self, style: Style) -> Self {
         self.style = style;
-        self
-    }
-
-    /// If `truncate` is true, the list fills the full screen and truncates
-    /// the first or last item of the list. It is true by default.
-    #[must_use]
-    pub fn truncate(mut self, truncate: bool) -> Self {
-        self.truncate = truncate;
         self
     }
 
@@ -158,8 +146,7 @@ impl<'a, T: ListableWidget> StatefulWidget for List<'a, T> {
         // get assigned to. The number of elements in `view_heights` is less than
         // the number of elements in `raw_heights` if not all widgets are shown
         // on the viewport.
-        let sizes_scroll_direction =
-            state.update_view_port(&raw_item_sizes, size_scroll_axis, self.truncate);
+        let sizes_scroll_direction = state.update_view_port(&raw_item_sizes, size_scroll_axis);
 
         // Drain out elements that are shown on the view port from the vector of
         // all elements.

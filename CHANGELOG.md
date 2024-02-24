@@ -1,9 +1,10 @@
 
 Released
 --------
-0.8.0 - 24 February 2024
+0.8.1 - 24 February 2024
 ===================
 - Add support for horizontal scroll
+- Remove `truncate` option
 
 **Breaking Change**
 The ListableWidgets trait method main_axis_size() was renamed to
