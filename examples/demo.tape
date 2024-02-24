@@ -10,5 +10,5 @@ Type "cargo run --example demo"
 Enter
 Sleep 1.5s
 Down@1.2s 8
-Right@1.0s 8
-Sleep 0.5s
+Right@0.8s 12
+Sleep 1.5s
