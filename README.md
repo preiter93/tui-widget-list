@@ -1,10 +1,11 @@
 # tui-widget-list
 
-## A versatile list implementation for Ratatui
+## A versatile widget list for Ratatui
 
-This crate offers a stateful widget list implementation [`List`] for `Ratatui` that allows to work
-with any list of widgets that implement the [`ListableWidget`] trait. The associated selection state
-is [`ListState`] which offers methods like next and previous.
+This crate provides a stateful widget list implementation, [`List`], for `Ratatui`, enabling listing
+widgets that implement the [`ListableWidget`] trait. The associated [`ListState`], offers functionalities
+such as navigating to the next and previous items.
+Additionally, the lists support both horizontal and vertical scrolling.
 
 ### Examples
 ```rust
@@ -14,7 +15,7 @@ use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::Text;
 use ratatui::widgets::{Paragraph, Widget};
 use ratatui::Frame;
-use tui_widget_list::{List, ListState, ListableWidget};
+use tui_widget_list::{List, ListState, ListableWidget, ScrollAxis};
 
 #[derive(Debug, Clone)]
 pub struct CustomItem {
@@ -34,7 +35,7 @@ impl CustomItem {
 }
 
 impl ListableWidget for CustomItem {
-    fn main_axis_size(&self) -> usize {
+    fn size(&self, _: &ScrollAxis) -> usize {
         self.height
     }
 
@@ -67,13 +68,14 @@ pub fn render(f: &mut Frame) {
 For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
 
 ### Configuration
-The appearance of [`List`] can be modified
-- **style**: The base style of the list.
-- **block**: An optional outer block around the list.
-- **truncate**: If truncate is true, the first and last elements are truncated to fill the entire screen. True by default.
+The [`List`] can be customized with the following options:
+- **scroll_direction**: Specifies whether the list is vertically or horizontally scrollable.
+- **style**: Defines the base style of the list.
+- **block**: Optional outer block surrounding the list.
+- **truncate**: Determines whether the first and last elements are truncated to fit the screen. Enabled by default.
 
-The behaviour of [`ListState`] can be modified
-- **circular**: Whether the selection is circular, i.e. if true, the first item is selected after the last. True by default.
+You can adjust the behavior of [`ListState`] with the following options:
+- **circular**: Determines if the selection is circular. When enabled, selecting the last item loops back to the first. Enabled by default.
 
 ![](resources/demo.gif)
 
