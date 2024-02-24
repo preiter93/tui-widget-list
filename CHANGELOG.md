@@ -1,6 +1,15 @@
 
 Released
 --------
+0.8.0 - 24 February 2024
+===================
+- Add configuration for horizontal scroll
+
+**Breaking Change**
+The ListableWidgets trait method main_axis_size() was renamed to
+size with an additional scroll_direction parameter. This parameter
+can be ignored if the ListItem is only used in vertical or horizontal
+scroll mode, and not in both.
 
 0.7.2 - 14 February 2024
 ===================
