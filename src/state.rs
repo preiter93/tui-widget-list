@@ -1,4 +1,5 @@
-#[derive(Debug, Clone, Default)]
+#[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone)]
 pub struct ListState {
     /// The selected item. If `None`, no item is currently selected.
     pub selected: Option<usize>,
@@ -10,20 +11,30 @@ pub struct ListState {
     /// handle item selection.
     pub(crate) num_elements: usize,
 
-    /// Determines whether the selection is circular. If circular, calling `next`
-    /// on the last element returns the first element, and calling `previous` on
-    /// the first element returns the last element.
-    non_circular: bool,
+    /// Indicates if the selection forms a circular structure. If circular,
+    /// calling `next` on the last element returns the first, and calling
+    /// `previous` on the first element returns the last.
+    ///
+    /// True by default.
+    circular: bool,
+}
+
+impl Default for ListState {
+    fn default() -> Self {
+        Self {
+            selected: None,
+            offset: 0,
+            num_elements: 0,
+            circular: true,
+        }
+    }
 }
 
 impl ListState {
-    /// Sets whether the selection is circular. If circular is true, the
-    /// selection continues from the last item to the first when going
-    /// down, and from the first item to the last when going up.
-    /// It is true by default.
+    /// Sets the selection to be circular or not circular.
     #[must_use]
     pub fn circular(mut self, circular: bool) -> Self {
-        self.non_circular = !circular;
+        self.circular = circular;
         self
     }
 
@@ -59,10 +70,10 @@ impl ListState {
         let i = match self.selected() {
             Some(i) => {
                 if i >= self.num_elements - 1 {
-                    if self.non_circular {
-                        i
-                    } else {
+                    if self.circular {
                         0
+                    } else {
+                        i
                     }
                 } else {
                     i + 1
@@ -91,10 +102,10 @@ impl ListState {
         let i = match self.selected() {
             Some(i) => {
                 if i == 0 {
-                    if self.non_circular {
-                        i
-                    } else {
+                    if self.circular {
                         self.num_elements - 1
+                    } else {
+                        i
                     }
                 } else {
                     i - 1
@@ -208,7 +219,7 @@ mod tests {
                     offset: $given_offset,
                     selected: $given_selected,
                     num_elements: $given_heights.len(),
-                    non_circular: false,
+                    circular: true,
                 };
 
                 //when
