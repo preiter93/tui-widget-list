@@ -9,4 +9,6 @@ Set PlaybackSpeed 1.0
 Type "cargo run --example demo"
 Enter
 Sleep 1.5s
-Down@1.5s 8
+Down@1.2s 8
+Right@0.8s 12
+Sleep 1.5s

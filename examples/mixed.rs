@@ -8,7 +8,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Tabs, Widget},
 };
 use std::{error::Error, io};
-use tui_widget_list::{List, ListState, ListableWidget};
+use tui_widget_list::{List, ListState, ListableWidget, ScrollAxis};
 
 #[derive(Debug, Clone)]
 pub struct ParagraphItem<'a> {
@@ -34,7 +34,7 @@ impl ParagraphItem<'_> {
 }
 
 impl ListableWidget for ParagraphItem<'_> {
-    fn main_axis_size(&self) -> usize {
+    fn size(&self, _: &ScrollAxis) -> usize {
         self.height as usize
     }
 
@@ -66,7 +66,7 @@ impl TabItem {
 }
 
 impl ListableWidget for TabItem {
-    fn main_axis_size(&self) -> usize {
+    fn size(&self, _: &ScrollAxis) -> usize {
         3
     }
 
@@ -98,10 +98,10 @@ enum ListElements<'a> {
 }
 
 impl ListableWidget for ListElements<'_> {
-    fn main_axis_size(&self) -> usize {
+    fn size(&self, scroll_direction: &ScrollAxis) -> usize {
         match &self {
-            Self::TabItem(inner) => inner.main_axis_size(),
-            Self::ParagraphItem(inner) => inner.main_axis_size(),
+            Self::TabItem(inner) => inner.size(scroll_direction),
+            Self::ParagraphItem(inner) => inner.size(scroll_direction),
         }
     }
 

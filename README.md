@@ -1,12 +1,27 @@
-# tui-widget-list
+## A versatile widget list for Ratatui
 
-## A versatile list implementation for Ratatui
+<div align="center">
+    
+[![Continuous Integration](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml/badge.svg)](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml)
 
-This crate offers a stateful widget list implementation [`List`] for `Ratatui` that allows to work
-with any list of widgets that implement the [`ListableWidget`] trait. The associated selection state
-is [`ListState`] which offers methods like next and previous.
+</div>
 
-### Examples
+This crate provides a stateful widget [`List`] implementation for `Ratatui`, enabling listing
+widgets that implement the [`ListableWidget`] trait. The associated [`ListState`], offers functionalities
+such as navigating to the next and previous items.
+Additionally, the lists support both horizontal and vertical scrolling.
+
+### Configuration
+The [`List`] can be customized with the following options:
+- `scroll_direction`: Specifies whether the list is vertically or horizontally scrollable.
+- `style`: Defines the base style of the list.
+- `block`: Optional outer block surrounding the list.
+- `truncate`: Determines whether the first and last elements are truncated to fit the screen. Enabled by default.
+
+You can adjust the behavior of [`ListState`] with the following options:
+- `circular`: Determines if the selection is circular. When enabled, selecting the last item loops back to the first. Enabled by default.
+
+### Example
 ```rust
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
@@ -14,16 +29,16 @@ use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::Text;
 use ratatui::widgets::{Paragraph, Widget};
 use ratatui::Frame;
-use tui_widget_list::{List, ListState, ListableWidget};
+use tui_widget_list::{List, ListState, ListableWidget, ScrollAxis};
 
 #[derive(Debug, Clone)]
-pub struct CustomItem {
+pub struct ListItem {
     text: String,
     style: Style,
     height: usize,
 }
 
-impl CustomItem {
+impl ListItem {
     pub fn new<T: Into<String>>(text: T, height: usize) -> Self {
         Self {
             text: text.into(),
@@ -33,8 +48,8 @@ impl CustomItem {
     }
 }
 
-impl ListableWidget for CustomItem {
-    fn main_axis_size(&self) -> usize {
+impl ListableWidget for ListItem {
+    fn size(&self, _: &ScrollAxis) -> usize {
         self.height
     }
 
@@ -46,7 +61,7 @@ impl ListableWidget for CustomItem {
     }
 }
 
-impl Widget for CustomItem {
+impl Widget for ListItem {
     fn render(self, area: Rect, buf: &mut Buffer) {
         Paragraph::new(Text::from(self.text))
             .style(self.style)
@@ -56,8 +71,8 @@ impl Widget for CustomItem {
 
 pub fn render(f: &mut Frame) {
     let list = List::new(vec![
-        CustomItem::new("hello", 1),
-        CustomItem::new("world", 2),
+        ListItem::new("hello", 1),
+        ListItem::new("world", 2),
     ]);
     let mut state = ListState::default();
     f.render_stateful_widget(list, f.size(), &mut state);
@@ -65,15 +80,6 @@ pub fn render(f: &mut Frame) {
 ```
 
 For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
-
-### Configuration
-The appearance of [`List`] can be modified
-- **style**: The base style of the list.
-- **block**: An optional outer block around the list.
-- **truncate**: If truncate is true, the first and last elements are truncated to fill the entire screen. True by default.
-
-The behaviour of [`ListState`] can be modified
-- **circular**: Whether the selection is circular, i.e. if true, the first item is selected after the last. True by default.
 
 ![](resources/demo.gif)
 
