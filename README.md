@@ -1,13 +1,27 @@
-# tui-widget-list
-
 ## A versatile widget list for Ratatui
 
-This crate provides a stateful widget list implementation, [`List`], for `Ratatui`, enabling listing
+<div align="center">
+    
+[![Continuous Integration](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml/badge.svg)](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml)
+
+</div>
+
+This crate provides a stateful widget [`List`] implementation for `Ratatui`, enabling listing
 widgets that implement the [`ListableWidget`] trait. The associated [`ListState`], offers functionalities
 such as navigating to the next and previous items.
 Additionally, the lists support both horizontal and vertical scrolling.
 
-### Examples
+### Configuration
+The [`List`] can be customized with the following options:
+- `scroll_direction`: Specifies whether the list is vertically or horizontally scrollable.
+- `style`: Defines the base style of the list.
+- `block`: Optional outer block surrounding the list.
+- `truncate`: Determines whether the first and last elements are truncated to fit the screen. Enabled by default.
+
+You can adjust the behavior of [`ListState`] with the following options:
+- `circular`: Determines if the selection is circular. When enabled, selecting the last item loops back to the first. Enabled by default.
+
+### Example
 ```rust
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
@@ -66,16 +80,6 @@ pub fn render(f: &mut Frame) {
 ```
 
 For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
-
-### Configuration
-The [`List`] can be customized with the following options:
-- **scroll_direction**: Specifies whether the list is vertically or horizontally scrollable.
-- **style**: Defines the base style of the list.
-- **block**: Optional outer block surrounding the list.
-- **truncate**: Determines whether the first and last elements are truncated to fit the screen. Enabled by default.
-
-You can adjust the behavior of [`ListState`] with the following options:
-- **circular**: Determines if the selection is circular. When enabled, selecting the last item loops back to the first. Enabled by default.
 
 ![](resources/demo.gif)
 

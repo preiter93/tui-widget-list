@@ -10,8 +10,8 @@ use ratatui::prelude::*;
 use ratatui::style::palette::tailwind::PURPLE;
 use ratatui::style::palette::tailwind::SLATE;
 use ratatui::style::{Color, Style};
-use ratatui::widgets::{Block, Borders, Paragraph, Widget};
-use ratatui::{Frame, Terminal};
+use ratatui::widgets::{Block, BorderType, Borders, Paragraph, Widget};
+use ratatui::Terminal;
 use std::error::Error;
 use std::io::{stdout, Stdout};
 use tui_widget_list::{List, ListState, ListableWidget, ScrollAxis};
@@ -76,13 +76,15 @@ impl Widget for TextContainer {
 struct ColoredContainer {
     color: Color,
     border_style: Style,
+    border_type: BorderType,
 }
 
 impl ColoredContainer {
     fn new(color: Color) -> Self {
         Self {
             color,
-            border_style: Style::default().fg(color).bold(),
+            border_style: Style::default(),
+            border_type: BorderType::Plain,
         }
     }
 }
@@ -95,6 +97,7 @@ impl Widget for ColoredContainer {
         Block::default()
             .borders(Borders::ALL)
             .border_style(self.border_style)
+            .border_type(self.border_type)
             .bg(self.color)
             .render(area, buf);
     }
@@ -109,7 +112,8 @@ impl ListableWidget for ColoredContainer {
         Self: Sized,
     {
         Self {
-            border_style: Style::default().black(),
+            border_style: Style::default().fg(Color::Black),
+            border_type: BorderType::Thick,
             ..self
         }
     }
@@ -120,8 +124,7 @@ type Result<T> = std::result::Result<T, Box<dyn Error>>;
 fn main() -> Result<()> {
     let mut terminal = init_terminal()?;
 
-    let app = App::default();
-    run(&mut terminal, app).unwrap();
+    App::default().run(&mut terminal).unwrap();
 
     reset_terminal()?;
     terminal.show_cursor()?;
@@ -168,32 +171,52 @@ pub struct App {
     pub color_list_state: ListState,
 }
 
-pub fn run<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
-    loop {
-        terminal.draw(|f| ui(f, &mut app))?;
+impl App {
+    pub fn run<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> Result<()> {
+        loop {
+            self.draw(terminal)?;
 
-        if let Event::Key(key) = event::read()? {
-            if key.kind == KeyEventKind::Press {
-                match key.code {
-                    KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Up | KeyCode::Char('k') => app.text_list_state.previous(),
-                    KeyCode::Down | KeyCode::Char('j') => app.text_list_state.next(),
-                    KeyCode::Left | KeyCode::Char('h') => app.color_list_state.previous(),
-                    KeyCode::Right | KeyCode::Char('l') => app.color_list_state.next(),
-                    _ => {}
+            if let Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press {
+                    match key.code {
+                        KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Up | KeyCode::Char('k') => self.text_list_state.previous(),
+                        KeyCode::Down | KeyCode::Char('j') => self.text_list_state.next(),
+                        KeyCode::Left | KeyCode::Char('h') => self.color_list_state.previous(),
+                        KeyCode::Right | KeyCode::Char('l') => self.color_list_state.next(),
+                        _ => {}
+                    }
                 }
             }
         }
     }
+
+    fn draw(&mut self, terminal: &mut Terminal<impl Backend>) -> Result<()> {
+        terminal.draw(|frame| {
+            frame.render_widget(self, frame.size());
+        })?;
+        Ok(())
+    }
 }
 
-pub fn ui(f: &mut Frame, app: &mut App) {
-    use Constraint::{Min, Percentage};
-    let area = f.size();
-    let [top, bottom] = Layout::vertical([Percentage(70), Min(0)]).areas(area);
-
-    f.render_stateful_widget(demo_text_list(), top, &mut app.text_list_state);
-    f.render_stateful_widget(demo_color_list(), bottom, &mut app.color_list_state);
+// pub fn ui(f: &mut Frame, app: &mut App) {
+//     use Constraint::{Min, Percentage};
+//     let area = f.size();
+//     let [top, bottom] = Layout::vertical([Percentage(75), Min(0)]).areas(area);
+//
+//     f.render_stateful_widget(demo_text_list(), top, &mut app.text_list_state);
+//     f.render_stateful_widget(demo_color_list(), bottom, &mut app.color_list_state);
+// }
+impl Widget for &mut App {
+    fn render(self, area: Rect, buf: &mut Buffer)
+    where
+        Self: Sized,
+    {
+        use Constraint::{Min, Percentage};
+        let [top, bottom] = Layout::vertical([Percentage(75), Min(0)]).areas(area);
+        demo_text_list().render(top, buf, &mut self.text_list_state);
+        demo_color_list().render(bottom, buf, &mut self.color_list_state);
+    }
 }
 
 pub struct Theme {
@@ -263,17 +286,16 @@ fn demo_text_list() -> List<'static, TextContainer> {
 
 fn demo_color_list() -> List<'static, ColoredContainer> {
     List::new(vec![
-        ColoredContainer::new(Color::Red),
-        ColoredContainer::new(Color::Blue),
-        ColoredContainer::new(Color::Yellow),
-        ColoredContainer::new(Color::Magenta),
-        ColoredContainer::new(Color::Green),
-        ColoredContainer::new(Color::LightCyan),
-        ColoredContainer::new(Color::White),
-        ColoredContainer::new(Color::Rgb(219, 172, 52)),
-        ColoredContainer::new(Color::LightGreen),
-        ColoredContainer::new(Color::LightRed),
-        ColoredContainer::new(Color::LightBlue),
+        ColoredContainer::new(Color::Rgb(255, 0, 0)),     // Red
+        ColoredContainer::new(Color::Rgb(255, 165, 0)),   // Orange
+        ColoredContainer::new(Color::Rgb(255, 255, 0)),   // Yellow
+        ColoredContainer::new(Color::Rgb(0, 128, 0)),     // Green
+        ColoredContainer::new(Color::Rgb(0, 0, 255)),     // Blue
+        ColoredContainer::new(Color::Rgb(75, 0, 130)),    // Indigo
+        ColoredContainer::new(Color::Rgb(128, 0, 128)),   // Violet
+        ColoredContainer::new(Color::Rgb(255, 20, 147)),  // Pink
+        ColoredContainer::new(Color::Rgb(255, 192, 203)), // Light Pink
+        ColoredContainer::new(Color::Rgb(255, 0, 255)),   // Magenta
     ])
     .scroll_direction(ScrollAxis::Horizontal)
 }
