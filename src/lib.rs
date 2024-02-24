@@ -26,13 +26,13 @@
 //! use tui_widget_list::{List, ListState, ListableWidget, ScrollAxis};
 //!
 //! #[derive(Debug, Clone)]
-//! pub struct CustomItem {
+//! pub struct ListItem {
 //!     text: String,
 //!     style: Style,
 //!     height: usize,
 //! }
 //!
-//! impl CustomItem {
+//! impl ListItem {
 //!     pub fn new<T: Into<String>>(text: T, height: usize) -> Self {
 //!         Self {
 //!             text: text.into(),
@@ -42,7 +42,7 @@
 //!     }
 //! }
 //!
-//! impl ListableWidget for CustomItem {
+//! impl ListableWidget for ListItem {
 //!     fn size(&self, _: &ScrollAxis) -> usize {
 //!         self.height
 //!     }
@@ -55,7 +55,7 @@
 //!     }
 //! }
 //!
-//! impl Widget for CustomItem {
+//! impl Widget for ListItem {
 //!     fn render(self, area: Rect, buf: &mut Buffer) {
 //!         Paragraph::new(Text::from(self.text))
 //!             .style(self.style)
@@ -65,8 +65,8 @@
 //!
 //! pub fn render(f: &mut Frame) {
 //!     let list = List::new(vec![
-//!         CustomItem::new("hello", 1),
-//!         CustomItem::new("world", 2),
+//!         ListItem::new("hello", 1),
+//!         ListItem::new("world", 2),
 //!     ]);
 //!     let mut state = ListState::default();
 //!     f.render_stateful_widget(list, f.size(), &mut state);
