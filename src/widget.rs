@@ -195,44 +195,68 @@ fn render_item<T: ListableWidget>(
     num_items: usize,
     scroll_direction: &ScrollAxis,
 ) {
-    // Check if the first element is truncated and needs special handling
     let item_size = item.size(scroll_direction) as u16;
-    if pos == 0 && num_items > 1 && area.height < item_size {
-        // Create an intermediate buffer for rendering the truncated element
-        let (width, height) = match scroll_direction {
-            ScrollAxis::Vertical => (area.width, item_size),
-            ScrollAxis::Horizontal => (item_size, area.height),
-        };
-        let mut hidden_buffer = Buffer::empty(Rect {
-            x: area.left(),
-            y: area.top(),
-            width,
-            height,
-        });
-        item.render(hidden_buffer.area, &mut hidden_buffer);
 
-        // Copy the visible part from the intermediate buffer to the main buffer
-        match scroll_direction {
-            ScrollAxis::Vertical => {
-                let offset = item_size.saturating_sub(area.height);
-                for x in area.left()..area.right() {
-                    for y in area.top()..area.bottom() {
-                        *buf.get_mut(x, y) = hidden_buffer.get(x, y + offset).clone();
-                    }
-                }
-            }
-            ScrollAxis::Horizontal => {
-                let offset = item_size.saturating_sub(area.width);
-                for x in area.left()..area.right() {
-                    for y in area.top()..area.bottom() {
-                        *buf.get_mut(x, y) = hidden_buffer.get(x + offset, y).clone();
-                    }
-                }
-            }
-        };
+    // Check if the item needs to be truncated
+    if area.height < item_size {
+        // Determine if truncation should happen at the top or the bottom
+        let truncate_top = pos == 0 && num_items > 1;
+        render_and_truncate(item, area, buf, scroll_direction, truncate_top);
     } else {
         item.render(area, buf);
     }
+}
+
+/// Renders a listable widget within a specified area of a buffer, potentially truncating the widget content based on scrolling direction.
+/// `truncate_top` indicates whether to truncate the content from the top or bottom.
+fn render_and_truncate<T: ListableWidget>(
+    item: T,
+    area: Rect,
+    buf: &mut Buffer,
+    scroll_direction: &ScrollAxis,
+    truncate_top: bool,
+) {
+    let item_size = item.size(scroll_direction) as u16;
+    // Create an intermediate buffer for rendering the truncated element
+    let (width, height) = match scroll_direction {
+        ScrollAxis::Vertical => (area.width, item_size),
+        ScrollAxis::Horizontal => (item_size, area.height),
+    };
+    let mut hidden_buffer = Buffer::empty(Rect {
+        x: area.left(),
+        y: area.top(),
+        width,
+        height,
+    });
+    item.render(hidden_buffer.area, &mut hidden_buffer);
+
+    // Copy the visible part from the intermediate buffer to the main buffer
+    match scroll_direction {
+        ScrollAxis::Vertical => {
+            let offset = if truncate_top {
+                item_size.saturating_sub(area.height)
+            } else {
+                0
+            };
+            for x in area.left()..area.right() {
+                for y in area.top()..area.bottom() {
+                    *buf.get_mut(x, y) = hidden_buffer.get(x, y + offset).clone();
+                }
+            }
+        }
+        ScrollAxis::Horizontal => {
+            let offset = if truncate_top {
+                item_size.saturating_sub(area.width)
+            } else {
+                0
+            };
+            for x in area.left()..area.right() {
+                for y in area.top()..area.bottom() {
+                    *buf.get_mut(x, y) = hidden_buffer.get(x + offset, y).clone();
+                }
+            }
+        }
+    };
 }
 
 /// Represents the scroll axis of a list.
@@ -244,4 +268,129 @@ pub enum ScrollAxis {
 
     /// Indicates horizontal scrolling.
     Horizontal,
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use ratatui::widgets::Borders;
+
+    struct TestItem {}
+    impl Widget for TestItem {
+        fn render(self, area: Rect, buf: &mut Buffer)
+        where
+            Self: Sized,
+        {
+            Block::default().borders(Borders::ALL).render(area, buf);
+        }
+    }
+    impl ListableWidget for TestItem {
+        fn size(&self, scroll_direction: &ScrollAxis) -> usize {
+            match scroll_direction {
+                ScrollAxis::Vertical => 3,
+                ScrollAxis::Horizontal => 3,
+            }
+        }
+    }
+
+    fn init(height: u16) -> (Rect, Buffer, List<'static, TestItem>, ListState) {
+        let area = Rect::new(0, 0, 5, height);
+        (
+            area,
+            Buffer::empty(area),
+            List::new(vec![TestItem {}, TestItem {}, TestItem {}]),
+            ListState::default(),
+        )
+    }
+
+    #[test]
+    fn not_truncated() {
+        // given
+        let (area, mut buf, list, mut state) = init(9);
+
+        // when
+        list.render(area, &mut buf, &mut state);
+
+        // then
+        assert_buffer_eq(
+            buf,
+            Buffer::with_lines(vec![
+                "┌───┐",
+                "│   │",
+                "└───┘",
+                "┌───┐",
+                "│   │",
+                "└───┘",
+                "┌───┐",
+                "│   │",
+                "└───┘",
+            ]),
+        )
+    }
+
+    #[test]
+    fn bottom_is_truncated() {
+        // given
+        let (area, mut buf, list, mut state) = init(8);
+
+        // when
+        list.render(area, &mut buf, &mut state);
+
+        // then
+        assert_buffer_eq(
+            buf,
+            Buffer::with_lines(vec![
+                "┌───┐",
+                "│   │",
+                "└───┘",
+                "┌───┐",
+                "│   │",
+                "└───┘",
+                "┌───┐",
+                "│   │",
+            ]),
+        )
+    }
+
+    #[test]
+    fn top_is_truncated() {
+        // given
+        let (area, mut buf, list, mut state) = init(8);
+        state.select(Some(2));
+
+        // when
+        list.render(area, &mut buf, &mut state);
+
+        // then
+        assert_buffer_eq(
+            buf,
+            Buffer::with_lines(vec![
+                "│   │",
+                "└───┘",
+                "┌───┐",
+                "│   │",
+                "└───┘",
+                "┌───┐",
+                "│   │",
+                "└───┘",
+            ]),
+        )
+    }
+
+    fn assert_buffer_eq(actual: Buffer, expected: Buffer) {
+        if actual.area != expected.area {
+            panic!(
+                "buffer areas not equal expected: {:?} actual: {:?}",
+                expected, actual
+            );
+        }
+        let diff = expected.diff(&actual);
+        if !diff.is_empty() {
+            panic!(
+                "buffer contents not equal\nexpected: {:?}\nactual: {:?}",
+                expected, actual,
+            );
+        }
+        assert_eq!(actual, expected, "buffers not equal");
+    }
 }
