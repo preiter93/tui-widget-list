@@ -1,3 +1,7 @@
+0.8.2 - ?
+===================
+- Truncate last element correctly
+- Add tests
 
 Released
 --------
