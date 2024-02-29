@@ -80,6 +80,6 @@ pub fn render(f: &mut Frame) {
 
 For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
 
-![](resources/demo.gif)
+![](resources/demo.gif?v1)
 
 License: MIT
