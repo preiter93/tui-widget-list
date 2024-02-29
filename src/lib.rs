@@ -74,7 +74,7 @@
 //!
 //! For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
 //!
-//!![](resources/demo.gif?v=1)
+//!![](examples/demo.gif?v=1)
 pub mod state;
 pub mod traits;
 pub mod widget;
