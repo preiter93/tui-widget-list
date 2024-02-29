@@ -1,10 +1,12 @@
-0.8.2 - ?
+
+Released
+--------
+
+0.8.2 - 29 February 2024
 ===================
 - Truncate last element correctly
 - Add tests
 
-Released
---------
 0.8.1 - 24 February 2024
 ===================
 - Add support for horizontal scroll
