@@ -177,10 +177,10 @@ impl<'a, T: ListableWidget> StatefulWidget for List<'a, T> {
             };
             if state.selected().is_some_and(|s| s == i + offset) {
                 if let Some(item) = highlighted.take() {
-                    render_item(item, area, buf, i, num_items, &scroll_direction);
+                    render_item(item, area, buf, i, num_items, &scroll_direction, self.style);
                 }
             } else if let Some(item) = items_in_view.next() {
-                render_item(item, area, buf, i, num_items, &scroll_direction);
+                render_item(item, area, buf, i, num_items, &scroll_direction, self.style);
             }
             pos_scroll_axis += size as u16;
         }
@@ -194,6 +194,7 @@ fn render_item<T: ListableWidget>(
     pos: usize,
     num_items: usize,
     scroll_direction: &ScrollAxis,
+    base_style: Style,
 ) {
     let item_size = item.size(scroll_direction) as u16;
 
@@ -201,7 +202,7 @@ fn render_item<T: ListableWidget>(
     if area.height < item_size {
         // Determine if truncation should happen at the top or the bottom
         let truncate_top = pos == 0 && num_items > 1;
-        render_and_truncate(item, area, buf, scroll_direction, truncate_top);
+        render_and_truncate(item, area, buf, scroll_direction, truncate_top, base_style);
     } else {
         item.render(area, buf);
     }
@@ -215,6 +216,7 @@ fn render_and_truncate<T: ListableWidget>(
     buf: &mut Buffer,
     scroll_direction: &ScrollAxis,
     truncate_top: bool,
+    base_style: Style,
 ) {
     let item_size = item.size(scroll_direction) as u16;
     // Create an intermediate buffer for rendering the truncated element
@@ -228,6 +230,7 @@ fn render_and_truncate<T: ListableWidget>(
         width,
         height,
     });
+    hidden_buffer.set_style(hidden_buffer.area, base_style);
     item.render(hidden_buffer.area, &mut hidden_buffer);
 
     // Copy the visible part from the intermediate buffer to the main buffer
