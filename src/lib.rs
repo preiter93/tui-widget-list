@@ -1,5 +1,11 @@
 //! # A versatile widget list for Ratatui
 //!
+//!<div align="center">
+//!     
+//! [![Continuous Integration](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml/badge.svg)](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml)
+//!
+//! </div>
+//!
 //! This crate provides a stateful widget [`List`] implementation for `Ratatui`, enabling listing
 //! widgets that implement the [`ListableWidget`] trait. The associated [`ListState`], offers functionalities
 //! such as navigating to the next and previous items.
@@ -22,17 +28,17 @@
 //! use ratatui::text::Text;
 //! use ratatui::widgets::{Paragraph, Widget};
 //! use ratatui::Frame;
-//! use tui_widget_list::{List, ListState, ListableWidget, ScrollAxis};
+//! use tui_widget_list::{List, ListState, ListWidget, RenderContext};
 //!
 //! #[derive(Debug, Clone)]
 //! pub struct ListItem {
 //!     text: String,
 //!     style: Style,
-//!     height: usize,
+//!     height: u16,
 //! }
 //!
 //! impl ListItem {
-//!     pub fn new<T: Into<String>>(text: T, height: usize) -> Self {
+//!     pub fn new<T: Into<String>>(text: T, height: u16) -> Self {
 //!         Self {
 //!             text: text.into(),
 //!             style: Style::default(),
@@ -41,17 +47,16 @@
 //!     }
 //! }
 //!
-//! impl ListableWidget for ListItem {
-//!     fn size(&self, _: &ScrollAxis) -> usize {
-//!         self.height
-//!     }
+//! impl ListWidget for ListItem {
+//!    fn pre_render(mut self, context: &RenderContext) -> (Self, u16) {
+//!        if context.is_selected {
+//!            self.style = self.style.reversed();
+//!        }
 //!
-//!     fn highlight(self) -> Self {
-//!         Self {
-//!             style: self.style.reversed(),
-//!             ..self
-//!         }
-//!     }
+//!        let main_axis_size = self.height;
+//!
+//!        (self, main_axis_size)
+//!    }
 //! }
 //!
 //! impl Widget for ListItem {
@@ -77,9 +82,12 @@
 //!![](examples/demo.gif?v=1)
 pub mod state;
 pub mod traits;
+pub mod traits_deprecated;
 pub mod widget;
+
 pub use state::ListState;
+pub use traits::{ListWidget, RenderContext};
+pub use widget::{List, ScrollAxis};
+
 #[allow(deprecated)]
-pub use traits::ListableWidget;
-pub use widget::List;
-pub use widget::ScrollAxis;
+pub use traits_deprecated::ListableWidget;

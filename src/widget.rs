@@ -5,13 +5,13 @@ use ratatui::{
     widgets::{Block, StatefulWidget, Widget},
 };
 
-use crate::{ListState, ListableWidget};
+use crate::{traits::RenderContext, ListState, ListWidget};
 
 /// A [`List`] is a widget for Ratatui that can render an arbitrary list of widgets.
 /// It is generic over `T`, where each widget `T` should implement the [`ListableWidget`]
 /// trait.
 #[derive(Clone)]
-pub struct List<'a, T: ListableWidget> {
+pub struct List<'a, T: ListWidget> {
     /// The list's items.
     pub items: Vec<T>,
 
@@ -21,11 +21,11 @@ pub struct List<'a, T: ListableWidget> {
     /// Block surrounding the widget list.
     block: Option<Block<'a>>,
 
-    /// Specifies the scroll direction.
-    scroll_direction: ScrollAxis,
+    /// Specifies the scroll axis. Either `Vertical` or `Horizontal`.
+    scroll_axis: ScrollAxis,
 }
 
-impl<'a, T: ListableWidget> List<'a, T> {
+impl<'a, T: ListWidget> List<'a, T> {
     /// Instantiates a widget list with elements.
     ///
     /// # Arguments
@@ -37,7 +37,7 @@ impl<'a, T: ListableWidget> List<'a, T> {
             items,
             style: Style::default(),
             block: None,
-            scroll_direction: ScrollAxis::default(),
+            scroll_axis: ScrollAxis::default(),
         }
     }
 
@@ -69,13 +69,13 @@ impl<'a, T: ListableWidget> List<'a, T> {
 
     /// Set the scroll direction of the list.
     #[must_use]
-    pub fn scroll_direction(mut self, scroll_direction: ScrollAxis) -> Self {
-        self.scroll_direction = scroll_direction;
+    pub fn scroll_direction(mut self, scroll_axis: ScrollAxis) -> Self {
+        self.scroll_axis = scroll_axis;
         self
     }
 }
 
-impl<'a, T: ListableWidget> From<Vec<T>> for List<'a, T> {
+impl<'a, T: ListWidget> From<Vec<T>> for List<'a, T> {
     /// Instantiates a [`List`] from a vector of elements implementing
     /// the [`ListableWidget`] trait.
     fn from(items: Vec<T>) -> Self {
@@ -83,18 +83,20 @@ impl<'a, T: ListableWidget> From<Vec<T>> for List<'a, T> {
     }
 }
 
-impl<'a, T: ListableWidget> StatefulWidget for List<'a, T> {
+impl<'a, T: ListWidget> StatefulWidget for List<'a, T> {
     type State = ListState;
     /// Renders a mutable reference to a widget list
+    #[allow(deprecated)]
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let scroll_direction = self.scroll_direction;
+        let style = self.style;
+        let scroll_axis = self.scroll_axis;
 
-        let mut items = self.items;
+        let raw_items = self.items;
         let mut block = self.block;
-        state.set_num_elements(items.len());
+        state.set_num_elements(raw_items.len());
 
         // Set the base style
-        buf.set_style(area, self.style);
+        buf.set_style(area, style);
         let area = match block.take() {
             Some(b) => {
                 let inner_area = b.inner(area);
@@ -105,122 +107,91 @@ impl<'a, T: ListableWidget> StatefulWidget for List<'a, T> {
         };
 
         // List is empty
-        if items.is_empty() {
+        if raw_items.is_empty() {
             return;
         }
 
         // Set the dimension along the scroll axis and the cross axis
-        let (size_scroll_axis, size_cross_axis) = match scroll_direction {
-            ScrollAxis::Vertical => (area.height as usize, area.width),
-            ScrollAxis::Horizontal => (area.width as usize, area.height),
+        let (scroll_axis_size, cross_axis_size) = match scroll_axis {
+            ScrollAxis::Vertical => (area.height, area.width),
+            ScrollAxis::Horizontal => (area.width, area.height),
         };
 
         // The starting coordinates of the current item
-        let (mut pos_scroll_axis, pos_cross_axis) = match scroll_direction {
+        let (mut scroll_axis_pos, cross_axis_pos) = match scroll_axis {
             ScrollAxis::Vertical => (area.top(), area.left()),
             ScrollAxis::Horizontal => (area.left(), area.top()),
         };
 
-        // Split out the highlighted item
-        let mut highlighted: Option<T> = None;
-        if let Some(index) = state.selected() {
-            if index < items.len() {
-                highlighted = Some(items.remove(index).highlight());
-            }
-        }
+        // Call the user provided callback to modify the items based on render info
+        let mut items = Vec::new();
+        for (i, item) in raw_items.into_iter().enumerate() {
+            let highlighted = state.selected().map_or(false, |j| i == j);
 
-        // Modify the widgets based on their selection state. Split out their heights
-        // for efficiency as we have to iterate over the heights back and forth to
-        // determine which widget is shown on the viewport.
-        let mut raw_item_sizes: Vec<_> = items
-            .iter()
-            .map(|item| item.size(&scroll_direction))
-            .collect();
+            let context = RenderContext {
+                cross_axis_size,
+                is_selected: highlighted,
+                scroll_axis,
+            };
 
-        // Insert the height of the highlighted item back in
-        if let (Some(index), Some(h)) = (state.selected, &mut highlighted) {
-            raw_item_sizes.insert(index, h.size(&scroll_direction));
+            let (item, main_axis_size) = item.pre_render(&context);
+            items.push((item, main_axis_size));
         }
 
         // Determine which widgets to show on the viewport and how much space they
         // get assigned to. The number of elements in `view_heights` is less than
         // the number of elements in `raw_heights` if not all widgets are shown
         // on the viewport.
-        let sizes_scroll_direction = state.update_view_port(&raw_item_sizes, size_scroll_axis);
+        let heights: Vec<_> = items.iter().map(|x| x.1).collect();
+        let sizes_scroll_direction = state.update_view_port(&heights, scroll_axis_size);
 
         // Drain out elements that are shown on the view port from the vector of
         // all elements.
         let first = state.offset;
-        let mut last = sizes_scroll_direction.len() + first;
-        if highlighted.is_some() {
-            last = last.saturating_sub(1);
-        }
+        let last = sizes_scroll_direction.len() + first;
         let mut items_in_view = items.drain(first..last);
 
         // Iterate over the modified items
-        let offset = state.offset;
         let num_items = sizes_scroll_direction.len();
         for (i, size) in sizes_scroll_direction.into_iter().enumerate() {
-            let area = match scroll_direction {
-                ScrollAxis::Vertical => Rect::new(
-                    pos_cross_axis,
-                    pos_scroll_axis,
-                    size_cross_axis,
-                    size as u16,
-                ),
-                ScrollAxis::Horizontal => Rect::new(
-                    pos_scroll_axis,
-                    pos_cross_axis,
-                    size as u16,
-                    size_cross_axis,
-                ),
-            };
-            if state.selected().is_some_and(|s| s == i + offset) {
-                if let Some(item) = highlighted.take() {
-                    render_item(item, area, buf, i, num_items, &scroll_direction, self.style);
+            let area = match scroll_axis {
+                ScrollAxis::Vertical => {
+                    Rect::new(cross_axis_pos, scroll_axis_pos, cross_axis_size, size)
                 }
-            } else if let Some(item) = items_in_view.next() {
-                render_item(item, area, buf, i, num_items, &scroll_direction, self.style);
+                ScrollAxis::Horizontal => {
+                    Rect::new(scroll_axis_pos, cross_axis_pos, size, cross_axis_size)
+                }
+            };
+            if let Some(item) = items_in_view.next() {
+                // Check if the item needs to be truncated
+                if area.height < item.1 {
+                    // Determine if truncation should happen at the top or the bottom
+                    let truncate_top = i == 0 && num_items > 1;
+                    render_truncated(item.0, item.1, area, buf, scroll_axis, truncate_top, style);
+                } else {
+                    item.0.render(area, buf);
+                }
             }
-            pos_scroll_axis += size as u16;
+
+            scroll_axis_pos += size;
         }
-    }
-}
-
-fn render_item<T: ListableWidget>(
-    item: T,
-    area: Rect,
-    buf: &mut Buffer,
-    pos: usize,
-    num_items: usize,
-    scroll_direction: &ScrollAxis,
-    base_style: Style,
-) {
-    let item_size = item.size(scroll_direction) as u16;
-
-    // Check if the item needs to be truncated
-    if area.height < item_size {
-        // Determine if truncation should happen at the top or the bottom
-        let truncate_top = pos == 0 && num_items > 1;
-        render_and_truncate(item, area, buf, scroll_direction, truncate_top, base_style);
-    } else {
-        item.render(area, buf);
     }
 }
 
 /// Renders a listable widget within a specified area of a buffer, potentially truncating the widget content based on scrolling direction.
 /// `truncate_top` indicates whether to truncate the content from the top or bottom.
-fn render_and_truncate<T: ListableWidget>(
+fn render_truncated<T: ListWidget>(
     item: T,
+    main_axis_size: u16,
     area: Rect,
     buf: &mut Buffer,
-    scroll_direction: &ScrollAxis,
+    scroll_axis: ScrollAxis,
     truncate_top: bool,
     base_style: Style,
 ) {
-    let item_size = item.size(scroll_direction) as u16;
+    let item_size = main_axis_size;
     // Create an intermediate buffer for rendering the truncated element
-    let (width, height) = match scroll_direction {
+    let (width, height) = match scroll_axis {
         ScrollAxis::Vertical => (area.width, item_size),
         ScrollAxis::Horizontal => (item_size, area.height),
     };
@@ -234,7 +205,7 @@ fn render_and_truncate<T: ListableWidget>(
     item.render(hidden_buffer.area, &mut hidden_buffer);
 
     // Copy the visible part from the intermediate buffer to the main buffer
-    match scroll_direction {
+    match scroll_axis {
         ScrollAxis::Vertical => {
             let offset = if truncate_top {
                 item_size.saturating_sub(area.height)
@@ -263,7 +234,7 @@ fn render_and_truncate<T: ListableWidget>(
 }
 
 /// Represents the scroll axis of a list.
-#[derive(Default, Clone)]
+#[derive(Debug, Default, Clone, Copy)]
 pub enum ScrollAxis {
     /// Indicates vertical scrolling. This is the default.
     #[default]
@@ -287,12 +258,14 @@ mod test {
             Block::default().borders(Borders::ALL).render(area, buf);
         }
     }
-    impl ListableWidget for TestItem {
-        fn size(&self, scroll_direction: &ScrollAxis) -> usize {
-            match scroll_direction {
+
+    impl ListWidget for TestItem {
+        fn pre_render(self, context: &RenderContext) -> (Self, u16) {
+            let main_axis_size = match context.scroll_axis {
                 ScrollAxis::Vertical => 3,
                 ScrollAxis::Horizontal => 3,
-            }
+            };
+            (self, main_axis_size)
         }
     }
 

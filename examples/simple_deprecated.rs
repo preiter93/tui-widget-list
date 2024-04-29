@@ -8,7 +8,7 @@ use ratatui::{
     widgets::Widget,
 };
 use std::{error::Error, io};
-use tui_widget_list::{List, ListState, ListWidget, RenderContext};
+use tui_widget_list::{widget::List, ListState, ListableWidget, ScrollAxis};
 
 /// A simple list text item.
 #[derive(Debug, Clone)]
@@ -55,17 +55,14 @@ impl<'a> ListItem<'a> {
     }
 }
 
-impl ListWidget for ListItem<'_> {
-    fn pre_render(mut self, context: &RenderContext) -> (Self, u16) {
-        let main_axis_size = if context.is_selected {
-            self.prefix = Some(">>");
-            self.style = Style::default().bg(Color::Cyan);
-            context.cross_axis_size / 10
-        } else {
-            1
-        };
+impl ListableWidget for ListItem<'_> {
+    fn size(&self, _: &ScrollAxis) -> usize {
+        1
+    }
 
-        (self, main_axis_size)
+    fn highlight(self) -> Self {
+        self.prefix(Some(">>"))
+            .style(Style::default().bg(Color::Cyan))
     }
 }
 

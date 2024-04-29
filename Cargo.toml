@@ -1,6 +1,6 @@
 [package]
 name = "tui-widget-list"
-version = "0.8.3"
+version = "0.9.0"
 edition = "2021"
 authors = ["preiter <phil.reiter93@gmail.com>"]
 description = "Widget List for TUI/Ratatui"
@@ -17,6 +17,9 @@ crossterm = "0.27"
 
 [[example]]
 name = "simple"
+
+[[example]]
+name = "simple_deprecated"
 
 [[example]]
 name = "paragraph"

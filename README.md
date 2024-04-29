@@ -1,7 +1,7 @@
-## A versatile widget list for Ratatui
+# A versatile widget list for Ratatui
 
 <div align="center">
-    
+
 [![Continuous Integration](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml/badge.svg)](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml)
 
 </div>
@@ -28,17 +28,17 @@ use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::Text;
 use ratatui::widgets::{Paragraph, Widget};
 use ratatui::Frame;
-use tui_widget_list::{List, ListState, ListableWidget, ScrollAxis};
+use tui_widget_list::{List, ListState, ListWidget, RenderContext};
 
 #[derive(Debug, Clone)]
 pub struct ListItem {
     text: String,
     style: Style,
-    height: usize,
+    height: u16,
 }
 
 impl ListItem {
-    pub fn new<T: Into<String>>(text: T, height: usize) -> Self {
+    pub fn new<T: Into<String>>(text: T, height: u16) -> Self {
         Self {
             text: text.into(),
             style: Style::default(),
@@ -47,17 +47,16 @@ impl ListItem {
     }
 }
 
-impl ListableWidget for ListItem {
-    fn size(&self, _: &ScrollAxis) -> usize {
-        self.height
-    }
+impl ListWidget for ListItem {
+   fn pre_render(mut self, context: &RenderContext) -> (Self, u16) {
+       if context.is_selected {
+           self.style = self.style.reversed();
+       }
 
-    fn highlight(self) -> Self {
-        Self {
-            style: self.style.reversed(),
-            ..self
-        }
-    }
+       let main_axis_size = self.height;
+
+       (self, main_axis_size)
+   }
 }
 
 impl Widget for ListItem {
