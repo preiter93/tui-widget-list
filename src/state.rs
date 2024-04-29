@@ -125,9 +125,9 @@ impl ListState {
     /// on the screen and iterate until we have reached the maximum height. If the selected value
     /// is within the bounds we do nothing. If the selected value is out of bounds, we adjust the
     /// offset accordingly.
-    pub(crate) fn update_view_port(&mut self, heights: &[usize], max_height: usize) -> Vec<usize> {
+    pub(crate) fn update_view_port(&mut self, heights: &[u16], max_height: u16) -> Vec<u16> {
         // The items heights on the viewport will be calculated on the fly.
-        let mut view_heights: Vec<usize> = Vec::new();
+        let mut view_heights: Vec<u16> = Vec::new();
 
         // If none is selected, the first item should be show on top of the viewport.
         let selected = self.selected.unwrap_or(0);
@@ -225,7 +225,7 @@ mod tests {
 
     update_view_port_tests! {
         happy_path: [0, Some(0), vec![2, 3], 6], [0, vec![2, 3]],
-        empty_list: [0, None, Vec::<usize>::new(), 4], [0, vec![]],
+        empty_list: [0, None, Vec::<u16>::new(), 4], [0, vec![]],
         update_offset_down: [0, Some(2), vec![2, 3, 3], 6], [1, vec![3, 3]],
         update_offset_up: [1, Some(0), vec![2, 3, 3], 6], [0, vec![2, 3, 1]],
         truncate_bottom: [0, Some(0), vec![2, 3], 4], [0, vec![2, 2]],

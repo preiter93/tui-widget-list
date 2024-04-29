@@ -5,26 +5,25 @@ use crate::ScrollAxis;
 /// Represents an item in a list widget.
 ///
 /// This trait should be implemented on widget list items to be used in a `List`.
-/// Implementors should provide information about the item's size along the lists
-/// main axis and optionally support highlighting.
 pub trait ListableWidget: Widget {
-    /// Returns the size of the item based on the scroll direction.
+    /// Callback invoked when rendering the widget.
     ///
-    /// This method should return the height for vertical lists and the width for horizontal lists.
-    ///
-    /// The `scroll_direction` parameter allows specifying different sizes depending on the list's scroll axis.
-    /// In most cases, this parameter can be ignored.
-    fn size(&self, scroll_direction: &ScrollAxis) -> usize;
+    /// This method is called during rendering to allow the widget to mutate itself based
+    /// on additional render info. It should return the main axis size of the widget.
+    fn on_render(&mut self, render_info: &RenderInfo) -> u16;
+}
 
-    /// Highlight the selected widget. Optional.
+/// Information provided during rendering.
+pub struct RenderInfo {
+    /// Cross axis size of the widget.
+    pub cross_axis_size: u16,
+
+    /// Indicates whether the widget should be rendered as highlighted.
+    pub highlighted: bool,
+
+    /// The scroll axis:
     ///
-    /// This method should return a new instance of the widget with modifications
-    /// to render it highlighted.
-    #[must_use]
-    fn highlight(self) -> Self
-    where
-        Self: Sized,
-    {
-        self
-    }
+    /// - `vertical` (default)
+    /// - `horizontal`
+    pub scroll_axis: ScrollAxis,
 }

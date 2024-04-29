@@ -8,7 +8,7 @@ use ratatui::{
     widgets::Widget,
 };
 use std::{error::Error, io};
-use tui_widget_list::{widget::List, ListState, ListableWidget, ScrollAxis};
+use tui_widget_list::{traits::RenderInfo, widget::List, ListState, ListableWidget};
 
 /// A simple list text item.
 #[derive(Debug, Clone)]
@@ -56,13 +56,14 @@ impl<'a> ListItem<'a> {
 }
 
 impl ListableWidget for ListItem<'_> {
-    fn size(&self, _: &ScrollAxis) -> usize {
-        1
-    }
+    fn on_render(&mut self, render_info: &RenderInfo) -> u16 {
+        if render_info.highlighted {
+            self.prefix = Some(">>");
+            self.style = Style::default().bg(Color::Cyan);
+            return render_info.cross_axis_size / 10;
+        }
 
-    fn highlight(self) -> Self {
-        self.prefix(Some(">>"))
-            .style(Style::default().bg(Color::Cyan))
+        1
     }
 }
 

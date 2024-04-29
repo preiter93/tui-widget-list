@@ -8,7 +8,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Tabs, Widget},
 };
 use std::{error::Error, io};
-use tui_widget_list::{List, ListState, ListableWidget, ScrollAxis};
+use tui_widget_list::{List, ListState, ListableWidget, RenderInfo};
 
 #[derive(Debug, Clone)]
 pub struct ParagraphItem<'a> {
@@ -27,20 +27,20 @@ impl ParagraphItem<'_> {
         Self { paragraph, height }
     }
 
-    pub fn style(mut self, style: Style) -> Self {
-        self.paragraph = self.paragraph.set_style(style);
-        self
+    pub fn set_style(&mut self, style: Style) {
+        let mut paragraph = std::mem::replace(&mut self.paragraph, Default::default());
+        paragraph = paragraph.style(style);
+        self.paragraph = paragraph;
     }
 }
 
 impl ListableWidget for ParagraphItem<'_> {
-    fn size(&self, _: &ScrollAxis) -> usize {
-        self.height as usize
-    }
+    fn on_render(&mut self, render_info: &RenderInfo) -> u16 {
+        if render_info.highlighted {
+            self.set_style(Style::default().bg(Color::White));
+        }
 
-    fn highlight(self) -> Self {
-        let style = Style::default().bg(Color::White);
-        self.style(style)
+        self.height
     }
 }
 
@@ -66,15 +66,12 @@ impl TabItem {
 }
 
 impl ListableWidget for TabItem {
-    fn size(&self, _: &ScrollAxis) -> usize {
-        3
-    }
-
-    fn highlight(self) -> Self {
-        Self {
-            titles: self.titles,
-            selected: true,
+    fn on_render(&mut self, render_info: &RenderInfo) -> u16 {
+        if render_info.highlighted {
+            self.selected = true;
         }
+
+        3
     }
 }
 
@@ -98,17 +95,10 @@ enum ListElements<'a> {
 }
 
 impl ListableWidget for ListElements<'_> {
-    fn size(&self, scroll_direction: &ScrollAxis) -> usize {
-        match &self {
-            Self::TabItem(inner) => inner.size(scroll_direction),
-            Self::ParagraphItem(inner) => inner.size(scroll_direction),
-        }
-    }
-
-    fn highlight(self) -> Self {
+    fn on_render(&mut self, render_info: &RenderInfo) -> u16 {
         match self {
-            Self::TabItem(inner) => Self::TabItem(inner.highlight()),
-            Self::ParagraphItem(inner) => Self::ParagraphItem(inner.highlight()),
+            Self::TabItem(inner) => inner.on_render(render_info),
+            Self::ParagraphItem(inner) => inner.on_render(render_info),
         }
     }
 }
