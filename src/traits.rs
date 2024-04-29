@@ -9,7 +9,9 @@ pub trait ListableWidget: Widget {
     /// Callback invoked when rendering the widget.
     ///
     /// This method is called during rendering to allow the widget to mutate itself based
-    /// on additional render info. It should return the main axis size of the widget.
+    /// on additional render info.
+    ///
+    /// Return the main axis size of the widget.
     fn on_render(&mut self, render_info: &RenderInfo) -> u16;
 }
 

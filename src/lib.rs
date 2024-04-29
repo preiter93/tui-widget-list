@@ -1,5 +1,11 @@
 //! # A versatile widget list for Ratatui
 //!
+//!<div align="center">
+//!     
+//! [![Continuous Integration](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml/badge.svg)](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml)
+//!
+//! </div>
+//!
 //! This crate provides a stateful widget [`List`] implementation for `Ratatui`, enabling listing
 //! widgets that implement the [`ListableWidget`] trait. The associated [`ListState`], offers functionalities
 //! such as navigating to the next and previous items.
