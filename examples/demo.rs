@@ -14,14 +14,14 @@ use ratatui::widgets::{Block, BorderType, Borders, Paragraph, Widget};
 use ratatui::Terminal;
 use std::error::Error;
 use std::io::{stdout, Stdout};
-use tui_widget_list::{List, ListState, ListableWidget, ScrollAxis};
+use tui_widget_list::{List, ListState, ListWidget, RenderContext, ScrollAxis};
 
 #[derive(Debug, Clone)]
 pub struct TextContainer {
     title: String,
     content: Vec<String>,
     style: Style,
-    height: usize,
+    height: u16,
     expand: bool,
 }
 
@@ -35,26 +35,18 @@ impl TextContainer {
             expand: false,
         }
     }
-
-    pub fn style(mut self, style: Style) -> Self {
-        self.style = style;
-        self
-    }
-
-    pub fn expand(mut self) -> Self {
-        self.expand = true;
-        self.height = 3 + self.content.len();
-        self
-    }
 }
 
-impl ListableWidget for TextContainer {
-    fn size(&self, _: &ScrollAxis) -> usize {
-        self.height
-    }
+impl ListWidget for TextContainer {
+    fn pre_render(mut self, context: &RenderContext) -> (Self, u16) {
+        if context.is_selected {
+            self.style = THEME.selection;
+            self.height = 3 + self.content.len() as u16;
+            self.expand = true;
+        }
 
-    fn highlight(self) -> Self {
-        self.style(THEME.selection).expand()
+        let height = self.height;
+        (self, height)
     }
 }
 
@@ -102,20 +94,14 @@ impl Widget for ColoredContainer {
             .render(area, buf);
     }
 }
-impl ListableWidget for ColoredContainer {
-    fn size(&self, _: &ScrollAxis) -> usize {
-        15
-    }
-
-    fn highlight(self) -> Self
-    where
-        Self: Sized,
-    {
-        Self {
-            border_style: Style::default().fg(Color::Black),
-            border_type: BorderType::Thick,
-            ..self
+impl ListWidget for ColoredContainer {
+    fn pre_render(mut self, context: &RenderContext) -> (Self, u16) {
+        if context.is_selected {
+            self.border_style = Style::default().fg(Color::Black);
+            self.border_type = BorderType::Thick;
         }
+
+        (self, 15)
     }
 }
 

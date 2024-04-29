@@ -8,7 +8,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Widget},
 };
 use std::{error::Error, io};
-use tui_widget_list::{List, ListState, ListableWidget, ScrollAxis};
+use tui_widget_list::{List, ListState, ListWidget, RenderContext};
 
 #[derive(Debug, Clone)]
 pub struct ParagraphItem<'a> {
@@ -27,20 +27,22 @@ impl ParagraphItem<'_> {
         Self { paragraph, height }
     }
 
-    pub fn style(mut self, style: Style) -> Self {
-        self.paragraph = self.paragraph.set_style(style);
-        self
+    pub fn set_style(&mut self, style: Style) {
+        let mut paragraph = std::mem::replace(&mut self.paragraph, Default::default());
+        paragraph = paragraph.style(style);
+        self.paragraph = paragraph;
     }
 }
 
-impl ListableWidget for ParagraphItem<'_> {
-    fn size(&self, _: &ScrollAxis) -> usize {
-        self.height as usize
-    }
+impl ListWidget for ParagraphItem<'_> {
+    fn pre_render(mut self, context: &RenderContext) -> (Self, u16) {
+        if context.is_selected {
+            self.paragraph = self.paragraph.style(Style::default().bg(Color::White))
+        }
 
-    fn highlight(self) -> Self {
-        let style = Style::default().bg(Color::White);
-        self.style(style)
+        let main_axis_size = self.height;
+
+        (self, main_axis_size)
     }
 }
 
