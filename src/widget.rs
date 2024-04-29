@@ -169,7 +169,7 @@ impl<'a, T: ListableWidget> StatefulWidget for List<'a, T> {
                 if area.height < item.main_axis_size {
                     // Determine if truncation should happen at the top or the bottom
                     let truncate_top = i == 0 && num_items > 1;
-                    render_truncated(item, area, buf, scroll_axis, truncate_top);
+                    render_truncated(item, area, buf, scroll_axis, truncate_top, self.style);
                 } else {
                     item.item.render(area, buf);
                 }
@@ -193,6 +193,7 @@ fn render_truncated<T: ListableWidget>(
     buf: &mut Buffer,
     scroll_axis: ScrollAxis,
     truncate_top: bool,
+    base_style: Style,
 ) {
     let item_size = item.main_axis_size;
     // Create an intermediate buffer for rendering the truncated element
@@ -206,6 +207,7 @@ fn render_truncated<T: ListableWidget>(
         width,
         height,
     });
+    hidden_buffer.set_style(hidden_buffer.area, base_style);
     item.item.render(hidden_buffer.area, &mut hidden_buffer);
 
     // Copy the visible part from the intermediate buffer to the main buffer
