@@ -1,3 +1,6 @@
+0.8.3 - 
+===================
+- Fix: Apply base style to truncated items
 
 Released
 --------
