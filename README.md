@@ -1,7 +1,7 @@
 ## A versatile widget list for Ratatui
 
 <div align="center">
-    
+
 [![Continuous Integration](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml/badge.svg)](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml)
 
 </div>
@@ -28,17 +28,17 @@ use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::Text;
 use ratatui::widgets::{Paragraph, Widget};
 use ratatui::Frame;
-use tui_widget_list::{List, ListState, ListableWidget, ScrollAxis};
+use tui_widget_list::{List, ListState, ListableWidget, RenderInfo};
 
 #[derive(Debug, Clone)]
 pub struct ListItem {
     text: String,
     style: Style,
-    height: usize,
+    height: u16,
 }
 
 impl ListItem {
-    pub fn new<T: Into<String>>(text: T, height: usize) -> Self {
+    pub fn new<T: Into<String>>(text: T, height: u16) -> Self {
         Self {
             text: text.into(),
             style: Style::default(),
@@ -48,16 +48,13 @@ impl ListItem {
 }
 
 impl ListableWidget for ListItem {
-    fn size(&self, _: &ScrollAxis) -> usize {
-        self.height
-    }
+   fn on_render(&mut self, render_info: &RenderInfo) -> u16 {
+       if render_info.highlighted {
+           self.style = self.style.reversed();
+       }
 
-    fn highlight(self) -> Self {
-        Self {
-            style: self.style.reversed(),
-            ..self
-        }
-    }
+       self.height
+   }
 }
 
 impl Widget for ListItem {
