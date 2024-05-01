@@ -1,3 +1,27 @@
+Prerelease
+----------
+
+0.9.0
+===================
+- Introduced `ListWidget` trait as a replacement for `ListableWidget`.
+  - This change is non-breaking and provides a more concise and clearer interface.
+  - `ListWidget` is implemented for all types implementing `ListableWidget`.
+Migration Guide
+- Replace references to `ListableWidget` with `ListWidget`.
+- Update trait implementations to use the new `pre_render` signature:
+
+```rust
+fn pre_render(mut self, context: &crate::RenderContext) -> (Self, u16) {
+    let main_axis_size = // The widgets size in the main axis
+
+    if context.is_selected {
+        self = // You can modify the selected item here
+    }
+
+    (self, main_axis_size)
+}
+```
+
 Released
 --------
 
