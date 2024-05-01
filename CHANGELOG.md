@@ -1,9 +1,9 @@
-0.8.3 - 
-===================
-- Fix: Apply base style to truncated items
-
 Released
 --------
+
+0.8.3 - 1 May 2024 
+===================
+- Fix: Missing base style on truncated items
 
 0.8.2 - 29 February 2024
 ===================
