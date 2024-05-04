@@ -57,15 +57,17 @@ impl<'a> ListItem<'a> {
 
 impl ListWidget for ListItem<'_> {
     fn pre_render(mut self, context: &RenderContext) -> (Self, u16) {
-        let main_axis_size = if context.is_selected {
-            self.prefix = Some(">>");
-            self.style = Style::default().bg(Color::Cyan);
-            context.cross_axis_size / 10
+        if context.index % 2 == 0 {
+            self.style = Style::default().bg(Color::Rgb(28, 28, 32));
         } else {
-            1
+            self.style = Style::default().bg(Color::Rgb(0, 0, 0));
+        }
+        if context.is_selected {
+            self.prefix = Some(">>");
+            self.style = Style::default().bg(Color::Rgb(251, 155, 100));
         };
 
-        (self, main_axis_size)
+        (self, 1)
     }
 }
 

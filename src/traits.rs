@@ -12,7 +12,7 @@ pub trait ListWidget: Widget {
     ///
     /// - `self`: Captured by value, allowing modification within the pre-render hook.
     /// - `context`: Rendering context providing additional information like selection
-    ///    status, cross-axis size, and scroll direction.
+    ///    status, cross-axis size, scroll direction and the widgets index in the list.
     ///
     /// # Returns
     ///
@@ -29,7 +29,7 @@ pub trait ListWidget: Widget {
     ///     fn pre_render(self, context: &RenderContext) -> (Self, u16) {
     ///         // Modify the widget based on the selection state
     ///         if context.is_selected {
-    ///             self.style = self.style.add_modifier(Modifier::REVERSED);
+    ///             self.style = self.style.reversed();
     ///         }
     ///
     ///         // Example: set main axis size to 1
@@ -59,4 +59,7 @@ pub struct RenderContext {
     /// - `vertical` (default)
     /// - `horizontal`
     pub scroll_axis: ScrollAxis,
+
+    /// The index of the widget in the list.
+    pub index: usize,
 }
