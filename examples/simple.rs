@@ -8,7 +8,7 @@ use ratatui::{
     widgets::Widget,
 };
 use std::{error::Error, io};
-use tui_widget_list::{List, ListState, ListWidget, PreRenderContext};
+use tui_widget_list::{List, ListState, PreRender, PreRenderContext};
 
 /// A simple list text item.
 #[derive(Debug, Clone)]
@@ -55,13 +55,14 @@ impl<'a> ListItem<'a> {
     }
 }
 
-impl ListWidget for ListItem<'_> {
-    fn pre_render(mut self, context: &PreRenderContext) -> (Self, u16) {
+impl PreRender for ListItem<'_> {
+    fn pre_render(&mut self, context: &PreRenderContext) -> u16 {
         if context.index % 2 == 0 {
             self.style = Style::default().bg(Color::Rgb(28, 28, 32));
         } else {
             self.style = Style::default().bg(Color::Rgb(0, 0, 0));
         }
+
         if context.is_selected {
             self.prefix = Some(">>");
             self.style = Style::default()
@@ -69,7 +70,7 @@ impl ListWidget for ListItem<'_> {
                 .fg(Color::Rgb(28, 28, 32));
         };
 
-        (self, 1)
+        1
     }
 }
 

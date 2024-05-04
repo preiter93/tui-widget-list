@@ -2,10 +2,8 @@ use ratatui::widgets::Widget;
 
 use crate::ScrollAxis;
 
-/// Represents an item in a list widget.
-///
 /// This trait should be implemented for items that are intended to be used within a `List` widget.
-pub trait ListWidget: Widget {
+pub trait PreRender: Widget {
     /// This method is called before rendering the widget.
     ///
     /// # Arguments
@@ -23,9 +21,9 @@ pub trait ListWidget: Widget {
     ///
     ///```ignore
     /// use ratatui::prelude::*;
-    /// use tui_widget_list::{PreRenderContext, ListWidget};
+    /// use tui_widget_list::{PreRenderContext, PreRender};
     ///
-    /// impl ListWidget for MyWidget {
+    /// impl PreRender for MyWidget {
     ///     fn pre_render(self, context: &PreRenderContext) -> (Self, u16) {
     ///         // Modify the widget based on the selection state
     ///         if context.is_selected {
@@ -39,14 +37,14 @@ pub trait ListWidget: Widget {
     ///     }
     /// }
     /// ```
-    fn pre_render(self, context: &PreRenderContext) -> (Self, u16)
+    fn pre_render(&mut self, context: &PreRenderContext) -> u16
     where
         Self: Sized;
 }
 
 /// The context provided during rendering.
 ///
-/// It provides a set of information that can be used from [`ListableWidget::on_render`].
+/// It provides a set of information that can be used from [`PreRender::pre_render`].
 #[derive(Debug, Clone)]
 pub struct PreRenderContext {
     /// Indicates whether the widget is selected.

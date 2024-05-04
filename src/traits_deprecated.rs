@@ -1,6 +1,8 @@
 use ratatui::widgets::Widget;
+use std::mem;
+use std::mem::MaybeUninit;
 
-use crate::ListWidget;
+use crate::PreRender;
 use crate::ScrollAxis;
 
 /// Represents an item in a list widget.
@@ -10,7 +12,7 @@ use crate::ScrollAxis;
 /// main axis and optionally support highlighting.
 #[deprecated(
     since = "0.9.0",
-    note = "Implement the ListWidget trait instead. See tui-widget-lists Changelog for a migration guide."
+    note = "Implement the PreRender trait instead. See tui-widget-lists Changelog for a migration guide."
 )]
 pub trait ListableWidget: Widget {
     /// Returns the size of the item based on the scroll direction.
@@ -35,14 +37,16 @@ pub trait ListableWidget: Widget {
 }
 
 #[allow(deprecated, clippy::cast_possible_truncation)]
-impl<T: ListableWidget> ListWidget for T {
-    fn pre_render(mut self, context: &crate::PreRenderContext) -> (Self, u16) {
+impl<T: ListableWidget> PreRender for T {
+    fn pre_render(&mut self, context: &crate::PreRenderContext) -> u16 {
         let main_axis_size = self.size(&context.scroll_axis) as u16;
 
         if context.is_selected {
-            self = self.highlight();
+            let tmp = unsafe { MaybeUninit::<T>::zeroed().assume_init() };
+            let tmp = mem::replace(self, tmp);
+            *self = tmp.highlight();
         }
 
-        (self, main_axis_size)
+        main_axis_size
     }
 }

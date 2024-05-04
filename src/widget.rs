@@ -5,13 +5,13 @@ use ratatui::{
     widgets::{Block, StatefulWidget, Widget},
 };
 
-use crate::{traits::PreRenderContext, ListState, ListWidget};
+use crate::{traits::PreRenderContext, ListState, PreRender};
 
 /// A [`List`] is a widget for Ratatui that can render an arbitrary list of widgets.
-/// It is generic over `T`, where each widget `T` should implement the [`ListableWidget`]
+/// It is generic over `T`, where each widget `T` should implement the [`PreRender`]
 /// trait.
 #[derive(Clone)]
-pub struct List<'a, T: ListWidget> {
+pub struct List<'a, T: PreRender> {
     /// The list's items.
     pub items: Vec<T>,
 
@@ -25,12 +25,12 @@ pub struct List<'a, T: ListWidget> {
     scroll_axis: ScrollAxis,
 }
 
-impl<'a, T: ListWidget> List<'a, T> {
+impl<'a, T: PreRender> List<'a, T> {
     /// Instantiates a widget list with elements.
     ///
     /// # Arguments
     ///
-    /// * `items` - A vector of elements implementing the [`ListableWidget`] trait.
+    /// * `items` - A vector of elements implementing the [`PreRender`] trait.
     #[must_use]
     pub fn new(items: Vec<T>) -> Self {
         Self {
@@ -75,15 +75,15 @@ impl<'a, T: ListWidget> List<'a, T> {
     }
 }
 
-impl<'a, T: ListWidget> From<Vec<T>> for List<'a, T> {
+impl<'a, T: PreRender> From<Vec<T>> for List<'a, T> {
     /// Instantiates a [`List`] from a vector of elements implementing
-    /// the [`ListableWidget`] trait.
+    /// the [`PreRender`] trait.
     fn from(items: Vec<T>) -> Self {
         Self::new(items)
     }
 }
 
-impl<'a, T: ListWidget> StatefulWidget for List<'a, T> {
+impl<'a, T: PreRender> StatefulWidget for List<'a, T> {
     type State = ListState;
     /// Renders a mutable reference to a widget list
     #[allow(deprecated)]
@@ -125,7 +125,7 @@ impl<'a, T: ListWidget> StatefulWidget for List<'a, T> {
 
         // Call the user provided callback to modify the items based on render info
         let mut items = Vec::new();
-        for (index, item) in raw_items.into_iter().enumerate() {
+        for (index, mut item) in raw_items.into_iter().enumerate() {
             let highlighted = state.selected().map_or(false, |j| index == j);
 
             let context = PreRenderContext {
@@ -135,7 +135,7 @@ impl<'a, T: ListWidget> StatefulWidget for List<'a, T> {
                 index,
             };
 
-            let (item, main_axis_size) = item.pre_render(&context);
+            let main_axis_size = item.pre_render(&context);
             items.push((item, main_axis_size));
         }
 
@@ -181,7 +181,7 @@ impl<'a, T: ListWidget> StatefulWidget for List<'a, T> {
 
 /// Renders a listable widget within a specified area of a buffer, potentially truncating the widget content based on scrolling direction.
 /// `truncate_top` indicates whether to truncate the content from the top or bottom.
-fn render_truncated<T: ListWidget>(
+fn render_truncated<T: PreRender>(
     item: T,
     main_axis_size: u16,
     area: Rect,
@@ -260,13 +260,13 @@ mod test {
         }
     }
 
-    impl ListWidget for TestItem {
-        fn pre_render(self, context: &PreRenderContext) -> (Self, u16) {
+    impl PreRender for TestItem {
+        fn pre_render(&mut self, context: &PreRenderContext) -> u16 {
             let main_axis_size = match context.scroll_axis {
                 ScrollAxis::Vertical => 3,
                 ScrollAxis::Horizontal => 3,
             };
-            (self, main_axis_size)
+            main_axis_size
         }
     }
 

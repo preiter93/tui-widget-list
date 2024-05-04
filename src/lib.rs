@@ -7,7 +7,7 @@
 //! </div>
 //!
 //! This crate provides a stateful widget [`List`] implementation for `Ratatui`, enabling listing
-//! widgets that implement the [`ListWidget`] trait. The associated [`ListState`], offers functionalities
+//! widgets that implement the [`PreRender`] trait. The associated [`ListState`], offers functionalities
 //! such as navigating to the next and previous items.
 //! Additionally, the lists support both horizontal and vertical scrolling.
 //!
@@ -23,7 +23,7 @@
 //! ## Example
 //! ```
 //! use ratatui::prelude::*;
-//! use tui_widget_list::{List, ListState, ListWidget, PreRenderContext};
+//! use tui_widget_list::{List, ListState, PreRender, PreRenderContext};
 //!
 //! #[derive(Debug, Clone)]
 //! pub struct ListItem {
@@ -40,7 +40,7 @@
 //!     }
 //! }
 //!
-//! impl ListWidget for ListItem {
+//! impl PreRender for ListItem {
 //!    fn pre_render(mut self, context: &PreRenderContext) -> (Self, u16) {
 //!        // Set alternating styles
 //!        if context.index % 2 == 0 {
@@ -96,7 +96,7 @@ pub mod traits_deprecated;
 pub mod widget;
 
 pub use state::ListState;
-pub use traits::{ListWidget, PreRenderContext};
+pub use traits::{PreRender, PreRenderContext};
 pub use widget::{List, ScrollAxis};
 
 #[allow(deprecated)]
