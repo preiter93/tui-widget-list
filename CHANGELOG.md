@@ -10,7 +10,7 @@ Migration Guide
 - Update trait implementations to use the new `pre_render` signature:
 
 ```rust
-fn pre_render(&mut self, context: &crate::RenderContext) -> u16 {
+fn pre_render(&mut self, context: &PreRenderContext) -> u16 {
     let main_axis_size = // The widgets size in the main axis
 
     if context.is_selected {

@@ -1,5 +1,5 @@
-# To run this script, install vhs and run `vhs ./examples/simple.tape`
-Output "examples/simple.gif"
+# To run this script, install vhs and run `vhs ./examples/tapes/simple.tape`
+Output "examples/tapes/simple.gif"
 Set Margin 10
 Set Padding 2
 Set BorderRadius 10

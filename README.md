@@ -7,7 +7,7 @@
 </div>
 
 This crate provides a stateful widget [`List`] implementation for `Ratatui`, enabling listing
-widgets that implement the [`ListWidget`] trait. The associated [`ListState`], offers functionalities
+widgets that implement the [`PreRender`] trait. The associated [`ListState`], offers functionalities
 such as navigating to the next and previous items.
 Additionally, the lists support both horizontal and vertical scrolling.
 
@@ -23,7 +23,7 @@ You can adjust the behavior of [`ListState`] with the following options:
 ### Example
 ```rust
 use ratatui::prelude::*;
-use tui_widget_list::{List, ListState, ListWidget, PreRenderContext};
+use tui_widget_list::{List, ListState, PreRender, PreRenderContext};
 
 #[derive(Debug, Clone)]
 pub struct ListItem {
@@ -40,8 +40,8 @@ impl ListItem {
     }
 }
 
-impl ListWidget for ListItem {
-   fn pre_render(mut self, context: &PreRenderContext) -> (Self, u16) {
+impl PreRender for ListItem {
+   fn pre_render(&mut self, context: &PreRenderContext) -> u16 {
        // Set alternating styles
        if context.index % 2 == 0 {
            self.style = Style::default().bg(Color::Rgb(28, 28, 32));
@@ -59,7 +59,7 @@ impl ListWidget for ListItem {
        // Example: set main axis size to 1
        let main_axis_size = 1;
 
-       (self, main_axis_size)
+       main_axis_size
    }
 }
 
@@ -85,10 +85,10 @@ For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-
 
 #### Simple list with alternating colors
 
-![](examples/simple.gif?v=1)
+![](examples/tapes/simple.gif?v=1)
 
 #### Vertically and horizontally scrollable
 
-![](examples/demo.gif?v=1)
+![](examples/tapes/demo.gif?v=1)
 
 License: MIT

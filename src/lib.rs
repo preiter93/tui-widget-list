@@ -41,7 +41,7 @@
 //! }
 //!
 //! impl PreRender for ListItem {
-//!    fn pre_render(mut self, context: &PreRenderContext) -> (Self, u16) {
+//!    fn pre_render(&mut self, context: &PreRenderContext) -> u16 {
 //!        // Set alternating styles
 //!        if context.index % 2 == 0 {
 //!            self.style = Style::default().bg(Color::Rgb(28, 28, 32));
@@ -59,7 +59,7 @@
 //!        // Example: set main axis size to 1
 //!        let main_axis_size = 1;
 //!
-//!        (self, main_axis_size)
+//!        main_axis_size
 //!    }
 //! }
 //!
@@ -85,11 +85,11 @@
 //!
 //! ### Simple list with alternating colors
 //!
-//!![](examples/simple.gif?v=1)
+//!![](examples/tapes/simple.gif?v=1)
 //!
 //! ### Vertically and horizontally scrollable
 //!
-//!![](examples/demo.gif?v=1)
+//!![](examples/tapes/demo.gif?v=1)
 pub mod state;
 pub mod traits;
 pub mod traits_deprecated;

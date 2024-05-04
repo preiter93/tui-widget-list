@@ -22,10 +22,7 @@ name = "simple"
 name = "simple_deprecated"
 
 [[example]]
-name = "paragraph"
-
-[[example]]
-name = "mixed"
+name = "blocks"
 
 [[example]]
 name = "demo"
