@@ -1,4 +1,4 @@
-# A versatile widget list for Ratatui
+## A versatile widget list for Ratatui
 
 <div align="center">
 
@@ -34,26 +34,33 @@ use tui_widget_list::{List, ListState, ListWidget, RenderContext};
 pub struct ListItem {
     text: String,
     style: Style,
-    height: u16,
 }
 
 impl ListItem {
-    pub fn new<T: Into<String>>(text: T, height: u16) -> Self {
+    pub fn new<T: Into<String>>(text: T) -> Self {
         Self {
             text: text.into(),
             style: Style::default(),
-            height,
         }
     }
 }
 
 impl ListWidget for ListItem {
    fn pre_render(mut self, context: &RenderContext) -> (Self, u16) {
-       if context.is_selected {
-           self.style = self.style.reversed();
+       // Set alternating styles
+       if context.index % 2 == 0 {
+           self.style = Style::default().bg(Color::Rgb(28, 28, 32));
+       } else {
+           self.style = Style::default().bg(Color::Rgb(0, 0, 0));
        }
 
-       let main_axis_size = self.height;
+       // Highlight the selected widget
+       if context.is_selected {
+           self.style = Style::default().bg(Color::Rgb(251, 155, 100));
+       };
+
+       // Example: set main axis size to 1
+       let main_axis_size = 1;
 
        (self, main_axis_size)
    }
@@ -69,8 +76,8 @@ impl Widget for ListItem {
 
 pub fn render(f: &mut Frame) {
     let list = List::new(vec![
-        ListItem::new("hello", 1),
-        ListItem::new("world", 2),
+        ListItem::new("1"),
+        ListItem::new("2"),
     ]);
     let mut state = ListState::default();
     f.render_stateful_widget(list, f.size(), &mut state);
@@ -78,6 +85,14 @@ pub fn render(f: &mut Frame) {
 ```
 
 For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
+
+### Demos
+
+#### Simple list with alternating colors
+
+![](examples/simple.gif?v=1)
+
+#### Vertically and horizontally scrollable
 
 ![](examples/demo.gif?v=1)
 
