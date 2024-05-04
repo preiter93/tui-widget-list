@@ -23,10 +23,10 @@ pub trait ListWidget: Widget {
     ///
     ///```ignore
     /// use ratatui::prelude::*;
-    /// use tui_widget_list::{RenderContext, ListWidget};
+    /// use tui_widget_list::{PreRenderContext, ListWidget};
     ///
     /// impl ListWidget for MyWidget {
-    ///     fn pre_render(self, context: &RenderContext) -> (Self, u16) {
+    ///     fn pre_render(self, context: &PreRenderContext) -> (Self, u16) {
     ///         // Modify the widget based on the selection state
     ///         if context.is_selected {
     ///             self.style = self.style.reversed();
@@ -39,7 +39,7 @@ pub trait ListWidget: Widget {
     ///     }
     /// }
     /// ```
-    fn pre_render(self, context: &RenderContext) -> (Self, u16)
+    fn pre_render(self, context: &PreRenderContext) -> (Self, u16)
     where
         Self: Sized;
 }
@@ -48,7 +48,7 @@ pub trait ListWidget: Widget {
 ///
 /// It provides a set of information that can be used from [`ListableWidget::on_render`].
 #[derive(Debug, Clone)]
-pub struct RenderContext {
+pub struct PreRenderContext {
     /// Indicates whether the widget is selected.
     pub is_selected: bool,
 

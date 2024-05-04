@@ -8,7 +8,7 @@ use ratatui::{
     widgets::Widget,
 };
 use std::{error::Error, io};
-use tui_widget_list::{List, ListState, ListWidget, RenderContext};
+use tui_widget_list::{List, ListState, ListWidget, PreRenderContext};
 
 /// A simple list text item.
 #[derive(Debug, Clone)]
@@ -56,7 +56,7 @@ impl<'a> ListItem<'a> {
 }
 
 impl ListWidget for ListItem<'_> {
-    fn pre_render(mut self, context: &RenderContext) -> (Self, u16) {
+    fn pre_render(mut self, context: &PreRenderContext) -> (Self, u16) {
         if context.index % 2 == 0 {
             self.style = Style::default().bg(Color::Rgb(28, 28, 32));
         } else {
