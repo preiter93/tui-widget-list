@@ -22,12 +22,7 @@
 //!
 //! ## Example
 //! ```
-//! use ratatui::buffer::Buffer;
-//! use ratatui::layout::Rect;
-//! use ratatui::style::{Color, Style, Stylize};
-//! use ratatui::text::Text;
-//! use ratatui::widgets::{Paragraph, Widget};
-//! use ratatui::Frame;
+//! use ratatui::prelude::*;
 //! use tui_widget_list::{List, ListState, ListWidget, RenderContext};
 //!
 //! #[derive(Debug, Clone)]
@@ -56,7 +51,9 @@
 //!
 //!        // Highlight the selected widget
 //!        if context.is_selected {
-//!            self.style = Style::default().bg(Color::Rgb(251, 155, 100));
+//!            self.style = Style::default()
+//!                .bg(Color::Rgb(255, 153, 0))
+//!                .fg(Color::Rgb(28, 28, 32));
 //!        };
 //!
 //!        // Example: set main axis size to 1
@@ -68,16 +65,14 @@
 //!
 //! impl Widget for ListItem {
 //!     fn render(self, area: Rect, buf: &mut Buffer) {
-//!         Paragraph::new(Text::from(self.text))
-//!             .style(self.style)
-//!             .render(area, buf);
+//!         Line::from(self.text).style(self.style).render(area, buf);
 //!     }
 //! }
 //!
 //! pub fn render(f: &mut Frame) {
 //!     let list = List::new(vec![
-//!         ListItem::new("1"),
-//!         ListItem::new("2"),
+//!         ListItem::new("Item 1"),
+//!         ListItem::new("Item 2"),
 //!     ]);
 //!     let mut state = ListState::default();
 //!     f.render_stateful_widget(list, f.size(), &mut state);

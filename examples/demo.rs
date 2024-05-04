@@ -7,7 +7,6 @@ use crossterm::terminal::{
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::prelude::*;
-use ratatui::style::palette::tailwind::SLATE;
 use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph, Widget};
 use ratatui::Terminal;
@@ -20,17 +19,17 @@ pub struct TextContainer {
     title: String,
     content: Vec<String>,
     style: Style,
-    height: u16,
+    selected_color: Color,
     expand: bool,
 }
 
 impl TextContainer {
-    pub fn new(title: &str, content: Vec<String>) -> Self {
+    pub fn new(title: &str, content: Vec<String>, selected_color: Color) -> Self {
         Self {
             title: title.to_string(),
             content,
             style: Style::default(),
-            height: 2,
+            selected_color,
             expand: false,
         }
     }
@@ -39,19 +38,21 @@ impl TextContainer {
 impl ListWidget for TextContainer {
     fn pre_render(mut self, context: &RenderContext) -> (Self, u16) {
         if context.index % 2 == 0 {
-            self.style = THEME.even;
+            self.style = Style::default().bg(Color::Rgb(28, 28, 32));
         } else {
-            self.style = THEME.odd;
+            self.style = Style::default().bg(Color::Rgb(0, 0, 0));
         }
 
+        let mut main_axis_size = 2;
         if context.is_selected {
-            self.style = THEME.selection;
-            self.height = 3 + self.content.len() as u16;
+            self.style = Style::default()
+                .bg(self.selected_color)
+                .fg(Color::Rgb(28, 28, 32));
             self.expand = true;
+            main_axis_size = 3 + self.content.len() as u16;
         }
 
-        let height = self.height;
-        (self, height)
+        (self, main_axis_size)
     }
 }
 
@@ -190,14 +191,6 @@ impl App {
     }
 }
 
-// pub fn ui(f: &mut Frame, app: &mut App) {
-//     use Constraint::{Min, Percentage};
-//     let area = f.size();
-//     let [top, bottom] = Layout::vertical([Percentage(75), Min(0)]).areas(area);
-//
-//     f.render_stateful_widget(demo_text_list(), top, &mut app.text_list_state);
-//     f.render_stateful_widget(demo_color_list(), bottom, &mut app.color_list_state);
-// }
 impl Widget for &mut App {
     fn render(self, area: Rect, buf: &mut Buffer)
     where
@@ -205,26 +198,27 @@ impl Widget for &mut App {
     {
         use Constraint::{Min, Percentage};
         let [top, bottom] = Layout::vertical([Percentage(75), Min(0)]).areas(area);
-        demo_text_list().render(top, buf, &mut self.text_list_state);
-        demo_color_list().render(bottom, buf, &mut self.color_list_state);
+        let colors = demo_colors();
+        let selected_color = match self.color_list_state.selected {
+            Some(index) => colors[index],
+            None => colors[1],
+        };
+
+        let text_list = demo_text_list(selected_color);
+        text_list.render(top, buf, &mut self.text_list_state);
+
+        let color_list = List::new(
+            colors
+                .into_iter()
+                .map(|color| ColoredContainer::new(color))
+                .collect(),
+        )
+        .scroll_direction(ScrollAxis::Horizontal);
+        color_list.render(bottom, buf, &mut self.color_list_state);
     }
 }
 
-pub struct Theme {
-    pub root: Style,
-    pub even: Style,
-    pub odd: Style,
-    pub selection: Style,
-}
-
-pub const THEME: Theme = Theme {
-    root: Style::new().bg(SLATE.c900),
-    even: Style::new().bg(SLATE.c900).fg(SLATE.c50),
-    odd: Style::new().bg(SLATE.c800).fg(SLATE.c50),
-    selection: Style::new().bg(Color::Rgb(30, 129, 176)).fg(SLATE.c50),
-};
-
-fn demo_text_list() -> List<'static, TextContainer> {
+fn demo_text_list(selected_color: Color) -> List<'static, TextContainer> {
     let monday: Vec<String> = vec![
         String::from("1. Exercise for 30 minutes"),
         String::from("2. Work on the project for 2 hours"),
@@ -246,45 +240,43 @@ fn demo_text_list() -> List<'static, TextContainer> {
         String::from("2. Document ideas and refine tasks"),
     ];
     let friday: Vec<String> = vec![
-        String::from("1. Have a one-on-one with a team lead"),
-        String::from("2. Attent demo talk"),
+        String::from("1. Have a recap meeting"),
+        String::from("2. Attent conference talk"),
         String::from("3. Go running for 1 hour"),
     ];
     let saturday: Vec<String> = vec![
-        String::from("1. Work on a personal coding project for 2 hours"),
+        String::from("1. Work on coding project"),
         String::from("2. Read a chapter from a book"),
         String::from("3. Go for a short walk"),
     ];
     let sunday: Vec<String> = vec![
-        String::from("1. Plan and outline goals for the upcoming week"),
-        String::from("2. Attend an online workshop"),
+        String::from("1. Plan upcoming trip"),
+        String::from("2. Read in the park"),
         String::from("3. Go to dinner with friends"),
-        String::from("4. Watch a movie"),
     ];
     List::new(vec![
-        TextContainer::new("Monday", monday),
-        TextContainer::new("Tuesday", tuesday),
-        TextContainer::new("Wednesday", wednesday),
-        TextContainer::new("Thursday", thursday),
-        TextContainer::new("Friday", friday),
-        TextContainer::new("Saturday", saturday),
-        TextContainer::new("Sunday", sunday),
+        TextContainer::new("Monday", monday, selected_color),
+        TextContainer::new("Tuesday", tuesday, selected_color),
+        TextContainer::new("Wednesday", wednesday, selected_color),
+        TextContainer::new("Thursday", thursday, selected_color),
+        TextContainer::new("Friday", friday, selected_color),
+        TextContainer::new("Saturday", saturday, selected_color),
+        TextContainer::new("Sunday", sunday, selected_color),
     ])
-    .style(THEME.root)
+    .style(Style::default())
 }
 
-fn demo_color_list() -> List<'static, ColoredContainer> {
-    List::new(vec![
-        ColoredContainer::new(Color::Rgb(255, 0, 255)), // Neon Pink
-        ColoredContainer::new(Color::Rgb(0, 255, 255)), // Neon Cyan
-        ColoredContainer::new(Color::Rgb(255, 255, 0)), // Neon Yellow
-        ColoredContainer::new(Color::Rgb(102, 255, 102)), // Neon Green
-        ColoredContainer::new(Color::Rgb(255, 102, 102)), // Neon Red
-        ColoredContainer::new(Color::Rgb(153, 51, 255)), // Neon Purple
-        ColoredContainer::new(Color::Rgb(255, 102, 204)), // Neon Magenta
-        ColoredContainer::new(Color::Rgb(255, 255, 102)), // Neon Lemon
-        ColoredContainer::new(Color::Rgb(51, 255, 153)), // Neon Turquoise
-        ColoredContainer::new(Color::Rgb(102, 255, 255)), // Neon Aqua
-    ])
-    .scroll_direction(ScrollAxis::Horizontal)
+fn demo_colors() -> Vec<Color> {
+    vec![
+        Color::Rgb(255, 102, 102), // Neon Red
+        Color::Rgb(255, 153, 0),   // Neon Orange
+        Color::Rgb(255, 204, 0),   // Neon Yellow
+        Color::Rgb(0, 204, 102),   // Neon Green
+        Color::Rgb(0, 204, 255),   // Neon Blue
+        Color::Rgb(102, 51, 255),  // Neon Purple
+        Color::Rgb(255, 51, 204),  // Neon Magenta
+        Color::Rgb(51, 255, 255),  // Neon Cyan
+        Color::Rgb(255, 102, 255), // Neon Pink
+        Color::Rgb(102, 255, 255), // Neon Aqua
+    ]
 }

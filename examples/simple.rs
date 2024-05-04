@@ -64,7 +64,9 @@ impl ListWidget for ListItem<'_> {
         }
         if context.is_selected {
             self.prefix = Some(">>");
-            self.style = Style::default().bg(Color::Rgb(251, 155, 100));
+            self.style = Style::default()
+                .bg(Color::Rgb(255, 153, 0))
+                .fg(Color::Rgb(28, 28, 32));
         };
 
         (self, 1)
