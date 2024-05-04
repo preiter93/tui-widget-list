@@ -81,6 +81,9 @@
 //!
 //! For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
 //!
+//! ## Documentation
+//! [docs.rs](https://docs.rs/tui-widget-list/)
+//!
 //! ## Demos
 //!
 //! ### Simple list with alternating colors

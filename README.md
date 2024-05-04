@@ -81,6 +81,9 @@ pub fn render(f: &mut Frame) {
 
 For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
 
+### Documentation
+[docs.rs](https://docs.rs/tui-widget-list/)
+
 ### Demos
 
 #### Simple list with alternating colors
@@ -90,5 +93,3 @@ For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-
 #### Vertically and horizontally scrollable
 
 ![](examples/tapes/demo.gif?v=1)
-
-License: MIT
