@@ -23,7 +23,7 @@
 //! ## Example
 //! ```
 //! use ratatui::prelude::*;
-//! use tui_widget_list::{List, ListState, ListWidget, RenderContext};
+//! use tui_widget_list::{List, ListState, ListWidget, PreRenderContext};
 //!
 //! #[derive(Debug, Clone)]
 //! pub struct ListItem {
@@ -41,7 +41,7 @@
 //! }
 //!
 //! impl ListWidget for ListItem {
-//!    fn pre_render(mut self, context: &RenderContext) -> (Self, u16) {
+//!    fn pre_render(mut self, context: &PreRenderContext) -> (Self, u16) {
 //!        // Set alternating styles
 //!        if context.index % 2 == 0 {
 //!            self.style = Style::default().bg(Color::Rgb(28, 28, 32));
@@ -96,7 +96,7 @@ pub mod traits_deprecated;
 pub mod widget;
 
 pub use state::ListState;
-pub use traits::{ListWidget, RenderContext};
+pub use traits::{ListWidget, PreRenderContext};
 pub use widget::{List, ScrollAxis};
 
 #[allow(deprecated)]

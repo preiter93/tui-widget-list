@@ -36,7 +36,7 @@ pub trait ListableWidget: Widget {
 
 #[allow(deprecated, clippy::cast_possible_truncation)]
 impl<T: ListableWidget> ListWidget for T {
-    fn pre_render(mut self, context: &crate::RenderContext) -> (Self, u16) {
+    fn pre_render(mut self, context: &crate::PreRenderContext) -> (Self, u16) {
         let main_axis_size = self.size(&context.scroll_axis) as u16;
 
         if context.is_selected {

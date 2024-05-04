@@ -8,7 +8,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Widget},
 };
 use std::{error::Error, io};
-use tui_widget_list::{List, ListState, ListWidget, RenderContext};
+use tui_widget_list::{List, ListState, ListWidget, PreRenderContext};
 
 #[derive(Debug, Clone)]
 pub struct ParagraphItem<'a> {
@@ -35,7 +35,7 @@ impl ParagraphItem<'_> {
 }
 
 impl ListWidget for ParagraphItem<'_> {
-    fn pre_render(mut self, context: &RenderContext) -> (Self, u16) {
+    fn pre_render(mut self, context: &PreRenderContext) -> (Self, u16) {
         if context.is_selected {
             self.paragraph = self.paragraph.style(Style::default().bg(Color::White))
         }

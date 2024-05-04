@@ -5,7 +5,7 @@ use ratatui::{
     widgets::{Block, StatefulWidget, Widget},
 };
 
-use crate::{traits::RenderContext, ListState, ListWidget};
+use crate::{traits::PreRenderContext, ListState, ListWidget};
 
 /// A [`List`] is a widget for Ratatui that can render an arbitrary list of widgets.
 /// It is generic over `T`, where each widget `T` should implement the [`ListableWidget`]
@@ -128,7 +128,7 @@ impl<'a, T: ListWidget> StatefulWidget for List<'a, T> {
         for (index, item) in raw_items.into_iter().enumerate() {
             let highlighted = state.selected().map_or(false, |j| index == j);
 
-            let context = RenderContext {
+            let context = PreRenderContext {
                 cross_axis_size,
                 is_selected: highlighted,
                 scroll_axis,
@@ -261,7 +261,7 @@ mod test {
     }
 
     impl ListWidget for TestItem {
-        fn pre_render(self, context: &RenderContext) -> (Self, u16) {
+        fn pre_render(self, context: &PreRenderContext) -> (Self, u16) {
             let main_axis_size = match context.scroll_axis {
                 ScrollAxis::Vertical => 3,
                 ScrollAxis::Horizontal => 3,
