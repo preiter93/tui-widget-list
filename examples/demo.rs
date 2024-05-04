@@ -7,7 +7,6 @@ use crossterm::terminal::{
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::prelude::*;
-use ratatui::style::palette::tailwind::PURPLE;
 use ratatui::style::palette::tailwind::SLATE;
 use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph, Widget};
@@ -39,6 +38,12 @@ impl TextContainer {
 
 impl ListWidget for TextContainer {
     fn pre_render(mut self, context: &RenderContext) -> (Self, u16) {
+        if context.index % 2 == 0 {
+            self.style = THEME.even;
+        } else {
+            self.style = THEME.odd;
+        }
+
         if context.is_selected {
             self.style = THEME.selection;
             self.height = 3 + self.content.len() as u16;
@@ -207,19 +212,17 @@ impl Widget for &mut App {
 
 pub struct Theme {
     pub root: Style,
-    pub content: Style,
+    pub even: Style,
+    pub odd: Style,
     pub selection: Style,
 }
 
 pub const THEME: Theme = Theme {
-    root: Style::new().bg(DARK_BLUE),
-    content: Style::new().bg(DARK_BLUE).fg(LIGHT_GRAY),
-    selection: Style::new().bg(DARK_PURPLE).fg(LIGHT_GRAY),
+    root: Style::new().bg(SLATE.c900),
+    even: Style::new().bg(SLATE.c900).fg(SLATE.c50),
+    odd: Style::new().bg(SLATE.c800).fg(SLATE.c50),
+    selection: Style::new().bg(Color::Rgb(30, 129, 176)).fg(SLATE.c50),
 };
-
-const DARK_BLUE: Color = SLATE.c900;
-const DARK_PURPLE: Color = PURPLE.c900;
-const LIGHT_GRAY: Color = SLATE.c50;
 
 fn demo_text_list() -> List<'static, TextContainer> {
     let monday: Vec<String> = vec![
@@ -272,16 +275,16 @@ fn demo_text_list() -> List<'static, TextContainer> {
 
 fn demo_color_list() -> List<'static, ColoredContainer> {
     List::new(vec![
-        ColoredContainer::new(Color::Rgb(255, 0, 0)),     // Red
-        ColoredContainer::new(Color::Rgb(255, 165, 0)),   // Orange
-        ColoredContainer::new(Color::Rgb(255, 255, 0)),   // Yellow
-        ColoredContainer::new(Color::Rgb(0, 128, 0)),     // Green
-        ColoredContainer::new(Color::Rgb(0, 0, 255)),     // Blue
-        ColoredContainer::new(Color::Rgb(75, 0, 130)),    // Indigo
-        ColoredContainer::new(Color::Rgb(128, 0, 128)),   // Violet
-        ColoredContainer::new(Color::Rgb(255, 20, 147)),  // Pink
-        ColoredContainer::new(Color::Rgb(255, 192, 203)), // Light Pink
-        ColoredContainer::new(Color::Rgb(255, 0, 255)),   // Magenta
+        ColoredContainer::new(Color::Rgb(255, 0, 255)), // Neon Pink
+        ColoredContainer::new(Color::Rgb(0, 255, 255)), // Neon Cyan
+        ColoredContainer::new(Color::Rgb(255, 255, 0)), // Neon Yellow
+        ColoredContainer::new(Color::Rgb(102, 255, 102)), // Neon Green
+        ColoredContainer::new(Color::Rgb(255, 102, 102)), // Neon Red
+        ColoredContainer::new(Color::Rgb(153, 51, 255)), // Neon Purple
+        ColoredContainer::new(Color::Rgb(255, 102, 204)), // Neon Magenta
+        ColoredContainer::new(Color::Rgb(255, 255, 102)), // Neon Lemon
+        ColoredContainer::new(Color::Rgb(51, 255, 153)), // Neon Turquoise
+        ColoredContainer::new(Color::Rgb(102, 255, 255)), // Neon Aqua
     ])
     .scroll_direction(ScrollAxis::Horizontal)
 }
