@@ -12,7 +12,7 @@ use ratatui::widgets::{Block, BorderType, Borders, Paragraph, Widget};
 use ratatui::Terminal;
 use std::error::Error;
 use std::io::{stdout, Stdout};
-use tui_widget_list::{List, ListState, ListWidget, PreRenderContext, ScrollAxis};
+use tui_widget_list::{List, ListState, PreRender, PreRenderContext, ScrollAxis};
 
 #[derive(Debug, Clone)]
 pub struct TextContainer {
@@ -35,7 +35,7 @@ impl TextContainer {
     }
 }
 
-impl ListWidget for TextContainer {
+impl PreRender for TextContainer {
     fn pre_render(mut self, context: &PreRenderContext) -> (Self, u16) {
         if context.index % 2 == 0 {
             self.style = Style::default().bg(Color::Rgb(28, 28, 32));
@@ -100,7 +100,7 @@ impl Widget for ColoredContainer {
             .render(area, buf);
     }
 }
-impl ListWidget for ColoredContainer {
+impl PreRender for ColoredContainer {
     fn pre_render(mut self, context: &PreRenderContext) -> (Self, u16) {
         if context.is_selected {
             self.border_style = Style::default().fg(Color::Black);
