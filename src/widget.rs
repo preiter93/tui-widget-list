@@ -125,13 +125,14 @@ impl<'a, T: ListWidget> StatefulWidget for List<'a, T> {
 
         // Call the user provided callback to modify the items based on render info
         let mut items = Vec::new();
-        for (i, item) in raw_items.into_iter().enumerate() {
-            let highlighted = state.selected().map_or(false, |j| i == j);
+        for (index, item) in raw_items.into_iter().enumerate() {
+            let highlighted = state.selected().map_or(false, |j| index == j);
 
             let context = RenderContext {
                 cross_axis_size,
                 is_selected: highlighted,
                 scroll_axis,
+                index,
             };
 
             let (item, main_axis_size) = item.pre_render(&context);
