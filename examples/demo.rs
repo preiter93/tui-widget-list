@@ -36,7 +36,7 @@ impl TextContainer {
 }
 
 impl PreRender for TextContainer {
-    fn pre_render(mut self, context: &PreRenderContext) -> (Self, u16) {
+    fn pre_render(&mut self, context: &PreRenderContext) -> u16 {
         if context.index % 2 == 0 {
             self.style = Style::default().bg(Color::Rgb(28, 28, 32));
         } else {
@@ -52,7 +52,7 @@ impl PreRender for TextContainer {
             main_axis_size = 3 + self.content.len() as u16;
         }
 
-        (self, main_axis_size)
+        main_axis_size
     }
 }
 
@@ -101,13 +101,13 @@ impl Widget for ColoredContainer {
     }
 }
 impl PreRender for ColoredContainer {
-    fn pre_render(mut self, context: &PreRenderContext) -> (Self, u16) {
+    fn pre_render(&mut self, context: &PreRenderContext) -> u16 {
         if context.is_selected {
             self.border_style = Style::default().fg(Color::Black);
             self.border_type = BorderType::Thick;
         }
 
-        (self, 15)
+        15
     }
 }
 

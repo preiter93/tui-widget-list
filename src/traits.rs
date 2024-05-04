@@ -37,9 +37,7 @@ pub trait PreRender: Widget {
     ///     }
     /// }
     /// ```
-    fn pre_render(&mut self, context: &PreRenderContext) -> u16
-    where
-        Self: Sized;
+    fn pre_render(&mut self, context: &PreRenderContext) -> u16;
 }
 
 /// The context provided during rendering.
