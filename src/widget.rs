@@ -323,16 +323,28 @@ mod test {
     }
 
     #[test]
-    fn empty() {
+    fn empty_list() {
         // given
-        let (area, mut buf, _, mut state) = init(3);
+        let (area, mut buf, _, mut state) = init(2);
         let list = List::new(Vec::<TestItem>::new());
 
         // when
         list.render(area, &mut buf, &mut state);
 
         // then
-        assert_buffer_eq(buf, Buffer::with_lines(vec!["     ", "     ", "     "]))
+        assert_buffer_eq(buf, Buffer::with_lines(vec!["     ", "     "]))
+    }
+
+    #[test]
+    fn zero_size() {
+        // given
+        let (area, mut buf, list, mut state) = init(0);
+
+        // when
+        list.render(area, &mut buf, &mut state);
+
+        // then
+        assert_buffer_eq(buf, Buffer::empty(area))
     }
 
     #[test]
