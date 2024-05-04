@@ -134,43 +134,13 @@ pub struct App<'a> {
 
 impl<'a> App<'a> {
     pub fn new() -> App<'a> {
-        let items = vec![
-            ListItem::new(Line::from("Item 0")),
-            ListItem::new(Line::from("Item 1")),
-            ListItem::new(Line::from("Item 2")),
-            ListItem::new(Line::from("Item 3")),
-            ListItem::new(Line::from("Item 4")),
-            ListItem::new(Line::from("Item 5")),
-            ListItem::new(Line::from("Item 6")),
-            ListItem::new(Line::from("Item 7")),
-            ListItem::new(Line::from("Item 8")),
-            ListItem::new(Line::from("Item 9")),
-            ListItem::new(Line::from("Item 10")),
-            ListItem::new(Line::from("Item 11")),
-            ListItem::new(Line::from("Item 12")),
-            ListItem::new(Line::from("Item 13")),
-            ListItem::new(Line::from("Item 14")),
-            ListItem::new(Line::from("Item 15")),
-            ListItem::new(Line::from("Item 16")),
-            ListItem::new(Line::from("Item 17")),
-            ListItem::new(Line::from("Item 18")),
-            ListItem::new(Line::from("Item 19")),
-            ListItem::new(Line::from("Item 20")),
-            ListItem::new(Line::from("Item 21")),
-            ListItem::new(Line::from("Item 22")),
-            ListItem::new(Line::from("Item 23")),
-            ListItem::new(Line::from("Item 24")),
-            ListItem::new(Line::from("Item 25")),
-            ListItem::new(Line::from("Item 26")),
-            ListItem::new(Line::from("Item 27")),
-            ListItem::new(Line::from("Item 28")),
-            ListItem::new(Line::from("Item 29")),
-        ];
+        let items: Vec<_> = (0..30)
+            .map(|index| ListItem::new(Line::from(format!("Item {index}"))))
+            .collect();
+        let list = List::from(items);
         let state = ListState::default();
-        App {
-            list: items.into(),
-            state,
-        }
+
+        App { list, state }
     }
 }
 
