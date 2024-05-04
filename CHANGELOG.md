@@ -21,6 +21,8 @@ fn pre_render(mut self, context: &crate::RenderContext) -> (Self, u16) {
     (self, main_axis_size)
 }
 ```
+- Deprecated ListState::selected(). Use the struct field selected instead.
+- Updated examples
 
 Released
 --------

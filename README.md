@@ -7,7 +7,7 @@
 </div>
 
 This crate provides a stateful widget [`List`] implementation for `Ratatui`, enabling listing
-widgets that implement the [`ListableWidget`] trait. The associated [`ListState`], offers functionalities
+widgets that implement the [`ListWidget`] trait. The associated [`ListState`], offers functionalities
 such as navigating to the next and previous items.
 Additionally, the lists support both horizontal and vertical scrolling.
 

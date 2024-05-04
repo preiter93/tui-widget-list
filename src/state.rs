@@ -40,6 +40,7 @@ impl ListState {
 
     /// Returns the index of the currently selected item, if any.
     #[must_use]
+    #[deprecated(since = "0.9.0", note = "Use ListState's selected field instead.")]
     pub fn selected(&self) -> Option<usize> {
         self.selected
     }
@@ -67,7 +68,7 @@ impl ListState {
         if self.num_elements == 0 {
             return;
         }
-        let i = match self.selected() {
+        let i = match self.selected {
             Some(i) => {
                 if i >= self.num_elements - 1 {
                     if self.circular {
@@ -99,7 +100,7 @@ impl ListState {
         if self.num_elements == 0 {
             return;
         }
-        let i = match self.selected() {
+        let i = match self.selected {
             Some(i) => {
                 if i == 0 {
                     if self.circular {
