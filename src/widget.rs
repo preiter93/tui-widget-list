@@ -5,7 +5,7 @@ use ratatui::{
     widgets::{Block, StatefulWidget, Widget},
 };
 
-use crate::{traits::PreRenderContext, ListState, PreRender};
+use crate::{traits::PreRenderContext, utils::update_view_port, ListState, PreRender};
 
 /// A [`List`] is a widget for Ratatui that can render an arbitrary list of widgets.
 /// It is generic over `T`, where each widget `T` should implement the [`PreRender`]
@@ -134,15 +134,13 @@ impl<'a, T: PreRender> StatefulWidget for List<'a, T> {
 
         // Determine which widgets to show on the viewport and how much space they
         // get assigned to.
-        let available_main_axis_sizes_viewport =
-            state.update_view_port(&main_axis_sizes, scroll_axis_size);
+        let viewport_layouts = update_view_port(state, &main_axis_sizes, scroll_axis_size);
 
         // Drain out elements that are shown on the view port from the vector of
         // all elements.
-        let num_items_viewport = available_main_axis_sizes_viewport.len();
+        let num_items_viewport = viewport_layouts.len();
         let (start, end) = (state.offset, num_items_viewport + state.offset);
         let items_viewport = items.drain(start..end);
-        let main_axis_sizes_viewport = main_axis_sizes.drain(start..end);
 
         // The starting coordinates of the current item
         let (mut scroll_axis_pos, cross_axis_pos) = match scroll_axis {
@@ -151,69 +149,57 @@ impl<'a, T: PreRender> StatefulWidget for List<'a, T> {
         };
 
         // Render the widgets on the viewport
-        for (i, (available_main_axis_size, (main_axis_size, item))) in
-            available_main_axis_sizes_viewport
-                .into_iter()
-                .zip(main_axis_sizes_viewport.zip(items_viewport))
-                .enumerate()
+        for (i, (viewport_layout, item)) in
+            viewport_layouts.into_iter().zip(items_viewport).enumerate()
         {
             let area = match scroll_axis {
                 ScrollAxis::Vertical => Rect::new(
                     cross_axis_pos,
                     scroll_axis_pos,
                     cross_axis_size,
-                    available_main_axis_size,
+                    viewport_layout.size,
                 ),
                 ScrollAxis::Horizontal => Rect::new(
                     scroll_axis_pos,
                     cross_axis_pos,
-                    available_main_axis_size,
+                    viewport_layout.size,
                     cross_axis_size,
                 ),
             };
 
             // Check if the item needs to be truncated
-            if available_main_axis_size < main_axis_size {
-                // Determine whether to truncate from the top or the bottom
-                let truncate_top = i == 0 && num_items_viewport > 1;
-                render_truncated(
-                    item,
-                    area,
-                    buf,
-                    main_axis_size,
-                    scroll_axis,
-                    truncate_top,
-                    style,
-                );
+            if viewport_layout.truncated_by > 0 {
+                let trunc_top = i == 0 && num_items_viewport > 1;
+                let tot_size = viewport_layout.size + viewport_layout.truncated_by;
+                render_trunc(item, area, buf, tot_size, scroll_axis, trunc_top, style);
             } else {
                 item.render(area, buf);
             }
 
-            scroll_axis_pos += available_main_axis_size;
+            scroll_axis_pos += viewport_layout.size;
         }
     }
 }
 
 /// Renders a listable widget within a specified area of a buffer, potentially truncating the widget content based on scrolling direction.
 /// `truncate_top` indicates whether to truncate the content from the top or bottom.
-fn render_truncated<T: Widget>(
+fn render_trunc<T: Widget>(
     item: T,
-    area: Rect,
+    available_area: Rect,
     buf: &mut Buffer,
-    main_axis_size: u16,
+    total_size: u16,
     scroll_axis: ScrollAxis,
     truncate_top: bool,
     style: Style,
 ) {
-    let item_size = main_axis_size;
     // Create an intermediate buffer for rendering the truncated element
     let (width, height) = match scroll_axis {
-        ScrollAxis::Vertical => (area.width, item_size),
-        ScrollAxis::Horizontal => (item_size, area.height),
+        ScrollAxis::Vertical => (available_area.width, total_size),
+        ScrollAxis::Horizontal => (total_size, available_area.height),
     };
     let mut hidden_buffer = Buffer::empty(Rect {
-        x: area.left(),
-        y: area.top(),
+        x: available_area.left(),
+        y: available_area.top(),
         width,
         height,
     });
@@ -224,26 +210,26 @@ fn render_truncated<T: Widget>(
     match scroll_axis {
         ScrollAxis::Vertical => {
             let offset = if truncate_top {
-                item_size.saturating_sub(area.height)
+                total_size.saturating_sub(available_area.height)
             } else {
                 0
             };
-            for y in area.top()..area.bottom() {
+            for y in available_area.top()..available_area.bottom() {
                 let y_off = y + offset;
-                for x in area.left()..area.right() {
+                for x in available_area.left()..available_area.right() {
                     *buf.get_mut(x, y) = hidden_buffer.get(x, y_off).clone();
                 }
             }
         }
         ScrollAxis::Horizontal => {
             let offset = if truncate_top {
-                item_size.saturating_sub(area.width)
+                total_size.saturating_sub(available_area.width)
             } else {
                 0
             };
-            for x in area.left()..area.right() {
+            for x in available_area.left()..available_area.right() {
                 let x_off = x + offset;
-                for y in area.top()..area.bottom() {
+                for y in available_area.top()..available_area.bottom() {
                     *buf.get_mut(x, y) = hidden_buffer.get(x_off, y).clone();
                 }
             }
