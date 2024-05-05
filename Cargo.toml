@@ -22,7 +22,10 @@ name = "simple"
 name = "simple_deprecated"
 
 [[example]]
-name = "blocks"
+name = "long"
+
+[[example]]
+name = "var_sizes"
 
 [[example]]
 name = "demo"

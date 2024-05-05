@@ -79,6 +79,13 @@
 //! }
 //! ```
 //!
+//! ## Long lists
+//!
+//! `tui-widget-list` also allows to render long lists with thousands of items efficiently.
+//! Check out the [example](https://github.com/preiter93/tui-widget-list/tree/main/examples/long.rs)
+//! for demonstration. Note that the key is to create the items only once and implement `Widget` and
+//! `PreRender` on the references to the list item.
+//!
 //! For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
 //!
 //! ## Documentation
