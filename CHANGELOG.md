@@ -22,6 +22,7 @@ fn pre_render(&mut self, context: &PreRenderContext) -> u16 {
 ```
 - Deprecated ListState::selected(). Use the struct field selected instead.
 - Updated examples
+- Add example for long lists
 
 Released
 --------

@@ -1,3 +1,8 @@
+//! This example showcases a list with many widgets.
+//!
+//! Note that we do not implement `Widget` and `PreRender` on the ListItem itself,
+//! but on its reference. This avoids copying the values in each frame and makes
+//! rendering more performant.
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -8,13 +13,15 @@ use tui_widget_list::{List, ListState, PreRender, PreRenderContext};
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
-impl Widget for ListItem<'_> {
+/// Implement `Widget` on the mutable reference to ListItem
+impl Widget for &mut ListItem<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         self.clone().get_line().render(area, buf);
     }
 }
 
-impl PreRender for ListItem<'_> {
+/// Implement `PreRender` on the mutable reference to ListItem
+impl PreRender for &mut ListItem<'_> {
     fn pre_render(&mut self, context: &PreRenderContext) -> u16 {
         if context.index % 2 == 0 {
             self.style = Style::default().bg(Color::Rgb(28, 28, 32));
@@ -27,6 +34,8 @@ impl PreRender for ListItem<'_> {
             self.style = Style::default()
                 .bg(Color::Rgb(255, 153, 0))
                 .fg(Color::Rgb(28, 28, 32));
+        } else {
+            self.prefix = None;
         };
 
         1
@@ -58,13 +67,15 @@ fn main() -> Result<()> {
 }
 
 pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
-    let items: Vec<_> = (0..30)
+    // Create the widgets only once
+    let mut items: Vec<_> = (0..300000)
         .map(|index| ListItem::new(Line::from(format!("Item {index}"))))
         .collect();
-    let list = List::from(items);
 
     loop {
-        terminal.draw(|f| ui(f, &mut app, list.clone()))?;
+        // Then pass them by reference
+        let list = List::from(items.iter_mut().collect::<Vec<_>>());
+        terminal.draw(|f| ui(f, &mut app, list))?;
 
         if let Event::Key(key) = event::read()? {
             if key.kind == KeyEventKind::Press {
@@ -79,7 +90,7 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Resu
     }
 }
 
-pub fn ui(f: &mut Frame, app: &mut App, list: List<ListItem>) {
+pub fn ui(f: &mut Frame, app: &mut App, list: List<&mut ListItem>) {
     f.render_stateful_widget(list, f.size(), &mut app.state);
 }
 
