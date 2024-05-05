@@ -1,4 +1,6 @@
-use crate::ListState;
+use std::collections::HashMap;
+
+use crate::{ListState, PreRender, PreRenderContext, ScrollAxis};
 
 /// This method checks how to layout the items on the viewport and if necessary
 /// updates the offset of the first item on the screen.
@@ -10,10 +12,12 @@ use crate::ListState;
 /// # Returns
 /// - The sizes along the main axis of the elements on the viewport,
 ///   and how much they are being truncated to fit on the viewport.
-pub(crate) fn update_view_port(
+pub(crate) fn layout_on_viewport<T: PreRender>(
     state: &mut ListState,
-    main_axis_sizes: &[u16],
-    max_height: u16,
+    widgets: &mut [T],
+    total_main_axis_size: u16,
+    cross_axis_size: u16,
+    scroll_axis: ScrollAxis,
 ) -> Vec<ViewportLayout> {
     // The items heights on the viewport will be calculated on the fly.
     let mut viewport_layouts: Vec<ViewportLayout> = Vec::new();
@@ -27,36 +31,43 @@ pub(crate) fn update_view_port(
         state.offset = selected;
     }
 
+    let mut main_axis_size_cache: HashMap<usize, u16> = HashMap::new();
+
     // Check if the selected item is in the current view
-    let (mut y, mut i) = (0, state.offset);
+    let (mut y, mut index) = (0, state.offset);
     let mut found = false;
-    for main_axis_size in main_axis_sizes.iter().skip(state.offset) {
+    for widget in widgets.iter_mut().skip(state.offset) {
+        // Get the main axis size of the widget.
+        let is_selected = state.selected.map_or(false, |j| index == j);
+        let context = PreRenderContext::new(is_selected, cross_axis_size, scroll_axis, index);
+
+        let main_axis_size = widget.pre_render(&context);
+        main_axis_size_cache.insert(index, main_axis_size);
+
         // Out of bounds
-        if y + main_axis_size > max_height {
+        if y + main_axis_size > total_main_axis_size {
             // Truncate the last widget
-            let dy = max_height - y;
+            let dy = total_main_axis_size - y;
             if dy > 0 {
-                let vl = ViewportLayout {
-                    size: dy,
+                viewport_layouts.push(ViewportLayout {
+                    main_axis_size: dy,
                     truncated_by: main_axis_size.saturating_sub(dy),
-                };
-                viewport_layouts.push(vl);
+                });
             }
             break;
         }
         // Selected value is within view/bounds, so we are good
         // but we keep iterating to collect the view heights
-        if selected == i {
+        if selected == index {
             found = true;
         }
         y += main_axis_size;
-        i += 1;
+        index += 1;
 
-        let vl = ViewportLayout {
-            size: *main_axis_size,
+        viewport_layouts.push(ViewportLayout {
+            main_axis_size,
             truncated_by: 0,
-        };
-        viewport_layouts.push(vl);
+        });
     }
     if found {
         return viewport_layouts;
@@ -65,54 +76,89 @@ pub(crate) fn update_view_port(
     // The selected item is out of bounds. We iterate backwards from the selected
     // item and determine the first widget that still fits on the screen.
     viewport_layouts.clear();
-    let (mut y, mut i) = (0, selected);
-    let last = main_axis_sizes.len().saturating_sub(1);
-    for main_axis_size in main_axis_sizes
-        .iter()
-        .rev()
-        .skip(last.saturating_sub(selected))
-    {
+    let (mut y, mut index) = (0, selected);
+    let last = widgets.len().saturating_sub(1);
+    for widget in widgets.iter_mut().rev().skip(last.saturating_sub(selected)) {
+        // Get the main axis size of the widget. At this point we might have already
+        // calculated it, so check the cache first.
+        let main_axis_size = if let Some(main_axis_size) = main_axis_size_cache.remove(&index) {
+            main_axis_size
+        } else {
+            let is_selected = state.selected.map_or(false, |j| index == j);
+            let context = PreRenderContext::new(is_selected, cross_axis_size, scroll_axis, index);
+
+            widget.pre_render(&context)
+        };
+
         // Truncate the first widget
-        if y + main_axis_size >= max_height {
-            let dy = max_height - y;
-            let vl = ViewportLayout {
-                size: dy,
-                truncated_by: main_axis_size.saturating_sub(dy),
-            };
-            viewport_layouts.insert(0, vl);
-            state.offset = i;
+        if y + main_axis_size >= total_main_axis_size {
+            let dy = total_main_axis_size - y;
+            viewport_layouts.insert(
+                0,
+                ViewportLayout {
+                    main_axis_size: dy,
+                    truncated_by: main_axis_size.saturating_sub(dy),
+                },
+            );
+            state.offset = index;
             break;
         }
 
-        let vl = ViewportLayout {
-            size: *main_axis_size,
-            truncated_by: 0,
-        };
-        viewport_layouts.insert(0, vl);
+        viewport_layouts.insert(
+            0,
+            ViewportLayout {
+                main_axis_size,
+                truncated_by: 0,
+            },
+        );
 
         y += main_axis_size;
-        i -= 1;
+        index -= 1;
     }
     viewport_layouts
 }
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
 pub(crate) struct ViewportLayout {
-    pub(crate) size: u16,
+    pub(crate) main_axis_size: u16,
     pub(crate) truncated_by: u16,
 }
 
 #[cfg(test)]
 mod tests {
+    use ratatui::{
+        prelude::*,
+        widgets::{Block, Borders},
+    };
+
     use super::*;
+
+    struct TestItem {
+        main_axis_size: u16,
+    }
+
+    impl Widget for TestItem {
+        fn render(self, area: Rect, buf: &mut Buffer)
+        where
+            Self: Sized,
+        {
+            Block::default().borders(Borders::ALL).render(area, buf);
+        }
+    }
+
+    impl PreRender for TestItem {
+        fn pre_render(&mut self, _context: &PreRenderContext) -> u16 {
+            self.main_axis_size
+        }
+    }
 
     macro_rules! update_view_port_tests {
         ($($name:ident:
         [
            $given_offset:expr,
            $given_selected:expr,
-           $given_heights:expr,
-           $given_max_height:expr
+           $given_sizes:expr,
+           $given_max_size:expr
         ],
         [
            $expected_offset:expr,
@@ -125,16 +171,23 @@ mod tests {
                 let mut given_state = ListState {
                     offset: $given_offset,
                     selected: $given_selected,
-                    num_elements: $given_heights.len(),
+                    num_elements: $given_sizes.len(),
                     circular: true,
                 };
 
                 //when
-                let layouts = update_view_port(&mut given_state, &$given_heights, $given_max_height);
+                let mut widgets: Vec<TestItem> = $given_sizes
+                    .into_iter()
+                    .map(|main_axis_size| TestItem {
+                        main_axis_size: main_axis_size as u16,
+                    })
+                    .collect();
+                let scroll_axis = ScrollAxis::default();
+                let layouts = layout_on_viewport(&mut given_state, &mut widgets, $given_max_size, 0, scroll_axis);
                 let offset = given_state.offset;
 
                 // then
-                let main_axis_sizes: Vec<u16> = layouts.iter().map(|x| x.size).collect();
+                let main_axis_sizes: Vec<u16> = layouts.iter().map(|x| x.main_axis_size).collect();
                 assert_eq!(offset, $expected_offset);
                 assert_eq!(main_axis_sizes, $expected_sizes);
             }

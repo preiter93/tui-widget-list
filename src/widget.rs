@@ -5,7 +5,7 @@ use ratatui::{
     widgets::{Block, StatefulWidget, Widget},
 };
 
-use crate::{traits::PreRenderContext, utils::update_view_port, ListState, PreRender};
+use crate::{utils::layout_on_viewport, ListState, PreRender};
 
 /// A [`List`] is a widget for Ratatui that can render an arbitrary list of widgets.
 /// It is generic over `T`, where each widget `T` should implement the [`PreRender`]
@@ -111,30 +111,20 @@ impl<'a, T: PreRender> StatefulWidget for List<'a, T> {
         }
 
         // Set the dimension along the scroll axis and the cross axis
-        let (scroll_axis_size, cross_axis_size) = match scroll_axis {
+        let (total_main_axis_size, cross_axis_size) = match scroll_axis {
             ScrollAxis::Vertical => (area.height, area.width),
             ScrollAxis::Horizontal => (area.width, area.height),
         };
 
-        // Call the user provided callback to modify the items based on render info
-        let mut main_axis_sizes = Vec::new();
-        for (index, item) in items.iter_mut().enumerate() {
-            let highlighted = state.selected.map_or(false, |j| index == j);
-
-            let context = PreRenderContext {
-                cross_axis_size,
-                is_selected: highlighted,
-                scroll_axis,
-                index,
-            };
-
-            let main_axis_size = item.pre_render(&context);
-            main_axis_sizes.push(main_axis_size);
-        }
-
         // Determine which widgets to show on the viewport and how much space they
         // get assigned to.
-        let viewport_layouts = update_view_port(state, &main_axis_sizes, scroll_axis_size);
+        let viewport_layouts = layout_on_viewport(
+            state,
+            &mut items,
+            total_main_axis_size,
+            cross_axis_size,
+            scroll_axis,
+        );
 
         // Drain out elements that are shown on the view port from the vector of
         // all elements.
@@ -157,12 +147,12 @@ impl<'a, T: PreRender> StatefulWidget for List<'a, T> {
                     cross_axis_pos,
                     scroll_axis_pos,
                     cross_axis_size,
-                    viewport_layout.size,
+                    viewport_layout.main_axis_size,
                 ),
                 ScrollAxis::Horizontal => Rect::new(
                     scroll_axis_pos,
                     cross_axis_pos,
-                    viewport_layout.size,
+                    viewport_layout.main_axis_size,
                     cross_axis_size,
                 ),
             };
@@ -170,13 +160,13 @@ impl<'a, T: PreRender> StatefulWidget for List<'a, T> {
             // Check if the item needs to be truncated
             if viewport_layout.truncated_by > 0 {
                 let trunc_top = i == 0 && num_items_viewport > 1;
-                let tot_size = viewport_layout.size + viewport_layout.truncated_by;
+                let tot_size = viewport_layout.main_axis_size + viewport_layout.truncated_by;
                 render_trunc(item, area, buf, tot_size, scroll_axis, trunc_top, style);
             } else {
                 item.render(area, buf);
             }
 
-            scroll_axis_pos += viewport_layout.size;
+            scroll_axis_pos += viewport_layout.main_axis_size;
         }
     }
 }
@@ -250,6 +240,8 @@ pub enum ScrollAxis {
 
 #[cfg(test)]
 mod test {
+    use crate::PreRenderContext;
+
     use super::*;
     use ratatui::widgets::Borders;
 

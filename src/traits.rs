@@ -59,3 +59,19 @@ pub struct PreRenderContext {
     /// The index of the widget in the list.
     pub index: usize,
 }
+
+impl PreRenderContext {
+    pub(crate) fn new(
+        is_selected: bool,
+        cross_axis_size: u16,
+        scroll_axis: ScrollAxis,
+        index: usize,
+    ) -> Self {
+        Self {
+            is_selected,
+            cross_axis_size,
+            scroll_axis,
+            index,
+        }
+    }
+}
