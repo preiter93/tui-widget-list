@@ -2,29 +2,76 @@ use ratatui::widgets::Widget;
 
 use crate::ScrollAxis;
 
-/// Represents an item in a list widget.
-///
-/// This trait should be implemented on widget list items to be used in a `List`.
-/// Implementors should provide information about the item's size along the lists
-/// main axis and optionally support highlighting.
-pub trait ListableWidget: Widget {
-    /// Returns the size of the item based on the scroll direction.
+/// This trait should be implemented for items that are intended to be used within a `List` widget.
+pub trait PreRender: Widget {
+    /// This method is called before rendering the widget.
     ///
-    /// This method should return the height for vertical lists and the width for horizontal lists.
+    /// # Arguments
     ///
-    /// The `scroll_direction` parameter allows specifying different sizes depending on the list's scroll axis.
-    /// In most cases, this parameter can be ignored.
-    fn size(&self, scroll_direction: &ScrollAxis) -> usize;
+    /// - `self`: Captured by value, allowing modification within the pre-render hook.
+    /// - `context`: Rendering context providing additional information like selection
+    ///    status, cross-axis size, scroll direction and the widgets index in the list.
+    ///
+    /// # Returns
+    ///
+    /// - The (modified) widget.
+    /// - The widget's main axis size, used for layouting.
+    ///
+    /// # Example
+    ///
+    ///```ignore
+    /// use ratatui::prelude::*;
+    /// use tui_widget_list::{PreRenderContext, PreRender};
+    ///
+    /// impl PreRender for MyWidget {
+    ///     fn pre_render(self, context: &PreRenderContext) -> (Self, u16) {
+    ///         // Modify the widget based on the selection state
+    ///         if context.is_selected {
+    ///             self.style = self.style.reversed();
+    ///         }
+    ///
+    ///         // Example: set main axis size to 1
+    ///         let main_axis_size = 1;
+    ///
+    ///         (self, main_axis_size)
+    ///     }
+    /// }
+    /// ```
+    fn pre_render(&mut self, context: &PreRenderContext) -> u16;
+}
 
-    /// Highlight the selected widget. Optional.
-    ///
-    /// This method should return a new instance of the widget with modifications
-    /// to render it highlighted.
-    #[must_use]
-    fn highlight(self) -> Self
-    where
-        Self: Sized,
-    {
-        self
+/// The context provided during rendering.
+///
+/// It provides a set of information that can be used from [`PreRender::pre_render`].
+#[derive(Debug, Clone)]
+pub struct PreRenderContext {
+    /// Indicates whether the widget is selected.
+    pub is_selected: bool,
+
+    /// The cross axis size of the widget.
+    pub cross_axis_size: u16,
+
+    /// The list's scroll axis:
+    /// - `vertical` (default)
+    /// - `horizontal`
+    pub scroll_axis: ScrollAxis,
+
+    /// The index of the widget in the list.
+    pub index: usize,
+}
+
+impl PreRenderContext {
+    pub(crate) fn new(
+        is_selected: bool,
+        cross_axis_size: u16,
+        scroll_axis: ScrollAxis,
+        index: usize,
+    ) -> Self {
+        Self {
+            is_selected,
+            cross_axis_size,
+            scroll_axis,
+            index,
+        }
     }
 }

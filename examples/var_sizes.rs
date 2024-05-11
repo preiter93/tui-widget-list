@@ -5,48 +5,55 @@ use crossterm::{
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     prelude::*,
-    widgets::{Block, Borders, Paragraph, Widget},
+    widgets::{Block, Borders},
 };
 use std::{error::Error, io};
-use tui_widget_list::{List, ListState, ListableWidget, ScrollAxis};
+use tui_widget_list::{List, ListState, PreRender, PreRenderContext};
 
 #[derive(Debug, Clone)]
-pub struct ParagraphItem<'a> {
-    paragraph: Paragraph<'a>,
+pub struct LineItem<'a> {
+    line: Line<'a>,
     height: u16,
 }
 
-impl ParagraphItem<'_> {
+impl LineItem<'_> {
     pub fn new(text: &str, height: u16) -> Self {
-        let paragraph = Paragraph::new(vec![Line::from(Span::styled(
+        let line = Line::from(Span::styled(
             text.to_string(),
             Style::default().fg(Color::Cyan),
-        ))])
-        .style(Style::default().bg(Color::Black))
-        .block(Block::default().borders(Borders::ALL).title("Inner block"));
-        Self { paragraph, height }
+        ))
+        .style(Style::default().bg(Color::Black));
+        Self { line, height }
     }
 
-    pub fn style(mut self, style: Style) -> Self {
-        self.paragraph = self.paragraph.set_style(style);
-        self
-    }
-}
-
-impl ListableWidget for ParagraphItem<'_> {
-    fn size(&self, _: &ScrollAxis) -> usize {
-        self.height as usize
-    }
-
-    fn highlight(self) -> Self {
-        let style = Style::default().bg(Color::White);
-        self.style(style)
+    pub fn set_style(&mut self, style: Style) {
+        let mut paragraph = std::mem::replace(&mut self.line, Default::default());
+        paragraph = paragraph.style(style);
+        self.line = paragraph;
     }
 }
 
-impl Widget for ParagraphItem<'_> {
+impl PreRender for LineItem<'_> {
+    fn pre_render(&mut self, context: &PreRenderContext) -> u16 {
+        if context.is_selected {
+            self.line.style = Style::default().bg(Color::White);
+        }
+
+        let main_axis_size = self.height;
+
+        main_axis_size
+    }
+}
+
+impl Widget for LineItem<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        self.paragraph.render(area, buf);
+        let inner = {
+            let block = Block::default().borders(Borders::ALL);
+            block.clone().render(area, buf);
+            block.inner(area)
+        };
+
+        self.line.render(inner, buf);
     }
 }
 
@@ -98,27 +105,27 @@ fn panic_hook() {
 }
 
 pub struct App<'a> {
-    pub list: List<'a, ParagraphItem<'a>>,
+    pub list: List<'a, LineItem<'a>>,
     pub state: ListState,
 }
 
 impl<'a> App<'a> {
     pub fn new() -> App<'a> {
         let items = vec![
-            ParagraphItem::new("Height: 4", 4),
-            ParagraphItem::new("Height: 6", 6),
-            ParagraphItem::new("Height: 5", 5),
-            ParagraphItem::new("Height: 4", 4),
-            ParagraphItem::new("Height: 3", 3),
-            ParagraphItem::new("Height: 3", 3),
-            ParagraphItem::new("Height: 6", 6),
-            ParagraphItem::new("Height: 5", 5),
-            ParagraphItem::new("Height: 7", 7),
-            ParagraphItem::new("Height: 3", 3),
-            ParagraphItem::new("Height: 6", 6),
-            ParagraphItem::new("Height: 9", 9),
-            ParagraphItem::new("Height: 4", 4),
-            ParagraphItem::new("Height: 6", 6),
+            LineItem::new("Height: 4", 4),
+            LineItem::new("Height: 6", 6),
+            LineItem::new("Height: 5", 5),
+            LineItem::new("Height: 4", 4),
+            LineItem::new("Height: 3", 3),
+            LineItem::new("Height: 3", 3),
+            LineItem::new("Height: 6", 6),
+            LineItem::new("Height: 5", 5),
+            LineItem::new("Height: 7", 7),
+            LineItem::new("Height: 3", 3),
+            LineItem::new("Height: 6", 6),
+            LineItem::new("Height: 9", 9),
+            LineItem::new("Height: 4", 4),
+            LineItem::new("Height: 6", 6),
         ];
         let list = List::new(items)
             .style(Style::default().bg(Color::Black))
