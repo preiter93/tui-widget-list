@@ -1,31 +1,28 @@
-Prerelease
-----------
+Released
+--------
 
 0.9.0 - 11 May 2024
 ===================
 - Introduced `PreRender` trait as a replacement for `ListableWidget`.
-  - This change is non-breaking 
-  - It provides a more concise and clearer interface.
+- This change is non-breaking 
+- It provides a more concise and clearer interface.
 Migration Guide
 - Update trait implementations to use the new `pre_render` signature:
 
 ```rust
 fn pre_render(&mut self, context: &PreRenderContext) -> u16 {
-    let main_axis_size = // The widgets size in the main axis
+  let main_axis_size = // The widgets size in the main axis
 
     if context.is_selected {
-        self = // You can modify the selected item here
+      self = // You can modify the selected item here
     }
 
-    main_axis_size
+  main_axis_size
 }
 ```
 - Deprecated ListState::selected(). Use the struct field selected instead.
 - Updated examples
 - Add example for long lists
-
-Released
---------
 
 0.8.3 - 1 May 2024 
 ===================
