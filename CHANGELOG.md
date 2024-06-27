@@ -1,6 +1,10 @@
 Released
 --------
 
+0.10.0 - 27 June 2024
+===================
+- Bump ratatui to v0.27
+
 0.9.0 - 11 May 2024
 ===================
 - Introduced `PreRender` trait as a replacement for `ListableWidget`.
