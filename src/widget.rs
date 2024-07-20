@@ -1,7 +1,7 @@
 #![allow(clippy::cast_possible_truncation)]
 use ratatui::{
     prelude::{Buffer, Rect},
-    style::Style,
+    style::{Style, Styled},
     widgets::{Block, StatefulWidget, Widget},
 };
 
@@ -48,13 +48,6 @@ impl<'a, T: PreRender> List<'a, T> {
         self
     }
 
-    /// Set the base style of the List.
-    #[must_use]
-    pub fn style(mut self, style: Style) -> Self {
-        self.style = style;
-        self
-    }
-
     /// Checks whether the widget list is empty.
     #[must_use]
     pub fn is_empty(&self) -> bool {
@@ -67,10 +60,29 @@ impl<'a, T: PreRender> List<'a, T> {
         self.items.len()
     }
 
+    /// Set the base style of the List.
+    #[must_use]
+    pub fn style<S: Into<Style>>(mut self, style: S) -> Self {
+        self.style = style.into();
+        self
+    }
+
     /// Set the scroll direction of the list.
     #[must_use]
     pub fn scroll_direction(mut self, scroll_axis: ScrollAxis) -> Self {
         self.scroll_axis = scroll_axis;
+        self
+    }
+}
+
+impl<T: PreRender> Styled for List<'_, T> {
+    type Item = Self;
+    fn style(&self) -> Style {
+        self.style
+    }
+
+    fn set_style<S: Into<Style>>(mut self, style: S) -> Self::Item {
+        self.style = style.into();
         self
     }
 }
