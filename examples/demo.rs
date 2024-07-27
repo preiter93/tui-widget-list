@@ -7,6 +7,7 @@ use crossterm::terminal::{
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::prelude::*;
+use ratatui::style::Styled;
 use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph, Widget};
 use ratatui::Terminal;
@@ -21,6 +22,18 @@ pub struct TextContainer {
     style: Style,
     selected_color: Color,
     expand: bool,
+}
+
+impl Styled for TextContainer {
+    type Item = Self;
+    fn style(&self) -> Style {
+        self.style
+    }
+
+    fn set_style<S: Into<Style>>(mut self, style: S) -> Self::Item {
+        self.style = style.into();
+        self
+    }
 }
 
 impl TextContainer {
@@ -263,7 +276,7 @@ fn demo_text_list(selected_color: Color) -> List<'static, TextContainer> {
         TextContainer::new("Saturday", saturday, selected_color),
         TextContainer::new("Sunday", sunday, selected_color),
     ])
-    .style(Style::default())
+    .set_style(Style::default())
 }
 
 fn demo_colors() -> Vec<Color> {

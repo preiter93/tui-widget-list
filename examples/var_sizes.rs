@@ -128,7 +128,7 @@ impl<'a> App<'a> {
             LineItem::new("Height: 6", 6),
         ];
         let list = List::new(items)
-            .style(Style::default().bg(Color::Black))
+            .bg(Color::Black)
             .block(Block::default().borders(Borders::ALL).title("Outer block"));
         let state = ListState::default();
         App { list, state }
