@@ -83,6 +83,17 @@ impl<T> Styled for ListView<'_, T> {
     }
 }
 
+impl<T: Copy + 'static> From<Vec<T>> for ListView<'_, T> {
+    fn from(value: Vec<T>) -> Self {
+        let item_count = value.len();
+        let builder = ListBuilder::new(move |context| {
+            return (value[context.index], 1);
+        });
+
+        ListView::new(builder, item_count)
+    }
+}
+
 /// This structure holds information about the item's position, selection
 /// status, scrolling behavior, and size along the cross axis.
 pub struct ListBuildContext {

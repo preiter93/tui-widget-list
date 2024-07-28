@@ -10,6 +10,7 @@ use crate::{legacy::utils::layout_on_viewport, ListState, PreRender, ScrollAxis}
 /// A [`List`] is a widget for Ratatui that can render an arbitrary list of widgets.
 /// It is generic over `T`, where each widget `T` should implement the [`PreRender`]
 /// trait.
+/// `List` is no longer developed. Consider using `ListView`.
 #[derive(Clone)]
 pub struct List<'a, T: PreRender> {
     /// The list's items.
