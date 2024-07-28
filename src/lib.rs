@@ -100,15 +100,18 @@
 //! ### Vertically and horizontally scrollable
 //!
 //!![](examples/tapes/demo.gif?v=1)
+pub mod legacy;
+pub mod list_view;
+pub mod render;
+pub mod scroll_axis;
 pub mod state;
-pub mod traits;
-pub mod traits_deprecated;
-pub(crate) mod utils;
-pub mod widget;
 
+pub(crate) mod utils;
+pub use legacy::traits::{PreRender, PreRenderContext};
+pub use legacy::widget::List;
+pub use list_view::{ListBuildContext, ListBuilder, ListView};
+pub use scroll_axis::ScrollAxis;
 pub use state::ListState;
-pub use traits::{PreRender, PreRenderContext};
-pub use widget::{List, ScrollAxis};
 
 #[allow(deprecated)]
-pub use traits_deprecated::ListableWidget;
+pub use legacy::traits_deprecated::ListableWidget;

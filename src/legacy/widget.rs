@@ -5,7 +5,7 @@ use ratatui::{
     widgets::{Block, StatefulWidget, Widget},
 };
 
-use crate::{utils::layout_on_viewport, ListState, PreRender};
+use crate::{legacy::utils::layout_on_viewport, ListState, PreRender, ScrollAxis};
 
 /// A [`List`] is a widget for Ratatui that can render an arbitrary list of widgets.
 /// It is generic over `T`, where each widget `T` should implement the [`PreRender`]
@@ -237,17 +237,6 @@ fn render_trunc<T: Widget>(
             }
         }
     };
-}
-
-/// Represents the scroll axis of a list.
-#[derive(Debug, Default, Clone, Copy)]
-pub enum ScrollAxis {
-    /// Indicates vertical scrolling. This is the default.
-    #[default]
-    Vertical,
-
-    /// Indicates horizontal scrolling.
-    Horizontal,
 }
 
 #[cfg(test)]

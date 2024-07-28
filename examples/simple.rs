@@ -4,33 +4,20 @@ use crossterm::{
 };
 use ratatui::prelude::*;
 use std::{error::Error, io};
-use tui_widget_list::{List, ListState, PreRender, PreRenderContext};
+use tui_widget_list::{ListBuilder, ListState, ListView};
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
-impl Widget for ListItem<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        self.clone().get_line().render(area, buf);
-    }
-}
+fn main() -> Result<()> {
+    let mut terminal = init_terminal()?;
 
-impl PreRender for ListItem<'_> {
-    fn pre_render(&mut self, context: &PreRenderContext) -> u16 {
-        if context.index % 2 == 0 {
-            self.style = Style::default().bg(Color::Rgb(28, 28, 32));
-        } else {
-            self.style = Style::default().bg(Color::Rgb(0, 0, 0));
-        }
+    let mut app = App::new();
+    app.run(&mut terminal).unwrap();
 
-        if context.is_selected {
-            self.prefix = Some(">>");
-            self.style = Style::default()
-                .bg(Color::Rgb(255, 153, 0))
-                .fg(Color::Rgb(28, 28, 32));
-        };
+    reset_terminal()?;
+    terminal.show_cursor()?;
 
-        1
-    }
+    Ok(())
 }
 
 pub struct App {
@@ -45,42 +32,61 @@ impl App {
     }
 }
 
-fn main() -> Result<()> {
-    let mut terminal = init_terminal()?;
+impl App {
+    pub fn run<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> Result<()> {
+        loop {
+            self.draw(terminal)?;
 
-    let app = App::new();
-    run_app(&mut terminal, app).unwrap();
-
-    reset_terminal()?;
-    terminal.show_cursor()?;
-
-    Ok(())
-}
-
-pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
-    let items: Vec<_> = (0..30)
-        .map(|index| ListItem::new(Line::from(format!("Item {index}"))))
-        .collect();
-    let list = List::from(items);
-
-    loop {
-        terminal.draw(|f| ui(f, &mut app, list.clone()))?;
-
-        if let Event::Key(key) = event::read()? {
-            if key.kind == KeyEventKind::Press {
-                match key.code {
-                    KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Up => app.state.previous(),
-                    KeyCode::Down => app.state.next(),
-                    _ => {}
+            if let Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press {
+                    match key.code {
+                        KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Up | KeyCode::Char('k') => self.state.previous(),
+                        KeyCode::Down | KeyCode::Char('j') => self.state.next(),
+                        _ => {}
+                    }
                 }
             }
         }
     }
+
+    fn draw(&mut self, terminal: &mut Terminal<impl Backend>) -> Result<()> {
+        terminal.draw(|frame| {
+            frame.render_widget(self, frame.size());
+        })?;
+        Ok(())
+    }
 }
 
-pub fn ui(f: &mut Frame, app: &mut App, list: List<ListItem>) {
-    f.render_stateful_widget(list, f.size(), &mut app.state);
+impl Widget for &mut App {
+    fn render(self, area: Rect, buf: &mut Buffer)
+    where
+        Self: Sized,
+    {
+        let builder = ListBuilder::new(|context| {
+            let text = format!("Item {0}", context.index);
+            let mut item = Line::from(text);
+
+            if context.index % 2 == 0 {
+                item.style = Style::default().bg(Color::Rgb(28, 28, 32))
+            } else {
+                item.style = Style::default().bg(Color::Rgb(0, 0, 0))
+            };
+
+            if context.is_selected {
+                item = prefix_text(item, ">>");
+                item.style = Style::default()
+                    .bg(Color::Rgb(255, 153, 0))
+                    .fg(Color::Rgb(28, 28, 32));
+            };
+
+            return (item, 1);
+        });
+        let list = ListView::new(builder, 20);
+        let state = &mut self.state;
+
+        list.render(area, buf, state);
+    }
 }
 
 fn prefix_text<'a>(line: Line<'a>, prefix: &'a str) -> Line<'a> {
@@ -103,34 +109,23 @@ pub struct ListItem<'a> {
 }
 
 impl<'a> ListItem<'a> {
-    pub fn new<T>(line: T) -> Self
-    where
-        T: Into<Line<'a>>,
-    {
+    pub fn new(text: String, style: Style, prefix: Option<&'a str>) -> Self {
         Self {
-            line: line.into(),
-            style: Style::default(),
-            prefix: None,
+            line: Line::from(text),
+            style,
+            prefix,
         }
     }
+}
 
-    pub fn style(mut self, style: Style) -> Self {
-        self.style = style;
-        self
-    }
-
-    pub fn prefix(mut self, prefix: Option<&'a str>) -> Self {
-        self.prefix = prefix;
-        self
-    }
-
-    fn get_line(self) -> Line<'a> {
+impl Widget for ListItem<'_> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let text = if let Some(prefix) = self.prefix {
             prefix_text(self.line, prefix)
         } else {
             self.line
         };
-        Line::from(text).style(self.style)
+        Line::from(text).style(self.style).render(area, buf);
     }
 }
 
