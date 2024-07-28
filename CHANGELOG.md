@@ -1,6 +1,10 @@
 Released
 --------
 
+0.10.1 - 28 July 2024
+===================
+- Implement Styled for List (contributor: airblast-dev)
+ 
 0.10.0 - 27 June 2024
 ===================
 - Bump ratatui to v0.27
