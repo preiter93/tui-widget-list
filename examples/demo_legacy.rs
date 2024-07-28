@@ -13,13 +13,14 @@ use ratatui::widgets::{Block, BorderType, Borders, Paragraph, Widget};
 use ratatui::Terminal;
 use std::error::Error;
 use std::io::{stdout, Stdout};
-use tui_widget_list::{ListBuilder, ListState, ListView, ScrollAxis};
+use tui_widget_list::{List, ListState, PreRender, PreRenderContext, ScrollAxis};
 
 #[derive(Debug, Clone)]
 pub struct TextContainer {
     title: String,
     content: Vec<String>,
     style: Style,
+    selected_color: Color,
     expand: bool,
 }
 
@@ -36,13 +37,35 @@ impl Styled for TextContainer {
 }
 
 impl TextContainer {
-    pub fn new(title: &str, content: Vec<String>) -> Self {
+    pub fn new(title: &str, content: Vec<String>, selected_color: Color) -> Self {
         Self {
             title: title.to_string(),
             content,
             style: Style::default(),
+            selected_color,
             expand: false,
         }
+    }
+}
+
+impl PreRender for TextContainer {
+    fn pre_render(&mut self, context: &PreRenderContext) -> u16 {
+        if context.index % 2 == 0 {
+            self.style = Style::default().bg(Color::Rgb(28, 28, 32));
+        } else {
+            self.style = Style::default().bg(Color::Rgb(0, 0, 0));
+        }
+
+        let mut main_axis_size = 2;
+        if context.is_selected {
+            self.style = Style::default()
+                .bg(self.selected_color)
+                .fg(Color::Rgb(28, 28, 32));
+            self.expand = true;
+            main_axis_size = 3 + self.content.len() as u16;
+        }
+
+        main_axis_size
     }
 }
 
@@ -90,6 +113,17 @@ impl Widget for ColoredContainer {
             .render(area, buf);
     }
 }
+impl PreRender for ColoredContainer {
+    fn pre_render(&mut self, context: &PreRenderContext) -> u16 {
+        if context.is_selected {
+            self.border_style = Style::default().fg(Color::Black);
+            self.border_type = BorderType::Thick;
+        }
+
+        15
+    }
+}
+
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 fn main() -> Result<()> {
@@ -186,12 +220,18 @@ impl Widget for &mut App {
         let text_list = demo_text_list(selected_color);
         text_list.render(top, buf, &mut self.text_list_state);
 
-        let color_list = demo_colors_list();
+        let color_list = List::new(
+            colors
+                .into_iter()
+                .map(|color| ColoredContainer::new(color))
+                .collect(),
+        )
+        .scroll_direction(ScrollAxis::Horizontal);
         color_list.render(bottom, buf, &mut self.color_list_state);
     }
 }
 
-fn demo_text_list(selected_color: Color) -> ListView<'static, TextContainer> {
+fn demo_text_list(selected_color: Color) -> List<'static, TextContainer> {
     let monday: Vec<String> = vec![
         String::from("1. Exercise for 30 minutes"),
         String::from("2. Work on the project for 2 hours"),
@@ -227,56 +267,16 @@ fn demo_text_list(selected_color: Color) -> ListView<'static, TextContainer> {
         String::from("2. Read in the park"),
         String::from("3. Go to dinner with friends"),
     ];
-    let containers = vec![
-        TextContainer::new("Monday", monday),
-        TextContainer::new("Tuesday", tuesday),
-        TextContainer::new("Wednesday", wednesday),
-        TextContainer::new("Thursday", thursday),
-        TextContainer::new("Friday", friday),
-        TextContainer::new("Saturday", saturday),
-        TextContainer::new("Sunday", sunday),
-    ];
-
-    let builder = ListBuilder::new(move |context| {
-        let mut main_axis_size = 2;
-
-        let mut container = containers[context.index].clone();
-
-        if context.index % 2 == 0 {
-            container.style = Style::default().bg(Color::Rgb(28, 28, 32));
-        } else {
-            container.style = Style::default().bg(Color::Rgb(0, 0, 0));
-        }
-
-        if context.is_selected {
-            container.style = Style::default()
-                .bg(selected_color)
-                .fg(Color::Rgb(28, 28, 32));
-            container.expand = true;
-            main_axis_size = 3 + container.content.len() as u16;
-        }
-
-        (container, main_axis_size)
-    });
-
-    ListView::new(builder, 7)
-}
-
-fn demo_colors_list() -> ListView<'static, ColoredContainer> {
-    let colors = demo_colors();
-    let builder = ListBuilder::new(move |context| {
-        let color = demo_colors()[context.index];
-
-        let mut widget = ColoredContainer::new(color);
-        if context.is_selected {
-            widget.border_style = Style::default().fg(Color::Black);
-            widget.border_type = BorderType::Thick;
-        };
-
-        (widget, 15)
-    });
-
-    ListView::new(builder, colors.len()).scroll_axis(ScrollAxis::Horizontal)
+    List::new(vec![
+        TextContainer::new("Monday", monday, selected_color),
+        TextContainer::new("Tuesday", tuesday, selected_color),
+        TextContainer::new("Wednesday", wednesday, selected_color),
+        TextContainer::new("Thursday", thursday, selected_color),
+        TextContainer::new("Friday", friday, selected_color),
+        TextContainer::new("Saturday", saturday, selected_color),
+        TextContainer::new("Sunday", sunday, selected_color),
+    ])
+    .set_style(Style::default())
 }
 
 fn demo_colors() -> Vec<Color> {

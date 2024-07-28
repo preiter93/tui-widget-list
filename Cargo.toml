@@ -19,13 +19,17 @@ crossterm = "0.27"
 name = "simple"
 
 [[example]]
-name = "simple_deprecated"
-
-[[example]]
-name = "long"
-
-[[example]]
 name = "var_sizes"
 
 [[example]]
 name = "demo"
+
+[[example]]
+name = "demo_legacy"
+
+[[example]]
+name = "simple_legacy"
+
+[features]
+default = ["unstable-widget-ref"]
+unstable-widget-ref = ["ratatui/unstable-widget-ref"]
