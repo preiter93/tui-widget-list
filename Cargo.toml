@@ -1,6 +1,6 @@
 [package]
 name = "tui-widget-list"
-version = "0.10.1"
+version = "0.11.0"
 edition = "2021"
 authors = ["preiter <phil.reiter93@gmail.com>"]
 description = "Widget List for TUI/Ratatui"
@@ -19,13 +19,17 @@ crossterm = "0.27"
 name = "simple"
 
 [[example]]
-name = "simple_deprecated"
-
-[[example]]
-name = "long"
-
-[[example]]
 name = "var_sizes"
 
 [[example]]
 name = "demo"
+
+[[example]]
+name = "demo_legacy"
+
+[[example]]
+name = "simple_legacy"
+
+[features]
+default = ["unstable-widget-ref"]
+unstable-widget-ref = ["ratatui/unstable-widget-ref"]

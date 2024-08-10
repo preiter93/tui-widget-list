@@ -1,3 +1,36 @@
+
+0.11.0 - ?
+===================
+- Introduces `ListView`, `ListBuilder` and `ListBuildContext` as replacement for `List`, `PreRender` and `PreRenderContext`.
+- `List`, `PreRender` and `PreRenderContext` are marked as deprecated.
+```rust
+// Builder provides the ListBuildContext.
+// Return the widget and the widget's size along its main-axis.
+let builder = ListBuilder::new(|context| {
+    let mut item = Line::from(format!("Item {0}", context.index));
+
+    if context.index % 2 == 0 {
+        item.style = Style::default().bg(Color::Rgb(28, 28, 32))
+    } else {
+        item.style = Style::default().bg(Color::Rgb(0, 0, 0))
+    };
+
+    if context.is_selected {
+        item.style = Style::default()
+            .bg(Color::Rgb(255, 153, 0))
+            .fg(Color::Rgb(28, 28, 32));
+    };
+
+    return (item, 1);
+});
+
+// Construct the list. ListView takes in the builder and an item count.
+let list = ListView::new(builder, 20);
+
+// Render the list
+list.render(area, &mut buf, &mut state);
+``` 
+
 Released
 --------
 

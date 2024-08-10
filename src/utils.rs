@@ -1,26 +1,17 @@
 use std::collections::HashMap;
 
-use crate::{ListState, PreRender, PreRenderContext, ScrollAxis};
+use crate::{ListBuildContext, ListBuilder, ListState, ScrollAxis};
 
-/// This method checks how to layout the items on the viewport and if necessary
-/// updates the offset of the first item on the screen.
-///
-/// For this we start with the first item on the screen and iterate until we have
-/// reached the maximum height. If the selected value is within the bounds we do
-/// nothing. If the selected value is out of bounds, the offset is adjusted.
-///
-/// # Returns
-/// - The sizes along the main axis of the elements on the viewport,
-///   and how much they are being truncated to fit on the viewport.
-pub(crate) fn layout_on_viewport<T: PreRender>(
+pub(crate) fn layout_on_viewport<T>(
     state: &mut ListState,
-    widgets: &mut [T],
+    builder: &ListBuilder<T>,
+    item_count: usize,
     total_main_axis_size: u16,
     cross_axis_size: u16,
     scroll_axis: ScrollAxis,
-) -> Vec<ViewportLayout> {
+) -> HashMap<usize, ViewportElement<T>> {
     // The items heights on the viewport will be calculated on the fly.
-    let mut viewport_layouts: Vec<ViewportLayout> = Vec::new();
+    let mut viewport: HashMap<usize, ViewportElement<T>> = HashMap::new();
 
     // If none is selected, the first item should be show on top of the viewport.
     let selected = state.selected.unwrap_or(0);
@@ -31,97 +22,108 @@ pub(crate) fn layout_on_viewport<T: PreRender>(
         state.offset = selected;
     }
 
-    let mut main_axis_size_cache: HashMap<usize, u16> = HashMap::new();
-
     // Check if the selected item is in the current view
-    let (mut y, mut index) = (0, state.offset);
+    let (mut y, mut found_last) = (0, false);
     let mut found = false;
-    for widget in widgets.iter_mut().skip(state.offset) {
-        // Get the main axis size of the widget.
-        let is_selected = state.selected.map_or(false, |j| index == j);
-        let context = PreRenderContext::new(is_selected, cross_axis_size, scroll_axis, index);
+    for index in state.offset..item_count {
+        let mut truncate_by = 0;
+        let available_size: u16 = total_main_axis_size.saturating_sub(y);
 
-        let main_axis_size = widget.pre_render(&context);
-        main_axis_size_cache.insert(index, main_axis_size);
+        // Build the widget
+        let context = ListBuildContext {
+            index,
+            is_selected: state.selected.map_or(false, |j| index == j),
+            scroll_axis,
+            cross_axis_size,
+        };
+        let (widget, main_axis_size) = builder.call_closure(&context);
 
         // Out of bounds
-        if y + main_axis_size > total_main_axis_size {
-            // Truncate the last widget
-            let dy = total_main_axis_size - y;
-            if dy > 0 {
-                viewport_layouts.push(ViewportLayout {
-                    main_axis_size: dy,
-                    truncated_by: main_axis_size.saturating_sub(dy),
-                });
-            }
+        if !found && main_axis_size >= available_size {
             break;
         }
+
         // Selected value is within view/bounds, so we are good
-        // but we keep iterating to collect the view heights
-        if selected == index {
+        // but we keep iterating to collect the full viewport.
+        if selected == index && main_axis_size <= available_size {
             found = true;
         }
-        y += main_axis_size;
-        index += 1;
 
-        viewport_layouts.push(ViewportLayout {
-            main_axis_size,
-            truncated_by: 0,
-        });
+        // Found the last element. We can stop iterating.
+        if found && main_axis_size >= available_size {
+            found_last = true;
+            truncate_by = main_axis_size.saturating_sub(available_size);
+        }
+        let element = ViewportElement::new(widget, main_axis_size, truncate_by);
+        viewport.insert(index, element);
+
+        if found_last {
+            break;
+        }
+
+        // We keep iterating until we collected all viewport elements
+        y += main_axis_size;
     }
+
     if found {
-        return viewport_layouts;
+        return viewport;
     }
+
+    viewport.clear();
 
     // The selected item is out of bounds. We iterate backwards from the selected
     // item and determine the first widget that still fits on the screen.
-    viewport_layouts.clear();
-    let (mut y, mut index) = (0, selected);
-    let last = widgets.len().saturating_sub(1);
-    for widget in widgets.iter_mut().rev().skip(last.saturating_sub(selected)) {
-        // Get the main axis size of the widget. At this point we might have already
-        // calculated it, so check the cache first.
-        let main_axis_size = if let Some(main_axis_size) = main_axis_size_cache.remove(&index) {
-            main_axis_size
-        } else {
-            let is_selected = state.selected.map_or(false, |j| index == j);
-            let context = PreRenderContext::new(is_selected, cross_axis_size, scroll_axis, index);
+    let (mut y, mut found_first) = (0, false);
+    for index in (0..=selected).rev() {
+        let available_size = total_main_axis_size - y;
+        let mut truncate_by = 0;
 
-            widget.pre_render(&context)
+        // Evaluate the widget
+        let context = ListBuildContext {
+            index,
+            is_selected: state.selected.map_or(false, |j| index == j),
+            scroll_axis,
+            cross_axis_size,
         };
+        let (widget, main_axis_size) = builder.call_closure(&context);
 
-        // Truncate the first widget
-        if y + main_axis_size >= total_main_axis_size {
-            let dy = total_main_axis_size - y;
-            viewport_layouts.insert(
-                0,
-                ViewportLayout {
-                    main_axis_size: dy,
-                    truncated_by: main_axis_size.saturating_sub(dy),
-                },
-            );
+        // We found the first element
+        if available_size <= main_axis_size {
+            found_first = true;
+            // main_axis_size = available_size;
+            truncate_by = main_axis_size.saturating_sub(available_size);
             state.offset = index;
+        }
+
+        let element = ViewportElement::new(widget, main_axis_size, truncate_by);
+        viewport.insert(index, element);
+
+        if found_first {
             break;
         }
 
-        viewport_layouts.insert(
-            0,
-            ViewportLayout {
-                main_axis_size,
-                truncated_by: 0,
-            },
-        );
-
         y += main_axis_size;
-        index -= 1;
     }
-    viewport_layouts
+
+    viewport
 }
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
-pub(crate) struct ViewportLayout {
+pub(crate) struct ViewportElement<T> {
+    pub(crate) widget: T,
     pub(crate) main_axis_size: u16,
-    pub(crate) truncated_by: u16,
+    pub(crate) truncate_by: u16,
+}
+
+impl<T> ViewportElement<T> {
+    #[must_use]
+    pub(crate) fn new(widget: T, main_axis_size: u16, truncated_by: u16) -> Self {
+        Self {
+            widget,
+            main_axis_size,
+            truncate_by: truncated_by,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -133,9 +135,8 @@ mod tests {
 
     use super::*;
 
-    struct TestItem {
-        main_axis_size: u16,
-    }
+    #[derive(Debug, Default, PartialEq, Eq)]
+    struct TestItem {}
 
     impl Widget for TestItem {
         fn render(self, area: Rect, buf: &mut Buffer)
@@ -146,62 +147,228 @@ mod tests {
         }
     }
 
-    impl PreRender for TestItem {
-        fn pre_render(&mut self, _context: &PreRenderContext) -> u16 {
-            self.main_axis_size
-        }
+    #[test]
+    fn happy_path() {
+        // given
+        let mut given_state = ListState {
+            num_elements: 2,
+            ..ListState::default()
+        };
+        let given_item_count = 2;
+        let given_sizes = vec![2, 3];
+        let given_total_size = 6;
+        let builder = &ListBuilder::new(move |context| {
+            return (TestItem {}, given_sizes[context.index]);
+        });
+
+        // when
+        let viewport = layout_on_viewport(
+            &mut given_state,
+            builder,
+            given_item_count,
+            given_total_size,
+            1,
+            ScrollAxis::Vertical,
+        );
+        let offset = given_state.offset;
+
+        // then
+        let expected_offset = 0;
+
+        let mut expected_viewport = HashMap::new();
+        expected_viewport.insert(0, ViewportElement::new(TestItem {}, 2, 0));
+        expected_viewport.insert(1, ViewportElement::new(TestItem {}, 3, 0));
+
+        assert_eq!(offset, expected_offset);
+        assert_eq!(viewport, expected_viewport);
     }
 
-    macro_rules! update_view_port_tests {
-        ($($name:ident:
-        [
-           $given_offset:expr,
-           $given_selected:expr,
-           $given_sizes:expr,
-           $given_max_size:expr
-        ],
-        [
-           $expected_offset:expr,
-           $expected_sizes:expr
-        ],)*) => {
-        $(
-            #[test]
-            fn $name() {
-                // given
-                let mut given_state = ListState {
-                    offset: $given_offset,
-                    selected: $given_selected,
-                    num_elements: $given_sizes.len(),
-                    circular: true,
-                };
+    #[test]
+    fn scroll_down_out_of_bounds() {
+        // given
+        let mut given_state = ListState {
+            num_elements: 3,
+            selected: Some(2),
+            ..ListState::default()
+        };
+        let given_sizes = vec![2, 3, 3];
+        let given_item_count = given_sizes.len();
+        let given_total_size = 6;
+        let builder = &ListBuilder::new(move |context| {
+            return (TestItem {}, given_sizes[context.index]);
+        });
 
-                //when
-                let mut widgets: Vec<TestItem> = $given_sizes
-                    .into_iter()
-                    .map(|main_axis_size| TestItem {
-                        main_axis_size: main_axis_size as u16,
-                    })
-                    .collect();
-                let scroll_axis = ScrollAxis::default();
-                let layouts = layout_on_viewport(&mut given_state, &mut widgets, $given_max_size, 0, scroll_axis);
-                let offset = given_state.offset;
+        // when
+        let viewport = layout_on_viewport(
+            &mut given_state,
+            builder,
+            given_item_count,
+            given_total_size,
+            1,
+            ScrollAxis::Vertical,
+        );
+        let offset = given_state.offset;
 
-                // then
-                let main_axis_sizes: Vec<u16> = layouts.iter().map(|x| x.main_axis_size).collect();
-                assert_eq!(offset, $expected_offset);
-                assert_eq!(main_axis_sizes, $expected_sizes);
-            }
-        )*
-        }
+        // then
+        let expected_offset = 1;
+
+        let mut expected_viewport = HashMap::new();
+        expected_viewport.insert(1, ViewportElement::new(TestItem {}, 3, 0));
+        expected_viewport.insert(2, ViewportElement::new(TestItem {}, 3, 0));
+
+        assert_eq!(offset, expected_offset);
+        assert_eq!(viewport, expected_viewport);
     }
 
-    update_view_port_tests! {
-        happy_path: [0, Some(0), vec![2, 3], 6], [0, vec![2, 3]],
-        empty_list: [0, None, Vec::<u16>::new(), 4], [0, vec![]],
-        update_offset_down: [0, Some(2), vec![2, 3, 3], 6], [1, vec![3, 3]],
-        update_offset_up: [1, Some(0), vec![2, 3, 3], 6], [0, vec![2, 3, 1]],
-        truncate_bottom: [0, Some(0), vec![2, 3], 4], [0, vec![2, 2]],
-        truncate_top: [0, Some(1), vec![2, 3], 4], [0, vec![1, 3]],
-        num_elements: [0, None, vec![1, 1, 1, 1, 1], 3], [0, vec![1, 1, 1]],
+    #[test]
+    fn scroll_up() {
+        // given
+        let mut given_state = ListState {
+            num_elements: 4,
+            selected: Some(2),
+            offset: 1,
+            ..ListState::default()
+        };
+        let given_sizes = vec![2, 2, 2, 3];
+        let given_total_size = 6;
+        let given_item_count = given_sizes.len();
+        let builder = &ListBuilder::new(move |context| {
+            return (TestItem {}, given_sizes[context.index]);
+        });
+
+        // when
+        let viewport = layout_on_viewport(
+            &mut given_state,
+            builder,
+            given_item_count,
+            given_total_size,
+            1,
+            ScrollAxis::Vertical,
+        );
+        let offset = given_state.offset;
+
+        // then
+        let expected_offset = 1;
+
+        let mut expected_viewport = HashMap::new();
+        expected_viewport.insert(1, ViewportElement::new(TestItem {}, 2, 0));
+        expected_viewport.insert(2, ViewportElement::new(TestItem {}, 2, 0));
+        expected_viewport.insert(3, ViewportElement::new(TestItem {}, 3, 1));
+
+        assert_eq!(offset, expected_offset);
+        assert_eq!(viewport, expected_viewport);
+    }
+
+    #[test]
+    fn scroll_up_out_of_bounds() {
+        // given
+        let mut given_state = ListState {
+            num_elements: 3,
+            selected: Some(0),
+            offset: 1,
+            ..ListState::default()
+        };
+        let given_sizes = vec![2, 3, 3];
+        let given_total_size = 6;
+        let given_item_count = given_sizes.len();
+        let builder = &ListBuilder::new(move |context| {
+            return (TestItem {}, given_sizes[context.index]);
+        });
+
+        // when
+        let viewport = layout_on_viewport(
+            &mut given_state,
+            builder,
+            given_item_count,
+            given_total_size,
+            1,
+            ScrollAxis::Vertical,
+        );
+        let offset = given_state.offset;
+
+        // then
+        let expected_offset = 0;
+
+        let mut expected_viewport = HashMap::new();
+        expected_viewport.insert(0, ViewportElement::new(TestItem {}, 2, 0));
+        expected_viewport.insert(1, ViewportElement::new(TestItem {}, 3, 0));
+        expected_viewport.insert(2, ViewportElement::new(TestItem {}, 3, 2));
+
+        assert_eq!(offset, expected_offset);
+        assert_eq!(viewport, expected_viewport);
+    }
+
+    #[test]
+    fn truncate_top() {
+        // given
+        let mut given_state = ListState {
+            num_elements: 2,
+            selected: Some(1),
+            ..ListState::default()
+        };
+        let given_sizes = vec![2, 3];
+        let given_total_size = 4;
+        let given_item_count = given_sizes.len();
+        let builder = &ListBuilder::new(move |context| {
+            return (TestItem {}, given_sizes[context.index]);
+        });
+
+        // when
+        let viewport = layout_on_viewport(
+            &mut given_state,
+            builder,
+            given_item_count,
+            given_total_size,
+            1,
+            ScrollAxis::Vertical,
+        );
+        let offset = given_state.offset;
+
+        // then
+        let expected_offset = 0;
+
+        let mut expected_viewport = HashMap::new();
+        expected_viewport.insert(0, ViewportElement::new(TestItem {}, 2, 1));
+        expected_viewport.insert(1, ViewportElement::new(TestItem {}, 3, 0));
+
+        assert_eq!(offset, expected_offset);
+        assert_eq!(viewport, expected_viewport);
+    }
+
+    #[test]
+    fn truncate_bot() {
+        // given
+        let mut given_state = ListState {
+            num_elements: 2,
+            selected: Some(0),
+            ..ListState::default()
+        };
+        let given_sizes = vec![2, 3];
+        let given_total_size = 4;
+        let given_item_count = given_sizes.len();
+        let builder = &ListBuilder::new(move |context| {
+            return (TestItem {}, given_sizes[context.index]);
+        });
+
+        // when
+        let viewport = layout_on_viewport(
+            &mut given_state,
+            builder,
+            given_item_count,
+            given_total_size,
+            1,
+            ScrollAxis::Vertical,
+        );
+        let offset = given_state.offset;
+
+        // then
+        let expected_offset = 0;
+
+        let mut expected_viewport = HashMap::new();
+        expected_viewport.insert(0, ViewportElement::new(TestItem {}, 2, 0));
+        expected_viewport.insert(1, ViewportElement::new(TestItem {}, 3, 1));
+
+        assert_eq!(offset, expected_offset);
+        assert_eq!(viewport, expected_viewport);
     }
 }
