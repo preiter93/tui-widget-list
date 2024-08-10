@@ -78,10 +78,7 @@ impl ColoredContainer {
 }
 
 impl Widget for ColoredContainer {
-    fn render(self, area: Rect, buf: &mut Buffer)
-    where
-        Self: Sized,
-    {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         Block::default()
             .borders(Borders::ALL)
             .border_style(self.border_style)
