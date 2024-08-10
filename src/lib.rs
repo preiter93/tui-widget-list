@@ -19,9 +19,9 @@
 //! - [`ListState::circular`]: Determines if the selection is circular. When enabled, selecting the last item loops back to the first. Enabled by default.
 //!
 //! ## Example
-//! ```
+//!```
 //! use ratatui::prelude::*;
-//! use tui_widget_list::{ListView, ListState, ListBuilder};
+//! use tui_widget_list::{ListBuilder, ListState, ListView};
 //!
 //! #[derive(Debug, Clone)]
 //! pub struct ListItem {
@@ -44,37 +44,43 @@
 //!     }
 //! }
 //!
-//! pub fn render(f: &mut Frame) {
-//!     let builder = ListBuilder::new(|context| {
-//!        let mut item = ListItem::new(&format!("Item {:0}", context.index));
-//!
-//!        // Alternating styles
-//!        if context.index % 2 == 0 {
-//!            item.style = Style::default().bg(Color::Rgb(28, 28, 32));
-//!        } else {
-//!            item.style = Style::default().bg(Color::Rgb(0, 0, 0));
-//!        }
-//!
-//!        // Style the selected element
-//!        if context.is_selected {
-//!            item.style = Style::default()
-//!                .bg(Color::Rgb(255, 153, 0))
-//!                .fg(Color::Rgb(28, 28, 32));
-//!        };
-//!
-//!        // Return the size of the widget along the main axis.
-//!        let main_axis_size = 1;
-//!
-//!        (item, main_axis_size)
-//!     });
-//!
-//!     let mut state = ListState::default();
-//!     let item_count = 2;
-//!     let list = ListView::new(builder, item_count);
-//!
-//!     f.render_stateful_widget(list, f.size(), &mut state);
+//! pub struct App {
+//!     state: ListState,
 //! }
-//! ```
+//!
+//! impl Widget for &mut App {
+//!     fn render(self, area: Rect, buf: &mut Buffer) {
+//!         let builder = ListBuilder::new(|context| {
+//!            let mut item = ListItem::new(&format!("Item {:0}", context.index));
+//!
+//!            // Alternating styles
+//!            if context.index % 2 == 0 {
+//!                item.style = Style::default().bg(Color::Rgb(28, 28, 32));
+//!            } else {
+//!                item.style = Style::default().bg(Color::Rgb(0, 0, 0));
+//!            }
+//!
+//!            // Style the selected element
+//!            if context.is_selected {
+//!                item.style = Style::default()
+//!                    .bg(Color::Rgb(255, 153, 0))
+//!                    .fg(Color::Rgb(28, 28, 32));
+//!            };
+//!
+//!            // Return the size of the widget along the main axis.
+//!            let main_axis_size = 1;
+//!
+//!            (item, main_axis_size)
+//!         });
+//!
+//!         let item_count = 2;
+//!         let list = ListView::new(builder, item_count);
+//!         let state = &mut self.state;
+//!
+//!         list.render(area, buf, state);
+//!     }
+//! }
+//!```
 //!
 //! For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
 //!

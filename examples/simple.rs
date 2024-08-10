@@ -59,10 +59,7 @@ impl App {
 }
 
 impl Widget for &mut App {
-    fn render(self, area: Rect, buf: &mut Buffer)
-    where
-        Self: Sized,
-    {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let builder = ListBuilder::new(|context| {
             let text = format!("Item {0}", context.index);
             let mut item = Line::from(text);
