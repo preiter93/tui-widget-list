@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 use crossterm::event::{
     self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind,
 };

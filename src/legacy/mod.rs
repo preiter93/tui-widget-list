@@ -1,4 +1,3 @@
-pub mod traits;
-pub mod traits_deprecated;
+pub(crate) mod traits;
 mod utils;
-pub mod widget;
+pub(crate) mod widget;

@@ -1,4 +1,4 @@
-#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::cast_possible_truncation, deprecated)]
 use ratatui::{
     prelude::{Buffer, Rect},
     style::{Style, Styled},
@@ -12,6 +12,7 @@ use crate::{legacy::utils::layout_on_viewport, ListState, PreRender, ScrollAxis}
 /// trait.
 /// `List` is no longer developed. Consider using `ListView`.
 #[derive(Clone)]
+#[deprecated(since = "0.11.0", note = "Use ListView instead.")]
 pub struct List<'a, T: PreRender> {
     /// The list's items.
     pub items: Vec<T>,
@@ -26,6 +27,7 @@ pub struct List<'a, T: PreRender> {
     scroll_axis: ScrollAxis,
 }
 
+#[allow(deprecated)]
 impl<'a, T: PreRender> List<'a, T> {
     /// Instantiates a widget list with elements.
     ///
