@@ -6,16 +6,14 @@
 
 </div>
 
-This crate provides a stateful widget [`List`] implementation for `Ratatui`, enabling listing
-widgets that implement the [`PreRender`] trait. The associated [`ListState`], offers functionalities
-such as navigating to the next and previous items.
-Additionally, the lists support both horizontal and vertical scrolling.
+This crate provides a stateful widget [`ListView`] implementation for `Ratatui`. The associated [`ListState`], offers functionalities such as navigating to the next and previous items.
+The list view support both horizontal and vertical scrolling.
 
 ### Configuration
-The [`List`] can be customized with the following options:
-- [`List::scroll_direction`]: Specifies whether the list is vertically or horizontally scrollable.
-- [`List::style`]: Defines the base style of the list.
-- [`List::block`]: Optional outer block surrounding the list.
+The [`ListView`] can be customized with the following options:
+- [`ListView::scroll_axis`]: Specifies whether the list is vertically or horizontally scrollable.
+- [`ListView::style`]: Defines the base style of the list.
+- [`ListView::block`]: Optional outer block surrounding the list.
 
 You can adjust the behavior of [`ListState`] with the following options:
 - [`ListState::circular`]: Determines if the selection is circular. When enabled, selecting the last item loops back to the first. Enabled by default.
@@ -23,7 +21,7 @@ You can adjust the behavior of [`ListState`] with the following options:
 ### Example
 ```rust
 use ratatui::prelude::*;
-use tui_widget_list::{List, ListState, PreRender, PreRenderContext};
+use tui_widget_list::{ListBuilder, ListState, ListView};
 
 #[derive(Debug, Clone)]
 pub struct ListItem {
@@ -40,51 +38,49 @@ impl ListItem {
     }
 }
 
-impl PreRender for ListItem {
-   fn pre_render(&mut self, context: &PreRenderContext) -> u16 {
-       // Set alternating styles
-       if context.index % 2 == 0 {
-           self.style = Style::default().bg(Color::Rgb(28, 28, 32));
-       } else {
-           self.style = Style::default().bg(Color::Rgb(0, 0, 0));
-       }
-
-       // Highlight the selected widget
-       if context.is_selected {
-           self.style = Style::default()
-               .bg(Color::Rgb(255, 153, 0))
-               .fg(Color::Rgb(28, 28, 32));
-       };
-
-       // Example: set main axis size to 1
-       let main_axis_size = 1;
-
-       main_axis_size
-   }
-}
-
 impl Widget for ListItem {
     fn render(self, area: Rect, buf: &mut Buffer) {
         Line::from(self.text).style(self.style).render(area, buf);
     }
 }
 
-pub fn render(f: &mut Frame) {
-    let list = List::new(vec![
-        ListItem::new("Item 1"),
-        ListItem::new("Item 2"),
-    ]);
-    let mut state = ListState::default();
-    f.render_stateful_widget(list, f.size(), &mut state);
+pub struct App {
+    state: ListState,
+}
+
+impl Widget for &mut App {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let builder = ListBuilder::new(|context| {
+           let mut item = ListItem::new(&format!("Item {:0}", context.index));
+
+           // Alternating styles
+           if context.index % 2 == 0 {
+               item.style = Style::default().bg(Color::Rgb(28, 28, 32));
+           } else {
+               item.style = Style::default().bg(Color::Rgb(0, 0, 0));
+           }
+
+           // Style the selected element
+           if context.is_selected {
+               item.style = Style::default()
+                   .bg(Color::Rgb(255, 153, 0))
+                   .fg(Color::Rgb(28, 28, 32));
+           };
+
+           // Return the size of the widget along the main axis.
+           let main_axis_size = 1;
+
+           (item, main_axis_size)
+        });
+
+        let item_count = 2;
+        let list = ListView::new(builder, item_count);
+        let state = &mut self.state;
+
+        list.render(area, buf, state);
+    }
 }
 ```
-
-### Long lists
-
-`tui-widget-list` also allows to render long lists with thousands of items efficiently.
-Check out the [example](https://github.com/preiter93/tui-widget-list/tree/main/examples/long.rs)
-for demonstration. Note that the key is to create the items only once and implement `Widget` and
-`PreRender` on the references to the list item.
 
 For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
 
@@ -100,3 +96,5 @@ For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-
 #### Vertically and horizontally scrollable
 
 ![](examples/tapes/demo.gif?v=1)
+
+License: MIT
