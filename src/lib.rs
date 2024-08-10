@@ -15,9 +15,6 @@
 //! - [`ListView::style`]: Defines the base style of the list.
 //! - [`ListView::block`]: Optional outer block surrounding the list.
 //!
-//! You can adjust the behavior of [`ListState`] with the following options:
-//! - [`ListState::circular`]: Determines if the selection is circular. When enabled, selecting the last item loops back to the first. Enabled by default.
-//!
 //! ## Example
 //!```
 //! use ratatui::prelude::*;
@@ -101,10 +98,11 @@ pub(crate) mod state;
 pub(crate) mod utils;
 pub(crate) mod view;
 
+pub use state::ListState;
+pub use view::{ListBuildContext, ListBuilder, ListView, ScrollAxis};
+
 #[allow(deprecated)]
 pub use legacy::{
     traits::{PreRender, PreRenderContext},
     widget::List,
 };
-pub use state::ListState;
-pub use view::{ListBuildContext, ListBuilder, ListView, ScrollAxis};

@@ -42,13 +42,6 @@ impl<'a, T> ListView<'a, T> {
         }
     }
 
-    /// Sets the block style that surrounds the whole List.
-    #[must_use]
-    pub fn block(mut self, block: Block<'a>) -> Self {
-        self.block = Some(block);
-        self
-    }
-
     /// Checks whether the widget list is empty.
     #[must_use]
     pub fn is_empty(&self) -> bool {
@@ -59,6 +52,12 @@ impl<'a, T> ListView<'a, T> {
     #[must_use]
     pub fn len(&self) -> usize {
         self.item_count
+    }
+    /// Sets the block style that surrounds the whole List.
+    #[must_use]
+    pub fn block(mut self, block: Block<'a>) -> Self {
+        self.block = Some(block);
+        self
     }
 
     /// Set the base style of the List.
