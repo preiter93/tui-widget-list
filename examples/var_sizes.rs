@@ -6,7 +6,7 @@ use crossterm::{
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     prelude::*,
-    widgets::{Block, Borders, StatefulWidgetRef, WidgetRef},
+    widgets::{Block, Borders, Widget},
 };
 use std::{error::Error, io};
 use tui_widget_list::{ListBuilder, ListState, ListView};
@@ -30,15 +30,15 @@ impl LineItem<'_> {
     }
 }
 
-impl WidgetRef for LineItem<'_> {
-    fn render_ref(&self, area: Rect, buf: &mut Buffer) {
+impl Widget for LineItem<'_> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let inner = {
             let block = Block::default().borders(Borders::ALL);
             block.clone().render(area, buf);
             block.inner(area)
         };
 
-        self.line.render_ref(inner, buf);
+        self.line.render(inner, buf);
     }
 }
 
@@ -89,22 +89,15 @@ fn panic_hook() {
     }));
 }
 
-pub struct App<'a> {
-    pub list: ListView<'a, LineItem<'a>>,
+pub struct App {
     pub state: ListState,
 }
 
-impl Widget for &mut App<'_> {
+impl Widget for &mut App {
     fn render(self, area: Rect, buf: &mut Buffer)
     where
         Self: Sized,
     {
-        self.list.render_ref(area, buf, &mut self.state);
-    }
-}
-
-impl<'a> App<'a> {
-    pub fn new() -> App<'a> {
         let sizes = vec![4, 6, 5, 4, 3, 3, 6, 5, 7, 3, 6, 9, 4, 6];
         let item_count = sizes.len();
 
@@ -122,8 +115,14 @@ impl<'a> App<'a> {
         let list = ListView::new(builder, item_count)
             .bg(Color::Black)
             .block(block);
+        list.render(area, buf, &mut self.state);
+    }
+}
+
+impl App {
+    pub fn new() -> App {
         let state = ListState::default();
-        App { list, state }
+        App { state }
     }
 }
 

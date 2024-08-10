@@ -1,11 +1,10 @@
-use crate::ScrollAxis;
 use ratatui::{
     style::{Style, Styled},
     widgets::Block,
 };
 
-/// A struct representing a list view widget.
-/// The widget displays a list of items in a scrollable area.
+/// A struct representing a list view.
+/// The widget displays a scrollable list of items.
 pub struct ListView<'a, T> {
     /// The total number of items in the list
     pub item_count: usize,
@@ -111,11 +110,11 @@ pub struct ListBuildContext {
 }
 
 /// A type alias for the closure.
-type ListBuildClosure<T> = dyn Fn(&ListBuildContext) -> (T, u16);
+type ListBuilderClosure<T> = dyn Fn(&ListBuildContext) -> (T, u16);
 
 /// The builder to for constructing list elements in a `ListView<T>`
 pub struct ListBuilder<T> {
-    closure: Box<ListBuildClosure<T>>,
+    closure: Box<ListBuilderClosure<T>>,
 }
 
 impl<T> ListBuilder<T> {
@@ -133,4 +132,15 @@ impl<T> ListBuilder<T> {
     pub(crate) fn call_closure(&self, context: &ListBuildContext) -> (T, u16) {
         (self.closure)(context)
     }
+}
+
+/// Represents the scroll axis of a list.
+#[derive(Debug, Default, Clone, Copy)]
+pub enum ScrollAxis {
+    /// Indicates vertical scrolling. This is the default.
+    #[default]
+    Vertical,
+
+    /// Indicates horizontal scrolling.
+    Horizontal,
 }
