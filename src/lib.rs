@@ -91,7 +91,6 @@
 //!
 //!![](examples/tapes/demo.gif?v=1)
 pub(crate) mod legacy;
-pub(crate) mod render;
 pub(crate) mod state;
 pub(crate) mod utils;
 pub(crate) mod view;
