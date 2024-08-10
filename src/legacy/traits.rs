@@ -4,7 +4,7 @@ use ratatui::widgets::Widget;
 use crate::ScrollAxis;
 
 /// This trait should be implemented for items that are intended to be used within a `List` widget.
-#[deprecated(since = "0.11.0", note = "Use ListView instead.")]
+#[deprecated(since = "0.11.0", note = "Use ListView with ListBuilder instead.")]
 pub trait PreRender: Widget {
     /// This method is called before rendering the widget.
     ///
@@ -46,7 +46,7 @@ pub trait PreRender: Widget {
 ///
 /// It provides a set of information that can be used from [`PreRender::pre_render`].
 #[derive(Debug, Clone)]
-#[deprecated(since = "0.11.0", note = "Use ListView instead.")]
+#[deprecated(since = "0.11.0", note = "Use ListView with ListBuilder instead.")]
 pub struct PreRenderContext {
     /// Indicates whether the widget is selected.
     pub is_selected: bool,

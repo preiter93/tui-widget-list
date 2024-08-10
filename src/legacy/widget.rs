@@ -12,7 +12,7 @@ use crate::{legacy::utils::layout_on_viewport, ListState, PreRender, ScrollAxis}
 /// trait.
 /// `List` is no longer developed. Consider using `ListView`.
 #[derive(Clone)]
-#[deprecated(since = "0.11.0", note = "Use ListView instead.")]
+#[deprecated(since = "0.11.0", note = "Use ListView with ListBuilder instead.")]
 pub struct List<'a, T: PreRender> {
     /// The list's items.
     pub items: Vec<T>,
