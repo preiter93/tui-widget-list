@@ -168,7 +168,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
         }
 
         // Set the dimension along the scroll axis and the cross axis
-        let (total_main_axis_size, cross_axis_size) = match self.scroll_axis {
+        let (main_axis_size, cross_axis_size) = match self.scroll_axis {
             ScrollAxis::Vertical => (area.height, area.width),
             ScrollAxis::Horizontal => (area.width, area.height),
         };
@@ -185,7 +185,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             state,
             &self.builder,
             self.item_count,
-            total_main_axis_size,
+            main_axis_size,
             cross_axis_size,
             self.scroll_axis,
         );
@@ -193,25 +193,25 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
         let (start, end) = (state.offset, viewport.len() + state.offset);
         for i in start..end {
             let Some(ViewportElement {
-                main_axis_size,
+                main_axis_size: item_main_axis_size,
                 truncate_by,
                 widget,
             }) = viewport.remove(&i)
             else {
                 break;
             };
-            let effective_main_axis_size = main_axis_size.saturating_sub(truncate_by);
+            let visible_main_axis_size = item_main_axis_size.saturating_sub(truncate_by);
             let area = match self.scroll_axis {
                 ScrollAxis::Vertical => Rect::new(
                     cross_axis_pos,
                     scroll_axis_pos,
                     cross_axis_size,
-                    effective_main_axis_size,
+                    visible_main_axis_size,
                 ),
                 ScrollAxis::Horizontal => Rect::new(
                     scroll_axis_pos,
                     cross_axis_pos,
-                    effective_main_axis_size,
+                    visible_main_axis_size,
                     cross_axis_size,
                 ),
             };
@@ -223,7 +223,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
                     widget,
                     area,
                     buf,
-                    main_axis_size,
+                    item_main_axis_size,
                     truncate_top,
                     self.style,
                     self.scroll_axis,
@@ -232,7 +232,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
                 widget.render(area, buf);
             }
 
-            scroll_axis_pos += effective_main_axis_size;
+            scroll_axis_pos += visible_main_axis_size;
         }
     }
 }
