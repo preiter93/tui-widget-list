@@ -6,7 +6,7 @@ pub(crate) fn layout_on_viewport<T>(
     state: &mut ListState,
     builder: &ListBuilder<T>,
     item_count: usize,
-    total_main_axis_size: u16,
+    main_axis_size: u16,
     cross_axis_size: u16,
     scroll_axis: ScrollAxis,
 ) -> HashMap<usize, ViewportElement<T>> {
@@ -27,7 +27,7 @@ pub(crate) fn layout_on_viewport<T>(
     let mut found = false;
     for index in state.offset..item_count {
         let mut truncate_by = 0;
-        let available_size: u16 = total_main_axis_size.saturating_sub(y);
+        let available_size: u16 = main_axis_size.saturating_sub(y);
 
         // Build the widget
         let context = ListBuildContext {
@@ -75,7 +75,7 @@ pub(crate) fn layout_on_viewport<T>(
     // item and determine the first widget that still fits on the screen.
     let (mut y, mut found_first) = (0, false);
     for index in (0..=selected).rev() {
-        let available_size = total_main_axis_size - y;
+        let available_size = main_axis_size - y;
         let mut truncate_by = 0;
 
         // Evaluate the widget
