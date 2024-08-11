@@ -237,8 +237,8 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
     }
 }
 
-/// Renders a listable widget within a specified area of a buffer, potentially truncating the widget content based on scrolling direction.
-/// `truncate_top` indicates whether to truncate the content from the top or bottom.
+/// Render a truncated widget into a buffer. The method renders the widget fully into
+/// a hidden buffer and moves the visible content into `buf`.
 fn render_truncated<T: Widget>(
     item: T,
     available_area: Rect,
@@ -248,7 +248,7 @@ fn render_truncated<T: Widget>(
     base_style: Style,
     scroll_axis: ScrollAxis,
 ) {
-    // Create an intermediate buffer for rendering the truncated element
+    // Create an hidden buffer for rendering the truncated element
     let (width, height) = match scroll_axis {
         ScrollAxis::Vertical => (available_area.width, untruncated_size),
         ScrollAxis::Horizontal => (untruncated_size, available_area.height),
@@ -262,7 +262,7 @@ fn render_truncated<T: Widget>(
     hidden_buffer.set_style(hidden_buffer.area, base_style);
     item.render(hidden_buffer.area, &mut hidden_buffer);
 
-    // Copy the visible part from the intermediate buffer to the main buffer
+    // Copy the visible part from the hidden buffer to the main buffer
     match scroll_axis {
         ScrollAxis::Vertical => {
             let offset = if truncate_top {

@@ -11,9 +11,8 @@ pub struct ListState {
     /// handle item selection.
     pub(crate) num_elements: usize,
 
-    /// Indicates if the selection forms a circular structure. If circular,
-    /// calling `next` on the last element returns the first, and calling
-    /// `previous` on the first element returns the last.
+    /// Indicates if the selection is circular. If circular, calling `next` on the last
+    /// element returns the first, and calling `previous` on the first returns the last.
     ///
     /// True by default.
     pub(crate) circular: bool,
