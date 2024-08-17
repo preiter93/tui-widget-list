@@ -1,6 +1,10 @@
 Released
 --------
 
+0.12.0 - 17 Aug 2024
+===================
+- Bump ratatui to v0.28
+
 0.11.0 - 10 Aug 2024
 ===================
 - Introduces `ListView`, `ListBuilder` and `ListBuildContext` as replacement for `List`, `PreRender` and `PreRenderContext`.
