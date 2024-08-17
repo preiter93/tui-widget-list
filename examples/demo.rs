@@ -161,7 +161,7 @@ impl App {
 
     fn draw(&mut self, terminal: &mut Terminal<impl Backend>) -> Result<()> {
         terminal.draw(|frame| {
-            frame.render_widget(self, frame.size());
+            frame.render_widget(self, frame.area());
         })?;
         Ok(())
     }
