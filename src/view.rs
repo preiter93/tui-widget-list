@@ -1,6 +1,6 @@
 use ratatui::{
     buffer::Buffer,
-    layout::Rect,
+    layout::{Position, Rect},
     style::{Style, Styled},
     widgets::{block::BlockExt, Block, StatefulWidget, Widget, WidgetRef},
 };
@@ -273,7 +273,11 @@ fn render_truncated<T: Widget>(
             for y in available_area.top()..available_area.bottom() {
                 let y_off = y + offset;
                 for x in available_area.left()..available_area.right() {
-                    *buf.get_mut(x, y) = hidden_buffer.get(x, y_off).clone();
+                    if let Some(to) = buf.cell_mut(Position::new(x, y)) {
+                        if let Some(from) = hidden_buffer.cell(Position::new(x, y_off)) {
+                            *to = from.clone();
+                        }
+                    }
                 }
             }
         }
@@ -286,7 +290,11 @@ fn render_truncated<T: Widget>(
             for x in available_area.left()..available_area.right() {
                 let x_off = x + offset;
                 for y in available_area.top()..available_area.bottom() {
-                    *buf.get_mut(x, y) = hidden_buffer.get(x_off, y).clone();
+                    if let Some(to) = buf.cell_mut(Position::new(x, y)) {
+                        if let Some(from) = hidden_buffer.cell(Position::new(x_off, y)) {
+                            *to = from.clone();
+                        }
+                    }
                 }
             }
         }
