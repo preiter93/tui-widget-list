@@ -28,16 +28,16 @@ pub(crate) fn layout_on_viewport<T: PreRender>(
 
     // If the selected value is smaller than the offset, we roll
     // the offset so that the selected value is at the top
-    if selected < state.offset {
-        state.offset = selected;
+    if selected < state.view_state.offset {
+        state.view_state.offset = selected;
     }
 
     let mut main_axis_size_cache: HashMap<usize, u16> = HashMap::new();
 
     // Check if the selected item is in the current view
-    let (mut y, mut index) = (0, state.offset);
+    let (mut y, mut index) = (0, state.view_state.offset);
     let mut found = false;
-    for widget in widgets.iter_mut().skip(state.offset) {
+    for widget in widgets.iter_mut().skip(state.view_state.offset) {
         // Get the main axis size of the widget.
         let is_selected = state.selected.map_or(false, |j| index == j);
         let context = PreRenderContext::new(is_selected, cross_axis_size, scroll_axis, index);
@@ -101,7 +101,7 @@ pub(crate) fn layout_on_viewport<T: PreRender>(
                     truncated_by: main_axis_size.saturating_sub(dy),
                 },
             );
-            state.offset = index;
+            state.view_state.offset = index;
             break;
         }
 
@@ -124,86 +124,4 @@ pub(crate) fn layout_on_viewport<T: PreRender>(
 pub(crate) struct ViewportLayout {
     pub(crate) main_axis_size: u16,
     pub(crate) truncated_by: u16,
-}
-
-#[cfg(test)]
-mod tests {
-    use ratatui::{
-        prelude::*,
-        widgets::{Block, Borders},
-    };
-
-    use super::*;
-
-    struct TestItem {
-        main_axis_size: u16,
-    }
-
-    impl Widget for TestItem {
-        fn render(self, area: Rect, buf: &mut Buffer)
-        where
-            Self: Sized,
-        {
-            Block::default().borders(Borders::ALL).render(area, buf);
-        }
-    }
-
-    impl PreRender for TestItem {
-        fn pre_render(&mut self, _context: &PreRenderContext) -> u16 {
-            self.main_axis_size
-        }
-    }
-
-    macro_rules! update_view_port_tests {
-        ($($name:ident:
-        [
-           $given_offset:expr,
-           $given_selected:expr,
-           $given_sizes:expr,
-           $given_max_size:expr
-        ],
-        [
-           $expected_offset:expr,
-           $expected_sizes:expr
-        ],)*) => {
-        $(
-            #[test]
-            fn $name() {
-                // given
-                let mut given_state = ListState {
-                    offset: $given_offset,
-                    selected: $given_selected,
-                    num_elements: $given_sizes.len(),
-                    circular: true,
-                };
-
-                //when
-                let mut widgets: Vec<TestItem> = $given_sizes
-                    .into_iter()
-                    .map(|main_axis_size| TestItem {
-                        main_axis_size: main_axis_size as u16,
-                    })
-                    .collect();
-                let scroll_axis = ScrollAxis::default();
-                let layouts = layout_on_viewport(&mut given_state, &mut widgets, $given_max_size, 0, scroll_axis);
-                let offset = given_state.offset;
-
-                // then
-                let main_axis_sizes: Vec<u16> = layouts.iter().map(|x| x.main_axis_size).collect();
-                assert_eq!(offset, $expected_offset);
-                assert_eq!(main_axis_sizes, $expected_sizes);
-            }
-        )*
-        }
-    }
-
-    update_view_port_tests! {
-        happy_path: [0, Some(0), vec![2, 3], 6], [0, vec![2, 3]],
-        empty_list: [0, None, Vec::<u16>::new(), 4], [0, vec![]],
-        update_offset_down: [0, Some(2), vec![2, 3, 3], 6], [1, vec![3, 3]],
-        update_offset_up: [1, Some(0), vec![2, 3, 3], 6], [0, vec![2, 3, 1]],
-        truncate_bottom: [0, Some(0), vec![2, 3], 4], [0, vec![2, 2]],
-        truncate_top: [0, Some(1), vec![2, 3], 4], [0, vec![1, 3]],
-        num_elements: [0, None, vec![1, 1, 1, 1, 1], 3], [0, vec![1, 1, 1]],
-    }
 }

@@ -144,7 +144,10 @@ impl<'a, T: PreRender> StatefulWidget for List<'a, T> {
         // Drain out elements that are shown on the view port from the vector of
         // all elements.
         let num_items_viewport = viewport_layouts.len();
-        let (start, end) = (state.offset, num_items_viewport + state.offset);
+        let (start, end) = (
+            state.view_state.offset,
+            num_items_viewport + state.view_state.offset,
+        );
         let items_viewport = items.drain(start..end);
 
         // The starting coordinates of the current item
