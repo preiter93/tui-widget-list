@@ -1,6 +1,10 @@
 Released
 --------
 
+0.12.1 - 25 Aug 2024
+===================
+- Change scroll up behaviour - keep first element truncated if possible
+
 0.12.0 - 17 Aug 2024
 ===================
 - Bump ratatui to v0.28
