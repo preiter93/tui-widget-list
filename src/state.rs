@@ -4,9 +4,6 @@ pub struct ListState {
     /// The selected item. If `None`, no item is currently selected.
     pub selected: Option<usize>,
 
-    /// The index of the first item displayed on the screen.
-    pub(crate) offset: usize,
-
     /// The total number of elements in the list. This is necessary to correctly
     /// handle item selection.
     pub(crate) num_elements: usize,
@@ -16,15 +13,28 @@ pub struct ListState {
     ///
     /// True by default.
     pub(crate) circular: bool,
+
+    /// The state for the viewport. Keeps track which item to show
+    /// first and how much it is truncated.
+    pub(crate) view_state: ViewState,
+}
+
+#[derive(Debug, Clone, Default, Eq, PartialEq)]
+pub(crate) struct ViewState {
+    /// The index of the first item displayed on the screen.
+    pub(crate) offset: usize,
+
+    /// The truncation in rows/columns of the first item displayed on the screen.
+    pub(crate) first_truncated: u16,
 }
 
 impl Default for ListState {
     fn default() -> Self {
         Self {
             selected: None,
-            offset: 0,
             num_elements: 0,
             circular: true,
+            view_state: ViewState::default(),
         }
     }
 }
@@ -48,7 +58,7 @@ impl ListState {
     pub fn select(&mut self, index: Option<usize>) {
         self.selected = index;
         if index.is_none() {
-            self.offset = 0;
+            self.view_state.offset = 0;
         }
     }
 

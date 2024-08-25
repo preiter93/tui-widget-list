@@ -98,7 +98,7 @@ impl Widget for &mut App {
     where
         Self: Sized,
     {
-        let sizes = vec![4, 6, 5, 4, 3, 3, 6, 5, 7, 3, 6, 9, 4, 6];
+        let sizes = vec![100, 100, 4, 6, 5, 4, 3, 3, 6, 5, 7, 3, 6, 9, 10, 4, 4, 6];
         let item_count = sizes.len();
 
         let block = Block::default().borders(Borders::ALL).title("Outer block");
@@ -129,7 +129,7 @@ impl App {
 pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
     loop {
         terminal.draw(|frame| {
-            frame.render_widget(&mut app, frame.size());
+            frame.render_widget(&mut app, frame.area());
         })?;
 
         if let Event::Key(key) = event::read()? {
@@ -144,8 +144,3 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Resu
         }
     }
 }
-
-// pub fn ui(f: &mut Frame, app: App) {
-//     // let list = app.list;
-//     f.render_stateful_widget_ref(app.list, f.size(), &mut app.state);
-// }

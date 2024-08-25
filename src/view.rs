@@ -5,13 +5,11 @@ use ratatui::{
     widgets::{block::BlockExt, Block, StatefulWidget, Widget, WidgetRef},
 };
 
-use crate::{
-    utils::{layout_on_viewport, ViewportElement},
-    ListState,
-};
+use crate::{utils::layout_on_viewport, ListState};
 
 /// A struct representing a list view.
 /// The widget displays a scrollable list of items.
+#[allow(clippy::module_name_repetitions)]
 pub struct ListView<'a, T> {
     /// The total number of items in the list
     pub item_count: usize,
@@ -190,17 +188,17 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             self.scroll_axis,
         );
 
-        let (start, end) = (state.offset, viewport.len() + state.offset);
+        let (start, end) = (
+            state.view_state.offset,
+            viewport.len() + state.view_state.offset,
+        );
         for i in start..end {
-            let Some(ViewportElement {
-                main_axis_size: item_main_axis_size,
-                truncate_by,
-                widget,
-            }) = viewport.remove(&i)
-            else {
+            let Some(element) = viewport.remove(&i) else {
                 break;
             };
-            let visible_main_axis_size = item_main_axis_size.saturating_sub(truncate_by);
+            let visible_main_axis_size = element
+                .main_axis_size
+                .saturating_sub(element.truncation.value());
             let area = match self.scroll_axis {
                 ScrollAxis::Vertical => Rect::new(
                     cross_axis_pos,
@@ -217,19 +215,18 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             };
 
             // Render truncated widgets.
-            if truncate_by > 0 {
-                let truncate_top = i == 0 && viewport.len() > 1;
+            if element.truncation.value() > 0 {
                 render_truncated(
-                    widget,
+                    element.widget,
                     area,
                     buf,
-                    item_main_axis_size,
-                    truncate_top,
+                    element.main_axis_size,
+                    &element.truncation,
                     self.style,
                     self.scroll_axis,
                 );
             } else {
-                widget.render(area, buf);
+                element.widget.render(area, buf);
             }
 
             scroll_axis_pos += visible_main_axis_size;
@@ -244,7 +241,7 @@ fn render_truncated<T: Widget>(
     available_area: Rect,
     buf: &mut Buffer,
     untruncated_size: u16,
-    truncate_top: bool,
+    truncation: &Truncation,
     base_style: Style,
     scroll_axis: ScrollAxis,
 ) {
@@ -265,10 +262,9 @@ fn render_truncated<T: Widget>(
     // Copy the visible part from the hidden buffer to the main buffer
     match scroll_axis {
         ScrollAxis::Vertical => {
-            let offset = if truncate_top {
-                untruncated_size.saturating_sub(available_area.height)
-            } else {
-                0
+            let offset = match truncation {
+                Truncation::Top(value) => *value,
+                _ => 0,
             };
             for y in available_area.top()..available_area.bottom() {
                 let y_off = y + offset;
@@ -282,10 +278,9 @@ fn render_truncated<T: Widget>(
             }
         }
         ScrollAxis::Horizontal => {
-            let offset = if truncate_top {
-                untruncated_size.saturating_sub(available_area.width)
-            } else {
-                0
+            let offset = match truncation {
+                Truncation::Top(value) => *value,
+                _ => 0,
             };
             for x in available_area.left()..available_area.right() {
                 let x_off = x + offset;
@@ -299,6 +294,23 @@ fn render_truncated<T: Widget>(
             }
         }
     };
+}
+
+#[derive(Debug, Clone, Default, PartialEq, PartialOrd, Eq, Ord)]
+pub(crate) enum Truncation {
+    #[default]
+    None,
+    Top(u16),
+    Bot(u16),
+}
+
+impl Truncation {
+    pub(crate) fn value(&self) -> u16 {
+        match self {
+            Self::Top(value) | Self::Bot(value) => *value,
+            Self::None => 0,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -412,6 +424,45 @@ mod test {
         list.render(area, &mut buf, &mut state);
 
         // then
+        assert_buffer_eq(
+            buf,
+            Buffer::with_lines(vec![
+                "│   │",
+                "└───┘",
+                "┌───┐",
+                "│   │",
+                "└───┘",
+                "┌───┐",
+                "│   │",
+                "└───┘",
+            ]),
+        )
+    }
+
+    #[test]
+    fn scroll_up() {
+        let (area, mut buf, list, mut state) = test_data(8);
+        // Select last element and render
+        state.select(Some(2));
+        list.render(area, &mut buf, &mut state);
+        assert_buffer_eq(
+            buf,
+            Buffer::with_lines(vec![
+                "│   │",
+                "└───┘",
+                "┌───┐",
+                "│   │",
+                "└───┘",
+                "┌───┐",
+                "│   │",
+                "└───┘",
+            ]),
+        );
+
+        // Select first element and render
+        let (_, mut buf, list, _) = test_data(8);
+        state.select(Some(1));
+        list.render(area, &mut buf, &mut state);
         assert_buffer_eq(
             buf,
             Buffer::with_lines(vec![
