@@ -1,14 +1,13 @@
+pub mod item_container;
+#[allow(unused_imports)]
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{
-    buffer::Buffer,
-    layout::Rect,
     prelude::CrosstermBackend,
     style::{Color, Style},
-    text::Line,
-    widgets::{BorderType, Borders, Padding, StatefulWidget, Widget},
+    widgets::{BorderType, Borders, StatefulWidget},
 };
 use std::{
     error::Error,
@@ -27,29 +26,6 @@ impl Colors {
     pub const ORANGE: Color = Color::Rgb(255, 153, 0);
     pub const GRAY: Color = Color::Rgb(96, 96, 96);
     pub const TEAL: Color = Color::Rgb(0, 128, 128);
-}
-
-pub struct PaddedLine<'a> {
-    pub line: Line<'a>,
-    pub block: ratatui::widgets::Block<'a>,
-    pub style: Style,
-}
-
-impl<'a> PaddedLine<'a> {
-    pub fn new(line: Line<'a>, padding: Padding) -> Self {
-        let block = ratatui::widgets::Block::default().padding(padding);
-        let style = Style::default().fg(Color::White);
-        Self { line, block, style }
-    }
-}
-
-impl Widget for PaddedLine<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let inner_area = self.block.inner(area);
-        buf.set_style(area, self.style);
-        self.block.render(area, buf);
-        self.line.render(inner_area, buf);
-    }
 }
 
 pub struct Block;
