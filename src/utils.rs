@@ -45,6 +45,49 @@ pub(crate) fn layout_on_viewport<T>(
         state.view_state.first_truncated = 0;
     }
 
+    let found_selected = forward_pass(
+        &mut viewport,
+        state,
+        builder,
+        item_count,
+        total_main_axis_size,
+        selected,
+        cross_axis_size,
+        scroll_axis,
+    );
+
+    if found_selected {
+        return viewport;
+    }
+
+    viewport.clear();
+
+    backward_pass(
+        &mut viewport,
+        state,
+        builder,
+        total_main_axis_size,
+        selected,
+        cross_axis_size,
+        scroll_axis,
+    );
+
+    viewport
+}
+
+/// Iterate forward through the list of widgets.
+///
+/// Returns true if the selected widget is inside the viewport.
+fn forward_pass<T>(
+    viewport: &mut HashMap<usize, ViewportElement<T>>,
+    state: &mut ListState,
+    builder: &ListBuilder<T>,
+    item_count: usize,
+    total_main_axis_size: u16,
+    selected: usize,
+    cross_axis_size: u16,
+    scroll_axis: ScrollAxis,
+) -> bool {
     // Check if the selected item is in the current view
     let mut found_last = false;
     let mut found_selected = false;
@@ -77,7 +120,7 @@ pub(crate) fn layout_on_viewport<T>(
         }
 
         let truncation = match available_size.cmp(&main_axis_size) {
-            // We found the last element and it fits into the viewport
+            // We found the last element and it fits onto the viewport
             Ordering::Equal => {
                 found_last = true;
                 if is_first {
@@ -121,14 +164,20 @@ pub(crate) fn layout_on_viewport<T>(
         available_size -= main_axis_size;
     }
 
-    if found_selected {
-        return viewport;
-    }
+    return found_selected;
+}
 
-    viewport.clear();
-
-    // The selected item is out of bounds. We iterate backwards from the selected
-    // item and determine the first widget that still fits on the screen.
+// The selected item is out of bounds. We iterate backwards from the selected
+// item and determine the first widget that still fits on the screen.
+fn backward_pass<T>(
+    viewport: &mut HashMap<usize, ViewportElement<T>>,
+    state: &mut ListState,
+    builder: &ListBuilder<T>,
+    total_main_axis_size: u16,
+    selected: usize,
+    cross_axis_size: u16,
+    scroll_axis: ScrollAxis,
+) {
     let mut found_first = false;
     let mut available_size = total_main_axis_size;
     for index in (0..=selected).rev() {
@@ -173,8 +222,6 @@ pub(crate) fn layout_on_viewport<T>(
 
         available_size -= main_axis_size;
     }
-
-    viewport
 }
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
