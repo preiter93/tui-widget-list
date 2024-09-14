@@ -25,6 +25,9 @@ pub struct ListView<'a, T> {
 
     /// The base block surrounding the widget list.
     pub block: Option<Block<'a>>,
+
+    /// The scroll padding.
+    pub(crate) scroll_padding: usize,
 }
 
 impl<'a, T> ListView<'a, T> {
@@ -37,6 +40,7 @@ impl<'a, T> ListView<'a, T> {
             scroll_axis: ScrollAxis::Vertical,
             style: Style::default(),
             block: None,
+            scroll_padding: 0,
         }
     }
 
@@ -51,6 +55,7 @@ impl<'a, T> ListView<'a, T> {
     pub fn len(&self) -> usize {
         self.item_count
     }
+
     /// Sets the block style that surrounds the whole List.
     #[must_use]
     pub fn block(mut self, block: Block<'a>) -> Self {
@@ -69,6 +74,13 @@ impl<'a, T> ListView<'a, T> {
     #[must_use]
     pub fn scroll_axis(mut self, scroll_axis: ScrollAxis) -> Self {
         self.scroll_axis = scroll_axis;
+        self
+    }
+
+    /// Set the scroll padding of the list.
+    #[must_use]
+    pub fn scroll_padding(mut self, scroll_padding: usize) -> Self {
+        self.scroll_padding = scroll_padding;
         self
     }
 }
@@ -186,6 +198,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             main_axis_size,
             cross_axis_size,
             self.scroll_axis,
+            self.scroll_padding as u16,
         );
 
         let (start, end) = (

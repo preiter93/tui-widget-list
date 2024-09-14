@@ -11,18 +11,20 @@ use crate::common::{item_container::ListItemContainer, Colors};
 #[derive(PartialEq, Eq, Default, Clone)]
 pub enum Variant {
     #[default]
-    Simple,
-    Padded,
+    Classic,
+    InfiniteScrolling,
+    ScrollPadding,
     Horizontal,
 }
 
 impl Variant {
-    pub const COUNT: usize = 3;
+    pub const COUNT: usize = 4;
     pub fn from_index(index: usize) -> Self {
         match index {
-            1 => Variant::Padded,
-            2 => Variant::Horizontal,
-            _ => Variant::Simple,
+            1 => Variant::InfiniteScrolling,
+            2 => Variant::ScrollPadding,
+            3 => Variant::Horizontal,
+            _ => Variant::Classic,
         }
     }
 }
@@ -30,9 +32,10 @@ impl Variant {
 impl std::fmt::Display for Variant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Variant::Simple => write!(f, "Simple"),
-            Variant::Padded => write!(f, "Padded"),
-            Variant::Horizontal => write!(f, "Horizontal"),
+            Variant::Classic => write!(f, "Classic"),
+            Variant::InfiniteScrolling => write!(f, "Infinite Scrolling"),
+            Variant::ScrollPadding => write!(f, "Scroll Padding"),
+            Variant::Horizontal => write!(f, "Horizontal Scrolling"),
         }
     }
 }

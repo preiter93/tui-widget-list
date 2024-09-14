@@ -1,25 +1,25 @@
+#[path = "variants/classic.rs"]
+mod classic;
 #[path = "common/lib.rs"]
 mod common;
 #[path = "variants/config.rs"]
 mod config;
 #[path = "variants/horizontal.rs"]
 mod horizontal;
-#[path = "variants/padded.rs"]
-mod padded;
-#[path = "variants/simple.rs"]
-mod simple;
+#[path = "variants/scroll_padding.rs"]
+mod scroll_padding;
+use classic::PaddedListView;
 use common::{Block, Colors, Result, Terminal};
 use config::{Controls, Variant, VariantsListView};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use horizontal::HorizontalListView;
-use padded::PaddedListView;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
     style::Stylize,
     widgets::{StatefulWidget, Widget},
 };
-use simple::SimpleListView;
+use scroll_padding::ScrollPaddingListView;
 use tui_widget_list::ListState;
 
 fn main() -> Result<()> {
@@ -48,6 +48,7 @@ impl AppState {
         scroll_config_state.select(Some(0));
         Self {
             variant_state: scroll_config_state,
+            list_state: ListState::default().circular(false),
             ..AppState::default()
         }
     }
@@ -98,6 +99,7 @@ impl App {
                     | KeyCode::Char('h')
                     | KeyCode::Right
                     | KeyCode::Char('l') => {
+                        state.list_state = state.list_state.clone().circular(false);
                         state.list_state.select(None);
                         state.selected_tab.next()
                     }
@@ -140,18 +142,24 @@ impl StatefulWidget for &App {
             _ => Colors::GRAY,
         };
         match Variant::from_index(state.variant_state.selected.unwrap_or(0)) {
-            Variant::Simple => {
-                SimpleListView::new()
-                    .block(block)
-                    .fg(fg)
-                    .render(right, buf, &mut state.list_state)
-            }
-            Variant::Padded => {
+            Variant::Classic => {
                 PaddedListView::new()
                     .block(block)
                     .fg(fg)
                     .render(right, buf, &mut state.list_state)
             }
+            Variant::InfiniteScrolling => {
+                state.list_state = state.list_state.clone().circular(true);
+                PaddedListView::new()
+                    .block(block)
+                    .fg(fg)
+                    .render(right, buf, &mut state.list_state)
+            }
+            Variant::ScrollPadding => ScrollPaddingListView::new().block(block).fg(fg).render(
+                right,
+                buf,
+                &mut state.list_state,
+            ),
             Variant::Horizontal => HorizontalListView::new().block(block).fg(fg).render(
                 right,
                 buf,

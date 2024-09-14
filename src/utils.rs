@@ -1,6 +1,7 @@
-use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::io::Write;
+use std::{cmp::Ordering, fs::OpenOptions};
 
 use crate::{view::Truncation, ListBuildContext, ListBuilder, ListState, ScrollAxis};
 
@@ -29,6 +30,7 @@ pub(crate) fn layout_on_viewport<T>(
     total_main_axis_size: u16,
     cross_axis_size: u16,
     scroll_axis: ScrollAxis,
+    scroll_padding: u16,
 ) -> HashMap<usize, ViewportElement<T>> {
     // The items heights on the viewport will be calculated on the fly.
     let mut viewport: HashMap<usize, ViewportElement<T>> = HashMap::new();
@@ -45,15 +47,27 @@ pub(crate) fn layout_on_viewport<T>(
         state.view_state.first_truncated = 0;
     }
 
+    let effective_scroll_padding_by_index = calculate_scroll_padding_for_end_of_list(
+        state,
+        builder,
+        item_count,
+        cross_axis_size,
+        scroll_axis,
+        scroll_padding,
+    );
+
+    // Begin a forward pass, starting from `view_state.offset`.
     let found_selected = forward_pass(
         &mut viewport,
         state,
         builder,
+        state.view_state.offset,
         item_count,
         total_main_axis_size,
         selected,
         cross_axis_size,
         scroll_axis,
+        &effective_scroll_padding_by_index,
     );
 
     if found_selected {
@@ -62,6 +76,9 @@ pub(crate) fn layout_on_viewport<T>(
 
     viewport.clear();
 
+    // Perform a backward pass, starting from the `selected` item.
+    // This step is only necessary if the forward pass did not
+    // locate the selected item.
     backward_pass(
         &mut viewport,
         state,
@@ -70,9 +87,65 @@ pub(crate) fn layout_on_viewport<T>(
         selected,
         cross_axis_size,
         scroll_axis,
+        &effective_scroll_padding_by_index,
     );
 
+    // if scroll_padding > 0 {
+    //     let _ = forward_pass(
+    //         &mut viewport,
+    //         state,
+    //         builder,
+    //         selected + 1,
+    //         item_count,
+    //         scroll_padding,
+    //         selected,
+    //         cross_axis_size,
+    //         scroll_axis,
+    //         0,
+    //     );
+    // }
+
     viewport
+}
+/// Calculate the effective scroll padding at the end of the list.
+/// Padding is applied until the scroll padding limit is reached,
+/// after which elements at the end of the list do not receive padding.
+///
+/// Returns:
+/// A `HashMap` where the keys are the indices of the list items and the values are
+/// the corresponding padding applied. If the item is not on the list, `scroll_padding`
+/// is unaltered.
+fn calculate_scroll_padding_for_end_of_list<T>(
+    state: &mut ListState,
+    builder: &ListBuilder<T>,
+    item_count: usize,
+    cross_axis_size: u16,
+    scroll_axis: ScrollAxis,
+    scroll_padding: u16,
+) -> HashMap<usize, u16> {
+    let mut padding_by_element = HashMap::new();
+    let mut total_main_axis_size = 0 as u16;
+
+    for index in (0..item_count).rev() {
+        // Stop applying padding once the scroll padding limit is reached
+        if total_main_axis_size >= scroll_padding {
+            padding_by_element.insert(index, scroll_padding);
+        } else {
+            padding_by_element.insert(index, total_main_axis_size);
+        }
+
+        let context = ListBuildContext {
+            index,
+            is_selected: state.selected.map_or(false, |j| index == j),
+            scroll_axis,
+            cross_axis_size,
+        };
+
+        let (_, item_main_axis_size) = builder.call_closure(&context);
+        total_main_axis_size += item_main_axis_size;
+    }
+
+    return padding_by_element;
 }
 
 /// Iterate forward through the list of widgets.
@@ -82,17 +155,19 @@ fn forward_pass<T>(
     viewport: &mut HashMap<usize, ViewportElement<T>>,
     state: &mut ListState,
     builder: &ListBuilder<T>,
+    offset: usize,
     item_count: usize,
     total_main_axis_size: u16,
     selected: usize,
     cross_axis_size: u16,
     scroll_axis: ScrollAxis,
+    scroll_padding_by_index: &HashMap<usize, u16>,
 ) -> bool {
     // Check if the selected item is in the current view
     let mut found_last = false;
     let mut found_selected = false;
     let mut available_size = total_main_axis_size;
-    for index in state.view_state.offset..item_count {
+    for index in offset..item_count {
         let is_first = index == state.view_state.offset;
         // Build the widget
         let context = ListBuildContext {
@@ -108,8 +183,12 @@ fn forward_pass<T>(
             total_main_axis_size
         };
 
+        // The effective available size considering scroll padding.
+        let scroll_padding_effective = scroll_padding_by_index.get(&index).unwrap_or(&0);
+        let available_effective = available_size.saturating_sub(*scroll_padding_effective);
+
         // Out of bounds
-        if !found_selected && main_axis_size >= available_size {
+        if !found_selected && main_axis_size >= available_effective {
             break;
         }
 
@@ -148,9 +227,6 @@ fn forward_pass<T>(
                 }
             }
         };
-        // if found_selected && is_first {
-        //     state.truncated = truncation.value();
-        // }
 
         viewport.insert(
             index,
@@ -177,7 +253,11 @@ fn backward_pass<T>(
     selected: usize,
     cross_axis_size: u16,
     scroll_axis: ScrollAxis,
+    scroll_padding_by_index: &HashMap<usize, u16>,
 ) {
+    // The effective available size considering scroll padding.
+    let scroll_padding_effective = *scroll_padding_by_index.get(&selected).unwrap_or(&0);
+
     let mut found_first = false;
     let mut available_size = total_main_axis_size;
     for index in (0..=selected).rev() {
@@ -190,7 +270,9 @@ fn backward_pass<T>(
         };
         let (widget, main_axis_size) = builder.call_closure(&context);
 
-        let truncation = match available_size.cmp(&main_axis_size) {
+        let available_effective = available_size.saturating_sub(scroll_padding_effective);
+
+        let truncation = match available_effective.cmp(&main_axis_size) {
             // We found the first element and it fits into the viewport
             Ordering::Equal => {
                 found_first = true;
@@ -202,7 +284,8 @@ fn backward_pass<T>(
             Ordering::Less => {
                 found_first = true;
                 state.view_state.offset = index;
-                state.view_state.first_truncated = main_axis_size.saturating_sub(available_size);
+                state.view_state.first_truncated =
+                    main_axis_size.saturating_sub(available_effective);
                 // Truncate from the bottom if there is only one element on the viewport
                 if index == selected {
                     Truncation::Bot(state.view_state.first_truncated)
@@ -221,6 +304,19 @@ fn backward_pass<T>(
         }
 
         available_size -= main_axis_size;
+    }
+}
+
+#[allow(dead_code)]
+pub fn log_to_file<T: Debug>(data: T) {
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("debug.log")
+        .unwrap();
+
+    if let Err(e) = writeln!(file, "{data:?}") {
+        eprintln!("Couldn't write to file: {e}");
     }
 }
 
@@ -314,6 +410,7 @@ mod tests {
             given_total_size,
             1,
             ScrollAxis::Vertical,
+            0,
         );
 
         // then
@@ -372,6 +469,7 @@ mod tests {
             given_total_size,
             1,
             ScrollAxis::Vertical,
+            0,
         );
 
         // then
@@ -425,6 +523,65 @@ mod tests {
             given_total_size,
             1,
             ScrollAxis::Vertical,
+            0,
+        );
+
+        // then
+        assert_eq!(viewport, expected_viewport);
+        assert_eq!(state.view_state, expected_view_state);
+    }
+
+    // From:
+    //
+    // -----
+    // |   | 0 <-
+    // |   |
+    // -----
+    // |   | 1
+    // |   |
+    // -----
+    //
+    // To:
+    //
+    // |   |
+    // -----
+    // |   | 1 <-
+    // |   |
+    // -----
+    // |   |
+    #[test]
+    fn scroll_padding() {
+        // given
+        let mut state = ListState {
+            num_elements: 3,
+            selected: Some(1),
+            ..ListState::default()
+        };
+        let given_sizes = vec![2, 2, 2];
+        let given_item_count = given_sizes.len();
+        let given_total_size = 4;
+
+        let expected_view_state = ViewState {
+            offset: 0,
+            first_truncated: 1,
+        };
+        let expected_viewport = HashMap::from([
+            (0, ViewportElement::new(TestItem {}, 2, Truncation::Top(1))),
+            (1, ViewportElement::new(TestItem {}, 2, Truncation::None)),
+            (2, ViewportElement::new(TestItem {}, 2, Truncation::Bot(1))),
+        ]);
+
+        // when
+        let viewport = layout_on_viewport(
+            &mut state,
+            &ListBuilder::new(move |context| {
+                return (TestItem {}, given_sizes[context.index]);
+            }),
+            given_item_count,
+            given_total_size,
+            1,
+            ScrollAxis::Vertical,
+            1,
         );
 
         // then
@@ -483,6 +640,7 @@ mod tests {
             given_total_size,
             1,
             ScrollAxis::Vertical,
+            0,
         );
 
         // then
@@ -548,6 +706,7 @@ mod tests {
             given_total_size,
             1,
             ScrollAxis::Vertical,
+            0,
         );
 
         // then

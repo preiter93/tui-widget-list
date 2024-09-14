@@ -20,6 +20,6 @@ impl PaddedListView {
             return (line, 3);
         });
 
-        return ListView::new(builder, 50);
+        return ListView::new(builder, 30);
     }
 }
