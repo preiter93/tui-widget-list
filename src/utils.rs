@@ -47,7 +47,7 @@ pub(crate) fn layout_on_viewport<T>(
         state.view_state.first_truncated = 0;
     }
 
-    let effective_scroll_padding_by_index = calculate_scroll_padding_for_end_of_list(
+    let effective_scroll_padding_by_index = calculate_effective_scroll_padding(
         state,
         builder,
         item_count,
@@ -83,6 +83,7 @@ pub(crate) fn layout_on_viewport<T>(
         &mut viewport,
         state,
         builder,
+        item_count,
         total_main_axis_size,
         selected,
         cross_axis_size,
@@ -107,6 +108,7 @@ pub(crate) fn layout_on_viewport<T>(
 
     viewport
 }
+
 /// Calculate the effective scroll padding at the end of the list.
 /// Padding is applied until the scroll padding limit is reached,
 /// after which elements at the end of the list do not receive padding.
@@ -115,7 +117,7 @@ pub(crate) fn layout_on_viewport<T>(
 /// A `HashMap` where the keys are the indices of the list items and the values are
 /// the corresponding padding applied. If the item is not on the list, `scroll_padding`
 /// is unaltered.
-fn calculate_scroll_padding_for_end_of_list<T>(
+fn calculate_effective_scroll_padding<T>(
     state: &mut ListState,
     builder: &ListBuilder<T>,
     item_count: usize,
@@ -126,13 +128,33 @@ fn calculate_scroll_padding_for_end_of_list<T>(
     let mut padding_by_element = HashMap::new();
     let mut total_main_axis_size = 0 as u16;
 
-    for index in (0..item_count).rev() {
-        // Stop applying padding once the scroll padding limit is reached
+    for index in 0..item_count {
         if total_main_axis_size >= scroll_padding {
             padding_by_element.insert(index, scroll_padding);
+            continue;
         } else {
             padding_by_element.insert(index, total_main_axis_size);
         }
+        padding_by_element.insert(index, total_main_axis_size);
+
+        let context = ListBuildContext {
+            index,
+            is_selected: state.selected.map_or(false, |j| index == j),
+            scroll_axis,
+            cross_axis_size,
+        };
+
+        let (_, item_main_axis_size) = builder.call_closure(&context);
+        total_main_axis_size += item_main_axis_size;
+    }
+
+    total_main_axis_size = 0;
+    for index in (0..item_count).rev() {
+        // Stop applying padding once the scroll padding limit is reached
+        if total_main_axis_size >= scroll_padding {
+            break;
+        }
+        padding_by_element.insert(index, total_main_axis_size);
 
         let context = ListBuildContext {
             index,
@@ -249,17 +271,16 @@ fn backward_pass<T>(
     viewport: &mut HashMap<usize, ViewportElement<T>>,
     state: &mut ListState,
     builder: &ListBuilder<T>,
+    item_count: usize,
     total_main_axis_size: u16,
     selected: usize,
     cross_axis_size: u16,
     scroll_axis: ScrollAxis,
     scroll_padding_by_index: &HashMap<usize, u16>,
 ) {
-    // The effective available size considering scroll padding.
-    let scroll_padding_effective = *scroll_padding_by_index.get(&selected).unwrap_or(&0);
-
     let mut found_first = false;
     let mut available_size = total_main_axis_size;
+    let scroll_padding_effective = *scroll_padding_by_index.get(&selected).unwrap_or(&0);
     for index in (0..=selected).rev() {
         // Evaluate the widget
         let context = ListBuildContext {
@@ -304,6 +325,36 @@ fn backward_pass<T>(
         }
 
         available_size -= main_axis_size;
+    }
+
+    // Append elements to the list to fill the viewport after the selected item.
+    // Only necessary for lists with scroll padding.
+    if scroll_padding_effective > 0 {
+        available_size = scroll_padding_effective;
+        for index in selected + 1..item_count {
+            let context = ListBuildContext {
+                index,
+                is_selected: state.selected.map_or(false, |j| index == j),
+                scroll_axis,
+                cross_axis_size,
+            };
+            let (widget, main_axis_size) = builder.call_closure(&context);
+
+            let truncation = match available_size.cmp(&main_axis_size) {
+                Ordering::Greater | Ordering::Equal => Truncation::None,
+                Ordering::Less => Truncation::Bot(main_axis_size.saturating_sub(available_size)),
+            };
+            viewport.insert(
+                index,
+                ViewportElement::new(widget, main_axis_size, truncation),
+            );
+
+            available_size = available_size.saturating_sub(main_axis_size);
+            // Out of bounds
+            if available_size == 0 {
+                break;
+            }
+        }
     }
 }
 
@@ -712,5 +763,32 @@ mod tests {
         // then
         assert_eq!(viewport, expected_viewport);
         assert_eq!(state.view_state, expected_view_state);
+    }
+
+    #[test]
+    fn test_calculate_effective_scroll_padding() {
+        let mut state = ListState::default();
+        let given_sizes = vec![2, 2, 2, 2, 2];
+        let item_count = 5;
+        let scroll_padding = 3;
+
+        let builder = ListBuilder::new(move |context| {
+            return (TestItem {}, given_sizes[context.index]);
+        });
+
+        let scroll_padding = calculate_effective_scroll_padding(
+            &mut state,
+            &builder,
+            item_count,
+            1,
+            ScrollAxis::Vertical,
+            scroll_padding,
+        );
+
+        assert_eq!(*scroll_padding.get(&0).unwrap(), 0);
+        assert_eq!(*scroll_padding.get(&1).unwrap(), 2);
+        assert_eq!(*scroll_padding.get(&2).unwrap(), 3);
+        assert_eq!(*scroll_padding.get(&3).unwrap(), 2);
+        assert_eq!(*scroll_padding.get(&4).unwrap(), 0);
     }
 }
