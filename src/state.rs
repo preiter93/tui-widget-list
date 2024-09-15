@@ -8,11 +8,11 @@ pub struct ListState {
     /// handle item selection.
     pub(crate) num_elements: usize,
 
-    /// Indicates if the selection is circular. If circular, calling `next` on the last
+    /// Indicates if the selection is circular. If true, calling `next` on the last
     /// element returns the first, and calling `previous` on the first returns the last.
     ///
     /// True by default.
-    pub(crate) circular: bool,
+    pub(crate) infinite_scrolling: bool,
 
     /// The state for the viewport. Keeps track which item to show
     /// first and how much it is truncated.
@@ -33,7 +33,7 @@ impl Default for ListState {
         Self {
             selected: None,
             num_elements: 0,
-            circular: true,
+            infinite_scrolling: true,
             view_state: ViewState::default(),
         }
     }
@@ -41,10 +41,18 @@ impl Default for ListState {
 
 impl ListState {
     /// Sets the selection to be circular or not circular.
+    #[deprecated(
+        since = "0.12.2",
+        note = "Use ListViews's infinite_scrolling option instead."
+    )]
     #[must_use]
     pub fn circular(mut self, circular: bool) -> Self {
-        self.circular = circular;
+        self.infinite_scrolling = circular;
         self
+    }
+
+    pub(crate) fn set_infinite_scrolling(&mut self, infinite_scrolling: bool) {
+        self.infinite_scrolling = infinite_scrolling;
     }
 
     /// Returns the index of the currently selected item, if any.
@@ -80,7 +88,7 @@ impl ListState {
         let i = match self.selected {
             Some(i) => {
                 if i >= self.num_elements - 1 {
-                    if self.circular {
+                    if self.infinite_scrolling {
                         0
                     } else {
                         i
@@ -112,7 +120,7 @@ impl ListState {
         let i = match self.selected {
             Some(i) => {
                 if i == 0 {
-                    if self.circular {
+                    if self.infinite_scrolling {
                         self.num_elements - 1
                     } else {
                         i

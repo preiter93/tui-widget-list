@@ -5,7 +5,9 @@ use tui_widget_list::{ListBuilder, ListView};
 pub(crate) struct PaddedListView;
 
 impl PaddedListView {
-    pub(crate) fn new<'a>() -> ListView<'a, ListItemContainer<'a, Line<'a>>> {
+    pub(crate) fn new<'a>(
+        infinite_scrolling: bool,
+    ) -> ListView<'a, ListItemContainer<'a, Line<'a>>> {
         let builder = ListBuilder::new(|context| {
             let mut line = ListItemContainer::new(
                 Line::from(format!("Item {0}", context.index)).alignment(Alignment::Center),
@@ -20,6 +22,6 @@ impl PaddedListView {
             return (line, 3);
         });
 
-        return ListView::new(builder, 30);
+        return ListView::new(builder, 30).infinite_scrolling(infinite_scrolling);
     }
 }

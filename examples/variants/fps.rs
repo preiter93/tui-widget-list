@@ -15,7 +15,7 @@ impl Default for FPSCounter {
             last_frame: Instant::now(),
             frame_count: 0,
             fps: 0.0,
-            hide: false,
+            hide: true,
         }
     }
 }
