@@ -25,12 +25,6 @@ name = "var_sizes"
 name = "demo"
 
 [[example]]
-name = "demo_legacy"
-
-[[example]]
-name = "simple_legacy"
-
-[[example]]
 name = "variants"
 
 [features]
