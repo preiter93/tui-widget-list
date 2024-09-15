@@ -26,7 +26,3 @@ name = "demo"
 
 [[example]]
 name = "variants"
-
-[features]
-default = ["unstable-widget-ref"]
-unstable-widget-ref = ["ratatui/unstable-widget-ref"]

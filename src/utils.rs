@@ -32,6 +32,9 @@ pub(crate) fn layout_on_viewport<T>(
     scroll_axis: ScrollAxis,
     scroll_padding: u16,
 ) -> HashMap<usize, ViewportElement<T>> {
+    // Cache the widgets and sizes to evaluate the builder less often.
+    let mut cacher = WidgetCacher::new(builder, scroll_axis, cross_axis_size, state.selected);
+
     // The items heights on the viewport will be calculated on the fly.
     let mut viewport: HashMap<usize, ViewportElement<T>> = HashMap::new();
 
@@ -48,50 +51,22 @@ pub(crate) fn layout_on_viewport<T>(
         scroll_padding,
     );
 
-    // If the selected value is smaller than the offset, we roll
-    // the offset so that the selected value is at the top. The complicated
-    // part is that we also need to account for scroll padding.
-    let scroll_padding_top = *effective_scroll_padding_by_index
-        .get(&selected)
-        .unwrap_or(&0);
-    let mut first_element = selected;
-    let mut first_element_truncated = 0;
-    let mut available_size = scroll_padding_top;
-    for index in (0..=selected).rev() {
-        first_element = index;
-        if available_size == 0 {
-            break;
-        }
-        let context = ListBuildContext {
-            index,
-            is_selected: state.selected.map_or(false, |j| index == j),
-            scroll_axis,
-            cross_axis_size,
-        };
-        let (_, main_axis_size) = builder.call_closure(&context);
-        available_size = available_size.saturating_sub(main_axis_size);
-        if available_size > 0 {
-            first_element_truncated = main_axis_size.saturating_sub(available_size);
-        }
-    }
-    if first_element < state.view_state.offset
-        || (first_element == state.view_state.offset && state.view_state.first_truncated > 0)
-    {
-        state.view_state.offset = first_element;
-        state.view_state.first_truncated = first_element_truncated;
-    }
+    update_offset(
+        state,
+        &mut cacher,
+        selected,
+        &effective_scroll_padding_by_index,
+    );
 
     // Begin a forward pass, starting from `view_state.offset`.
     let found_selected = forward_pass(
         &mut viewport,
         state,
-        builder,
+        &mut cacher,
         state.view_state.offset,
         item_count,
         total_main_axis_size,
         selected,
-        cross_axis_size,
-        scroll_axis,
         &effective_scroll_padding_by_index,
     );
 
@@ -99,7 +74,9 @@ pub(crate) fn layout_on_viewport<T>(
         return viewport;
     }
 
-    viewport.clear();
+    for (key, value) in viewport.drain() {
+        cacher.insert(key, value.widget, value.main_axis_size);
+    }
 
     // Perform a backward pass, starting from the `selected` item.
     // This step is only necessary if the forward pass did not
@@ -107,16 +84,62 @@ pub(crate) fn layout_on_viewport<T>(
     backward_pass(
         &mut viewport,
         state,
-        builder,
+        &mut cacher,
         item_count,
         total_main_axis_size,
         selected,
-        cross_axis_size,
-        scroll_axis,
         &effective_scroll_padding_by_index,
     );
 
     viewport
+}
+
+// If the selected value is smaller than the offset, we roll
+// the offset so that the selected value is at the top. The complicated
+// part is that we also need to account for scroll padding.
+fn update_offset<T>(
+    state: &mut ListState,
+    cacher: &mut WidgetCacher<T>,
+    selected: usize,
+    scroll_padding_by_index: &HashMap<usize, u16>,
+) {
+    // Get the top padding for scrolling or default to 0 if not present
+    let scroll_padding_top = *scroll_padding_by_index.get(&selected).unwrap_or(&0);
+
+    // Initialize variables
+    let mut first_element = selected;
+    let mut first_element_truncated = 0;
+    let mut available_size = scroll_padding_top;
+
+    // Traverse from the selected index up to the beginning
+    for index in (0..=selected).rev() {
+        // Update the first element in view
+        first_element = index;
+
+        // If no space is available, exit the loop
+        if available_size == 0 {
+            break;
+        }
+
+        // Get the size of the current element
+        let main_axis_size = cacher.get_height(index);
+
+        // Update the available space
+        available_size = available_size.saturating_sub(main_axis_size);
+
+        // Calculate the truncated size if there's still space
+        if available_size > 0 {
+            first_element_truncated = main_axis_size.saturating_sub(available_size);
+        }
+    }
+
+    // Update the view state if needed
+    if first_element < state.view_state.offset
+        || (first_element == state.view_state.offset && state.view_state.first_truncated > 0)
+    {
+        state.view_state.offset = first_element;
+        state.view_state.first_truncated = first_element_truncated;
+    }
 }
 
 /// Iterate forward through the list of widgets.
@@ -126,13 +149,11 @@ pub(crate) fn layout_on_viewport<T>(
 fn forward_pass<T>(
     viewport: &mut HashMap<usize, ViewportElement<T>>,
     state: &mut ListState,
-    builder: &ListBuilder<T>,
+    cacher: &mut WidgetCacher<T>,
     offset: usize,
     item_count: usize,
     total_main_axis_size: u16,
     selected: usize,
-    cross_axis_size: u16,
-    scroll_axis: ScrollAxis,
     scroll_padding_by_index: &HashMap<usize, u16>,
 ) -> bool {
     // Check if the selected item is in the current view
@@ -141,14 +162,9 @@ fn forward_pass<T>(
     let mut available_size = total_main_axis_size;
     for index in offset..item_count {
         let is_first = index == state.view_state.offset;
-        // Build the widget
-        let context = ListBuildContext {
-            index,
-            is_selected: state.selected.map_or(false, |j| index == j),
-            scroll_axis,
-            cross_axis_size,
-        };
-        let (widget, total_main_axis_size) = builder.call_closure(&context);
+
+        let (widget, total_main_axis_size) = cacher.get(index);
+
         let main_axis_size = if is_first {
             total_main_axis_size.saturating_sub(state.view_state.first_truncated)
         } else {
@@ -221,26 +237,17 @@ fn forward_pass<T>(
 fn backward_pass<T>(
     viewport: &mut HashMap<usize, ViewportElement<T>>,
     state: &mut ListState,
-    builder: &ListBuilder<T>,
+    cacher: &mut WidgetCacher<T>,
     item_count: usize,
     total_main_axis_size: u16,
     selected: usize,
-    cross_axis_size: u16,
-    scroll_axis: ScrollAxis,
     scroll_padding_by_index: &HashMap<usize, u16>,
 ) {
     let mut found_first = false;
     let mut available_size = total_main_axis_size;
     let scroll_padding_effective = *scroll_padding_by_index.get(&selected).unwrap_or(&0);
     for index in (0..=selected).rev() {
-        // Evaluate the widget
-        let context = ListBuildContext {
-            index,
-            is_selected: state.selected.map_or(false, |j| index == j),
-            scroll_axis,
-            cross_axis_size,
-        };
-        let (widget, main_axis_size) = builder.call_closure(&context);
+        let (widget, main_axis_size) = cacher.get(index);
 
         let available_effective = available_size.saturating_sub(scroll_padding_effective);
 
@@ -283,13 +290,7 @@ fn backward_pass<T>(
     if scroll_padding_effective > 0 {
         available_size = scroll_padding_effective;
         for index in selected + 1..item_count {
-            let context = ListBuildContext {
-                index,
-                is_selected: state.selected.map_or(false, |j| index == j),
-                scroll_axis,
-                cross_axis_size,
-            };
-            let (widget, main_axis_size) = builder.call_closure(&context);
+            let (widget, main_axis_size) = cacher.get(index);
 
             let truncation = match available_size.cmp(&main_axis_size) {
                 Ordering::Greater | Ordering::Equal => Truncation::None,
@@ -367,6 +368,83 @@ fn calculate_effective_scroll_padding<T>(
     }
 
     padding_by_element
+}
+
+struct WidgetCacher<'a, T> {
+    cache: HashMap<usize, (T, u16)>,
+    builder: &'a ListBuilder<T>,
+    scroll_axis: ScrollAxis,
+    cross_axis_size: u16,
+    selected: Option<usize>,
+}
+
+impl<'a, T> WidgetCacher<'a, T> {
+    // Create a new WidgetCacher
+    fn new(
+        builder: &'a ListBuilder<T>,
+        scroll_axis: ScrollAxis,
+        cross_axis_size: u16,
+        selected: Option<usize>,
+    ) -> Self {
+        Self {
+            cache: HashMap::new(),
+            builder,
+            scroll_axis,
+            cross_axis_size,
+            selected,
+        }
+    }
+
+    // Gets the widget and the height. Removes the widget from the cache.
+    fn get(&mut self, index: usize) -> (T, u16) {
+        let is_selected = self.selected.map_or(false, |j| index == j);
+        // Check if the widget is already in cache
+        if let Some((widget, main_axis_size)) = self.cache.remove(&index) {
+            return (widget, main_axis_size);
+        }
+
+        // Create the context for the builder
+        let context = ListBuildContext {
+            index,
+            is_selected,
+            scroll_axis: self.scroll_axis,
+            cross_axis_size: self.cross_axis_size,
+        };
+
+        // Call the builder to get the widget
+        let (widget, main_axis_size) = self.builder.call_closure(&context);
+
+        (widget, main_axis_size)
+    }
+
+    // Gets the height.
+    fn get_height(&mut self, index: usize) -> u16 {
+        let is_selected = self.selected.map_or(false, |j| index == j);
+        // Check if the widget is already in cache
+        if let Some(&(_, main_axis_size)) = self.cache.get(&index) {
+            return main_axis_size;
+        }
+
+        // Create the context for the builder
+        let context = ListBuildContext {
+            index,
+            is_selected,
+            scroll_axis: self.scroll_axis,
+            cross_axis_size: self.cross_axis_size,
+        };
+
+        // Call the builder to get the widget
+        let (widget, main_axis_size) = self.builder.call_closure(&context);
+
+        // Store the widget in the cache
+        self.cache.insert(index, (widget, main_axis_size));
+
+        main_axis_size
+    }
+
+    fn insert(&mut self, index: usize, widget: T, main_axis_size: u16) {
+        self.cache.insert(index, (widget, main_axis_size));
+    }
 }
 
 #[allow(dead_code)]
