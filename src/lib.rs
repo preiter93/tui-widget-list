@@ -89,13 +89,13 @@
 //!
 //! ## Demos
 //!
-//! ### Simple list with alternating colors
-//!
-//!![](examples/tapes/simple.gif?v=1)
-//!
-//! ### Vertically and horizontally scrollable
+//! ### Demo
 //!
 //!![](examples/tapes/demo.gif?v=1)
+//!
+//! ### Infinite scrolling, scroll padding, horizontal scrolling
+//!
+//!![](examples/tapes/variants.gif?v=1)
 pub(crate) mod legacy;
 pub(crate) mod state;
 pub(crate) mod utils;
