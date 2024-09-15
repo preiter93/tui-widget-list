@@ -1,6 +1,6 @@
 [package]
 name = "tui-widget-list"
-version = "0.12.1"
+version = "0.12.2"
 edition = "2021"
 authors = ["preiter <phil.reiter93@gmail.com>"]
 description = "Widget List for TUI/Ratatui"

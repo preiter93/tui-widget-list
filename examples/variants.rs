@@ -52,7 +52,6 @@ impl AppState {
         scroll_config_state.select(Some(0));
         Self {
             variant_state: scroll_config_state,
-            list_state: ListState::default().circular(false),
             ..AppState::default()
         }
     }
@@ -105,7 +104,6 @@ impl App {
                     | KeyCode::Char('h')
                     | KeyCode::Right
                     | KeyCode::Char('l') => {
-                        state.list_state = state.list_state.clone().circular(false);
                         state.list_state.select(None);
                         state.selected_tab.next()
                     }
@@ -150,19 +148,16 @@ impl StatefulWidget for &App {
             _ => Colors::GRAY,
         };
         match Variant::from_index(state.variant_state.selected.unwrap_or(0)) {
-            Variant::Classic => {
-                PaddedListView::new()
-                    .block(block)
-                    .fg(fg)
-                    .render(right, buf, &mut state.list_state)
-            }
-            Variant::InfiniteScrolling => {
-                state.list_state = state.list_state.clone().circular(true);
-                PaddedListView::new()
-                    .block(block)
-                    .fg(fg)
-                    .render(right, buf, &mut state.list_state)
-            }
+            Variant::Classic => PaddedListView::new(false).block(block).fg(fg).render(
+                right,
+                buf,
+                &mut state.list_state,
+            ),
+            Variant::InfiniteScrolling => PaddedListView::new(true).block(block).fg(fg).render(
+                right,
+                buf,
+                &mut state.list_state,
+            ),
             Variant::ScrollPadding => ScrollPaddingListView::new().block(block).fg(fg).render(
                 right,
                 buf,
