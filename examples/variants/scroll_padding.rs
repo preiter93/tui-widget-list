@@ -20,6 +20,6 @@ impl ScrollPaddingListView {
             return (line, 3);
         });
 
-        return ListView::new(builder, 30).scroll_padding(4);
+        return ListView::new(builder, 30).scroll_padding(5);
     }
 }
