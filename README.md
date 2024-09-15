@@ -89,12 +89,12 @@ For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-
 
 ### Demos
 
-#### Simple list with alternating colors
-
-![](examples/tapes/simple.gif?v=1)
-
-#### Vertically and horizontally scrollable
+#### Demo
 
 ![](examples/tapes/demo.gif?v=1)
+
+#### Infinite scrolling, scroll padding, horizontal scrolling
+
+![](examples/tapes/variants.gif?v=1)
 
 License: MIT
