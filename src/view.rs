@@ -27,7 +27,7 @@ pub struct ListView<'a, T> {
     pub block: Option<Block<'a>>,
 
     /// The scroll padding.
-    pub(crate) scroll_padding: usize,
+    pub(crate) scroll_padding: u16,
 }
 
 impl<'a, T> ListView<'a, T> {
@@ -79,7 +79,7 @@ impl<'a, T> ListView<'a, T> {
 
     /// Set the scroll padding of the list.
     #[must_use]
-    pub fn scroll_padding(mut self, scroll_padding: usize) -> Self {
+    pub fn scroll_padding(mut self, scroll_padding: u16) -> Self {
         self.scroll_padding = scroll_padding;
         self
     }
@@ -198,7 +198,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             main_axis_size,
             cross_axis_size,
             self.scroll_axis,
-            self.scroll_padding as u16,
+            self.scroll_padding,
         );
 
         let (start, end) = (
