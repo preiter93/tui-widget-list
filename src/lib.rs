@@ -12,6 +12,9 @@
 //! ## Configuration
 //! The [`ListView`] can be customized with the following options:
 //! - [`ListView::scroll_axis`]: Specifies whether the list is vertically or horizontally scrollable.
+//!
+//! - [`ListView::scroll_padding`]: Specifies whether content should remain visible while scrolling, ensuring that a specified amount of padding is preserved above/below the selected item during scrolling.
+//! - [`ListView::infinite_scrolling`]: Allows the list to wrap around when scrolling past the first or last element.
 //! - [`ListView::style`]: Defines the base style of the list.
 //! - [`ListView::block`]: Optional outer block surrounding the list.
 //!
@@ -86,13 +89,13 @@
 //!
 //! ## Demos
 //!
-//! ### Simple list with alternating colors
-//!
-//!![](examples/tapes/simple.gif?v=1)
-//!
-//! ### Vertically and horizontally scrollable
+//! ### Demo
 //!
 //!![](examples/tapes/demo.gif?v=1)
+//!
+//! ### Infinite scrolling, scroll padding, horizontal scrolling
+//!
+//!![](examples/tapes/variants.gif?v=1)
 pub(crate) mod legacy;
 pub(crate) mod state;
 pub(crate) mod utils;

@@ -1,25 +1,28 @@
+#[path = "variants/classic.rs"]
+mod classic;
 #[path = "common/lib.rs"]
 mod common;
 #[path = "variants/config.rs"]
 mod config;
+#[path = "variants/fps.rs"]
+mod fps;
 #[path = "variants/horizontal.rs"]
 mod horizontal;
-#[path = "variants/padded.rs"]
-mod padded;
-#[path = "variants/simple.rs"]
-mod simple;
+#[path = "variants/scroll_padding.rs"]
+mod scroll_padding;
+use classic::PaddedListView;
 use common::{Block, Colors, Result, Terminal};
 use config::{Controls, Variant, VariantsListView};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
+use fps::FPSCounter;
 use horizontal::HorizontalListView;
-use padded::PaddedListView;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
     style::Stylize,
     widgets::{StatefulWidget, Widget},
 };
-use simple::SimpleListView;
+use scroll_padding::ScrollPaddingListView;
 use tui_widget_list::ListState;
 
 fn main() -> Result<()> {
@@ -40,6 +43,7 @@ pub struct AppState {
     selected_tab: Tab,
     variant_state: ListState,
     list_state: ListState,
+    fps_counter: FPSCounter,
 }
 
 impl AppState {
@@ -77,6 +81,7 @@ impl App {
             if Self::handle_events(&mut state)? {
                 return Ok(());
             }
+            state.fps_counter.update();
         }
     }
 
@@ -93,6 +98,7 @@ impl App {
                     KeyCode::Char('q') => return Ok(true),
                     KeyCode::Up | KeyCode::Char('k') => list_state.previous(),
                     KeyCode::Down | KeyCode::Char('j') => list_state.next(),
+                    KeyCode::Char('f') => state.fps_counter.toggle(),
                     KeyCode::Tab
                     | KeyCode::Left
                     | KeyCode::Char('h')
@@ -119,7 +125,9 @@ impl StatefulWidget for &App {
         let [left, right] = Layout::horizontal([Percentage(25), Min(0)]).areas(main);
 
         // Key mappings
-        Controls::default().render(top, buf);
+        let [top_left, top_right] = Layout::horizontal([Min(0), Length(10)]).areas(top);
+        Controls::default().render(top_left, buf);
+        state.fps_counter.render(top_right, buf);
 
         // Scroll config selection
         let block = match state.selected_tab {
@@ -140,18 +148,21 @@ impl StatefulWidget for &App {
             _ => Colors::GRAY,
         };
         match Variant::from_index(state.variant_state.selected.unwrap_or(0)) {
-            Variant::Simple => {
-                SimpleListView::new()
-                    .block(block)
-                    .fg(fg)
-                    .render(right, buf, &mut state.list_state)
-            }
-            Variant::Padded => {
-                PaddedListView::new()
-                    .block(block)
-                    .fg(fg)
-                    .render(right, buf, &mut state.list_state)
-            }
+            Variant::Classic => PaddedListView::new(false).block(block).fg(fg).render(
+                right,
+                buf,
+                &mut state.list_state,
+            ),
+            Variant::InfiniteScrolling => PaddedListView::new(true).block(block).fg(fg).render(
+                right,
+                buf,
+                &mut state.list_state,
+            ),
+            Variant::ScrollPadding => ScrollPaddingListView::new().block(block).fg(fg).render(
+                right,
+                buf,
+                &mut state.list_state,
+            ),
             Variant::Horizontal => HorizontalListView::new().block(block).fg(fg).render(
                 right,
                 buf,

@@ -25,6 +25,13 @@ pub struct ListView<'a, T> {
 
     /// The base block surrounding the widget list.
     pub block: Option<Block<'a>>,
+
+    /// The scroll padding.
+    pub(crate) scroll_padding: u16,
+
+    /// Whether infinite scrolling is enabled or not.
+    /// Disabled by default.
+    pub(crate) infinite_scrolling: bool,
 }
 
 impl<'a, T> ListView<'a, T> {
@@ -37,6 +44,8 @@ impl<'a, T> ListView<'a, T> {
             scroll_axis: ScrollAxis::Vertical,
             style: Style::default(),
             block: None,
+            scroll_padding: 0,
+            infinite_scrolling: false,
         }
     }
 
@@ -51,6 +60,7 @@ impl<'a, T> ListView<'a, T> {
     pub fn len(&self) -> usize {
         self.item_count
     }
+
     /// Sets the block style that surrounds the whole List.
     #[must_use]
     pub fn block(mut self, block: Block<'a>) -> Self {
@@ -69,6 +79,20 @@ impl<'a, T> ListView<'a, T> {
     #[must_use]
     pub fn scroll_axis(mut self, scroll_axis: ScrollAxis) -> Self {
         self.scroll_axis = scroll_axis;
+        self
+    }
+
+    /// Set the scroll padding of the list.
+    #[must_use]
+    pub fn scroll_padding(mut self, scroll_padding: u16) -> Self {
+        self.scroll_padding = scroll_padding;
+        self
+    }
+
+    /// Specify whether infinite scrolling should be enabled or not.
+    #[must_use]
+    pub fn infinite_scrolling(mut self, infinite_scrolling: bool) -> Self {
+        self.infinite_scrolling = infinite_scrolling;
         self
     }
 }
@@ -152,6 +176,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         state.set_num_elements(self.item_count);
+        state.set_infinite_scrolling(self.infinite_scrolling);
 
         // Set the base style
         buf.set_style(area, self.style);
@@ -186,6 +211,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             main_axis_size,
             cross_axis_size,
             self.scroll_axis,
+            self.scroll_padding,
         );
 
         let (start, end) = (

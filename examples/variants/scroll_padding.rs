@@ -2,9 +2,9 @@ use crate::common::{item_container::ListItemContainer, Colors};
 use ratatui::{layout::Alignment, style::Stylize, text::Line, widgets::Padding};
 use tui_widget_list::{ListBuilder, ListView};
 
-pub(crate) struct PaddedListView;
+pub(crate) struct ScrollPaddingListView;
 
-impl PaddedListView {
+impl ScrollPaddingListView {
     pub(crate) fn new<'a>() -> ListView<'a, ListItemContainer<'a, Line<'a>>> {
         let builder = ListBuilder::new(|context| {
             let mut line = ListItemContainer::new(
@@ -20,6 +20,6 @@ impl PaddedListView {
             return (line, 3);
         });
 
-        return ListView::new(builder, 50);
+        return ListView::new(builder, 30).scroll_padding(5);
     }
 }
