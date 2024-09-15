@@ -1,11 +1,12 @@
-0.12.2 - ? Sep 2024
-===================
-- ListView::scroll_padding added. Allows to keep a specified number of cells above/below the selected element visibile while scrolling.
-- ListState::circular got deprecated. Use ListView::infinite_scrolling instead
-- The default value of infinite_scrolling was changed to false
-
 Released
 --------
+
+0.12.2 - 15 Sep 2024
+===================
+- ListView::scroll_padding added. 
+Allows to keep a specified number of cells above/below the selected widget visibile while scrolling.
+
+- ListState::circular got removed. Use ListView::infinite_scrolling instead.
 
 0.12.1 - 25 Aug 2024
 ===================
