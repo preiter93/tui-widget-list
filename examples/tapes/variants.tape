@@ -13,16 +13,28 @@ Enter
 Sleep 0.5s
 Show
 
+# Classic
 Sleep 1.5s
 Right@0.5s 1
-Down@0.5s 15
+Down@0.2s 40
 
+# Infinite
 Left@1.5s 1
 Down@1.5s 1
 
 Right@0.5s 1
-Down@0.5s 20
+Down@0.2s 50
+Sleep 1.0s
 
+# Scroll padding
+Left@1.5s 1
+Down@1.5s 1
+
+Right@0.5s 1
+Down@0.2s 40
+Up@0.2s 40
+
+# Horizontal
 Left@1.5s 1
 Down@1.5s 1
 
