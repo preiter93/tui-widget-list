@@ -33,7 +33,7 @@ pub(crate) fn layout_on_viewport<T>(
     scroll_padding: u16,
 ) -> HashMap<usize, ViewportElement<T>> {
     // Cache the widgets and sizes to evaluate the builder less often.
-    let mut cacher = WidgetCacher::new(builder, scroll_axis, cross_axis_size);
+    let mut cacher = WidgetCacher::new(builder, scroll_axis, cross_axis_size, state.selected);
 
     // The items heights on the viewport will be calculated on the fly.
     let mut viewport: HashMap<usize, ViewportElement<T>> = HashMap::new();
@@ -121,11 +121,8 @@ fn update_offset<T>(
             break;
         }
 
-        // Determine if the current index is selected
-        let is_selected = state.selected.map_or(false, |j| index == j);
-
         // Get the size of the current element
-        let main_axis_size = cacher.get_height(index, is_selected);
+        let main_axis_size = cacher.get_height(index);
 
         // Update the available space
         available_size = available_size.saturating_sub(main_axis_size);
@@ -166,8 +163,7 @@ fn forward_pass<T>(
     for index in offset..item_count {
         let is_first = index == state.view_state.offset;
 
-        let is_selected = state.selected.map_or(false, |j| index == j);
-        let (widget, total_main_axis_size) = cacher.get(index, is_selected);
+        let (widget, total_main_axis_size) = cacher.get(index);
 
         let main_axis_size = if is_first {
             total_main_axis_size.saturating_sub(state.view_state.first_truncated)
@@ -251,8 +247,7 @@ fn backward_pass<T>(
     let mut available_size = total_main_axis_size;
     let scroll_padding_effective = *scroll_padding_by_index.get(&selected).unwrap_or(&0);
     for index in (0..=selected).rev() {
-        let is_selected = state.selected.map_or(false, |j| index == j);
-        let (widget, main_axis_size) = cacher.get(index, is_selected);
+        let (widget, main_axis_size) = cacher.get(index);
 
         let available_effective = available_size.saturating_sub(scroll_padding_effective);
 
@@ -295,8 +290,7 @@ fn backward_pass<T>(
     if scroll_padding_effective > 0 {
         available_size = scroll_padding_effective;
         for index in selected + 1..item_count {
-            let is_selected = state.selected.map_or(false, |j| index == j);
-            let (widget, main_axis_size) = cacher.get(index, is_selected);
+            let (widget, main_axis_size) = cacher.get(index);
 
             let truncation = match available_size.cmp(&main_axis_size) {
                 Ordering::Greater | Ordering::Equal => Truncation::None,
@@ -381,21 +375,29 @@ struct WidgetCacher<'a, T> {
     builder: &'a ListBuilder<T>,
     scroll_axis: ScrollAxis,
     cross_axis_size: u16,
+    selected: Option<usize>,
 }
 
 impl<'a, T> WidgetCacher<'a, T> {
     // Create a new WidgetCacher
-    fn new(builder: &'a ListBuilder<T>, scroll_axis: ScrollAxis, cross_axis_size: u16) -> Self {
+    fn new(
+        builder: &'a ListBuilder<T>,
+        scroll_axis: ScrollAxis,
+        cross_axis_size: u16,
+        selected: Option<usize>,
+    ) -> Self {
         Self {
             cache: HashMap::new(),
             builder,
             scroll_axis,
             cross_axis_size,
+            selected,
         }
     }
 
     // Gets the widget and the height. Removes the widget from the cache.
-    fn get(&mut self, index: usize, is_selected: bool) -> (T, u16) {
+    fn get(&mut self, index: usize) -> (T, u16) {
+        let is_selected = self.selected.map_or(false, |j| index == j);
         // Check if the widget is already in cache
         if let Some((widget, main_axis_size)) = self.cache.remove(&index) {
             return (widget, main_axis_size);
@@ -416,7 +418,8 @@ impl<'a, T> WidgetCacher<'a, T> {
     }
 
     // Gets the height.
-    fn get_height(&mut self, index: usize, is_selected: bool) -> u16 {
+    fn get_height(&mut self, index: usize) -> u16 {
+        let is_selected = self.selected.map_or(false, |j| index == j);
         // Check if the widget is already in cache
         if let Some(&(_, main_axis_size)) = self.cache.get(&index) {
             return main_axis_size;
