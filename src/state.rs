@@ -40,17 +40,6 @@ impl Default for ListState {
 }
 
 impl ListState {
-    /// Sets the selection to be circular or not circular.
-    #[deprecated(
-        since = "0.12.2",
-        note = "Use ListViews's infinite_scrolling option instead."
-    )]
-    #[must_use]
-    pub fn circular(mut self, circular: bool) -> Self {
-        self.infinite_scrolling = circular;
-        self
-    }
-
     pub(crate) fn set_infinite_scrolling(&mut self, infinite_scrolling: bool) {
         self.infinite_scrolling = infinite_scrolling;
     }
