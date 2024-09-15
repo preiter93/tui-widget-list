@@ -2,7 +2,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect},
     style::{Style, Styled},
-    widgets::{block::BlockExt, Block, StatefulWidget, Widget, WidgetRef},
+    widgets::{block::BlockExt, Block, StatefulWidget, Widget},
 };
 
 use crate::{utils::layout_on_viewport, ListState};
@@ -182,7 +182,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
         buf.set_style(area, self.style);
 
         // Set the base block
-        self.block.render_ref(area, buf);
+        self.block.render(area, buf);
         let area = self.block.inner_if_some(area);
 
         // List is empty
