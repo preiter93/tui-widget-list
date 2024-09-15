@@ -38,15 +38,7 @@ pub(crate) fn layout_on_viewport<T>(
     // If none is selected, the first item should be show on top of the viewport.
     let selected = state.selected.unwrap_or(0);
 
-    // If the selected value is smaller than the offset, we roll
-    // the offset so that the selected value is at the top
-    if selected < state.view_state.offset
-        || (selected == state.view_state.offset && state.view_state.first_truncated > 0)
-    {
-        state.view_state.offset = selected;
-        state.view_state.first_truncated = 0;
-    }
-
+    // Calculate the effective scroll padding for each widget
     let effective_scroll_padding_by_index = calculate_effective_scroll_padding(
         state,
         builder,
@@ -55,6 +47,39 @@ pub(crate) fn layout_on_viewport<T>(
         scroll_axis,
         scroll_padding,
     );
+
+    // If the selected value is smaller than the offset, we roll
+    // the offset so that the selected value is at the top. The complicated
+    // part is that we also need to account for scroll padding.
+    let scroll_padding_top = *effective_scroll_padding_by_index
+        .get(&selected)
+        .unwrap_or(&0);
+    let mut first_element = selected;
+    let mut first_element_truncated = 0;
+    let mut available_size = scroll_padding_top;
+    for index in (0..=selected).rev() {
+        first_element = index;
+        if available_size == 0 {
+            break;
+        }
+        let context = ListBuildContext {
+            index,
+            is_selected: state.selected.map_or(false, |j| index == j),
+            scroll_axis,
+            cross_axis_size,
+        };
+        let (_, main_axis_size) = builder.call_closure(&context);
+        available_size = available_size.saturating_sub(main_axis_size);
+        if available_size > 0 {
+            first_element_truncated = main_axis_size.saturating_sub(available_size);
+        }
+    }
+    if first_element < state.view_state.offset
+        || (first_element == state.view_state.offset && state.view_state.first_truncated > 0)
+    {
+        state.view_state.offset = first_element;
+        state.view_state.first_truncated = first_element_truncated;
+    }
 
     // Begin a forward pass, starting from `view_state.offset`.
     let found_selected = forward_pass(
@@ -91,88 +116,13 @@ pub(crate) fn layout_on_viewport<T>(
         &effective_scroll_padding_by_index,
     );
 
-    // if scroll_padding > 0 {
-    //     let _ = forward_pass(
-    //         &mut viewport,
-    //         state,
-    //         builder,
-    //         selected + 1,
-    //         item_count,
-    //         scroll_padding,
-    //         selected,
-    //         cross_axis_size,
-    //         scroll_axis,
-    //         0,
-    //     );
-    // }
-
     viewport
-}
-
-/// Calculate the effective scroll padding at the end of the list.
-/// Padding is applied until the scroll padding limit is reached,
-/// after which elements at the end of the list do not receive padding.
-///
-/// Returns:
-/// A `HashMap` where the keys are the indices of the list items and the values are
-/// the corresponding padding applied. If the item is not on the list, `scroll_padding`
-/// is unaltered.
-fn calculate_effective_scroll_padding<T>(
-    state: &mut ListState,
-    builder: &ListBuilder<T>,
-    item_count: usize,
-    cross_axis_size: u16,
-    scroll_axis: ScrollAxis,
-    scroll_padding: u16,
-) -> HashMap<usize, u16> {
-    let mut padding_by_element = HashMap::new();
-    let mut total_main_axis_size = 0 as u16;
-
-    for index in 0..item_count {
-        if total_main_axis_size >= scroll_padding {
-            padding_by_element.insert(index, scroll_padding);
-            continue;
-        } else {
-            padding_by_element.insert(index, total_main_axis_size);
-        }
-        padding_by_element.insert(index, total_main_axis_size);
-
-        let context = ListBuildContext {
-            index,
-            is_selected: state.selected.map_or(false, |j| index == j),
-            scroll_axis,
-            cross_axis_size,
-        };
-
-        let (_, item_main_axis_size) = builder.call_closure(&context);
-        total_main_axis_size += item_main_axis_size;
-    }
-
-    total_main_axis_size = 0;
-    for index in (0..item_count).rev() {
-        // Stop applying padding once the scroll padding limit is reached
-        if total_main_axis_size >= scroll_padding {
-            break;
-        }
-        padding_by_element.insert(index, total_main_axis_size);
-
-        let context = ListBuildContext {
-            index,
-            is_selected: state.selected.map_or(false, |j| index == j),
-            scroll_axis,
-            cross_axis_size,
-        };
-
-        let (_, item_main_axis_size) = builder.call_closure(&context);
-        total_main_axis_size += item_main_axis_size;
-    }
-
-    return padding_by_element;
 }
 
 /// Iterate forward through the list of widgets.
 ///
 /// Returns true if the selected widget is inside the viewport.
+#[allow(clippy::too_many_arguments)]
 fn forward_pass<T>(
     viewport: &mut HashMap<usize, ViewportElement<T>>,
     state: &mut ListState,
@@ -262,11 +212,12 @@ fn forward_pass<T>(
         available_size -= main_axis_size;
     }
 
-    return found_selected;
+    found_selected
 }
 
 // The selected item is out of bounds. We iterate backwards from the selected
 // item and determine the first widget that still fits on the screen.
+#[allow(clippy::too_many_arguments)]
 fn backward_pass<T>(
     viewport: &mut HashMap<usize, ViewportElement<T>>,
     state: &mut ListState,
@@ -356,6 +307,66 @@ fn backward_pass<T>(
             }
         }
     }
+}
+
+/// Calculate the effective scroll padding.
+/// Padding is applied until the scroll padding limit is reached,
+/// after which elements at the beginning or end of the list do
+/// not receive padding.
+///
+/// Returns:
+/// A `HashMap` where the keys are the indices of the list items and the values are
+/// the corresponding padding applied. If the item is not on the list, `scroll_padding`
+/// is unaltered.
+fn calculate_effective_scroll_padding<T>(
+    state: &mut ListState,
+    builder: &ListBuilder<T>,
+    item_count: usize,
+    cross_axis_size: u16,
+    scroll_axis: ScrollAxis,
+    scroll_padding: u16,
+) -> HashMap<usize, u16> {
+    let mut padding_by_element = HashMap::new();
+    let mut total_main_axis_size = 0;
+
+    for index in 0..item_count {
+        if total_main_axis_size >= scroll_padding {
+            padding_by_element.insert(index, scroll_padding);
+            continue;
+        }
+        padding_by_element.insert(index, total_main_axis_size);
+
+        let context = ListBuildContext {
+            index,
+            is_selected: state.selected.map_or(false, |j| index == j),
+            scroll_axis,
+            cross_axis_size,
+        };
+
+        let (_, item_main_axis_size) = builder.call_closure(&context);
+        total_main_axis_size += item_main_axis_size;
+    }
+
+    total_main_axis_size = 0;
+    for index in (0..item_count).rev() {
+        // Stop applying padding once the scroll padding limit is reached
+        if total_main_axis_size >= scroll_padding {
+            break;
+        }
+        padding_by_element.insert(index, total_main_axis_size);
+
+        let context = ListBuildContext {
+            index,
+            is_selected: state.selected.map_or(false, |j| index == j),
+            scroll_axis,
+            cross_axis_size,
+        };
+
+        let (_, item_main_axis_size) = builder.call_closure(&context);
+        total_main_axis_size += item_main_axis_size;
+    }
+
+    padding_by_element
 }
 
 #[allow(dead_code)]
@@ -601,11 +612,74 @@ mod tests {
     // -----
     // |   |
     #[test]
-    fn scroll_padding() {
+    fn scroll_padding_bottom() {
         // given
         let mut state = ListState {
             num_elements: 3,
             selected: Some(1),
+            ..ListState::default()
+        };
+        let given_sizes = vec![2, 2, 2];
+        let given_item_count = given_sizes.len();
+        let given_total_size = 4;
+
+        let expected_view_state = ViewState {
+            offset: 0,
+            first_truncated: 1,
+        };
+        let expected_viewport = HashMap::from([
+            (0, ViewportElement::new(TestItem {}, 2, Truncation::Top(1))),
+            (1, ViewportElement::new(TestItem {}, 2, Truncation::None)),
+            (2, ViewportElement::new(TestItem {}, 2, Truncation::Bot(1))),
+        ]);
+
+        // when
+        let viewport = layout_on_viewport(
+            &mut state,
+            &ListBuilder::new(move |context| {
+                return (TestItem {}, given_sizes[context.index]);
+            }),
+            given_item_count,
+            given_total_size,
+            1,
+            ScrollAxis::Vertical,
+            1,
+        );
+
+        // then
+        assert_eq!(viewport, expected_viewport);
+        assert_eq!(state.view_state, expected_view_state);
+    }
+
+    // From:
+    //
+    // -----
+    // |   | 1
+    // |   |
+    // -----
+    // |   | 2 <-
+    // |   |
+    // -----
+    //
+    // To:
+    //
+    // |   |
+    // -----
+    // |   | 1 <-
+    // |   |
+    // -----
+    // |   |
+    #[test]
+    fn scroll_padding_top() {
+        // given
+        let view_state = ViewState {
+            offset: 2,
+            first_truncated: 0,
+        };
+        let mut state = ListState {
+            num_elements: 3,
+            selected: Some(1),
+            view_state,
             ..ListState::default()
         };
         let given_sizes = vec![2, 2, 2];
