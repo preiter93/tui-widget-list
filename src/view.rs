@@ -45,7 +45,7 @@ impl<'a, T> ListView<'a, T> {
             style: Style::default(),
             block: None,
             scroll_padding: 0,
-            infinite_scrolling: false,
+            infinite_scrolling: true,
         }
     }
 
