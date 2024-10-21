@@ -1,6 +1,6 @@
 [package]
 name = "tui-widget-list"
-version = "0.12.2"
+version = "0.13.0"
 edition = "2021"
 authors = ["preiter <phil.reiter93@gmail.com>"]
 description = "Widget List for TUI/Ratatui"
@@ -10,7 +10,7 @@ readme = "README.md"
 license = "MIT"
 
 [dependencies]
-ratatui = "0.28"
+ratatui = "0.29"
 
 [dev-dependencies]
 crossterm = "0.28"

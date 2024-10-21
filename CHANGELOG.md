@@ -1,6 +1,10 @@
 Released
 --------
 
+0.13.0 - 22 Okt 2024
+===================
+- Bump ratatui to v0.29.0
+
 0.12.2 - 15 Sep 2024
 ===================
 - ListView::scroll_padding added. 
