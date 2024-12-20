@@ -12,12 +12,12 @@ use crate::{utils::layout_on_viewport, ListState};
 /// A struct representing a list view.
 /// The widget displays a scrollable list of items.
 #[allow(clippy::module_name_repetitions)]
-pub struct ListView<'block, 'render, T> {
+pub struct ListView<'a, T> {
     /// The total number of items in the list
     pub item_count: usize,
 
     ///  A `ListBuilder<T>` responsible for constructing the items in the list.
-    pub builder: ListBuilder<'render, T>,
+    pub builder: ListBuilder<'a, T>,
 
     /// Specifies the scroll axis. Either `Vertical` or `Horizontal`.
     pub scroll_axis: ScrollAxis,
@@ -26,7 +26,7 @@ pub struct ListView<'block, 'render, T> {
     pub style: Style,
 
     /// The base block surrounding the widget list.
-    pub block: Option<Block<'block>>,
+    pub block: Option<Block<'a>>,
 
     /// The scroll padding.
     pub(crate) scroll_padding: u16,
@@ -36,10 +36,10 @@ pub struct ListView<'block, 'render, T> {
     pub(crate) infinite_scrolling: bool,
 }
 
-impl<'block, 'render, T> ListView<'block, 'render, T> {
+impl<'a, T> ListView<'a, T> {
     /// Creates a new `ListView` with a builder an item count.
     #[must_use]
-    pub fn new(builder: ListBuilder<'render, T>, item_count: usize) -> Self {
+    pub fn new(builder: ListBuilder<'a, T>, item_count: usize) -> Self {
         Self {
             builder,
             item_count,
@@ -65,7 +65,7 @@ impl<'block, 'render, T> ListView<'block, 'render, T> {
 
     /// Sets the block style that surrounds the whole List.
     #[must_use]
-    pub fn block(mut self, block: Block<'block>) -> Self {
+    pub fn block(mut self, block: Block<'a>) -> Self {
         self.block = Some(block);
         self
     }
@@ -99,7 +99,7 @@ impl<'block, 'render, T> ListView<'block, 'render, T> {
     }
 }
 
-impl<T> Styled for ListView<'_, '_, T> {
+impl<T> Styled for ListView<'_, T> {
     type Item = Self;
 
     fn style(&self) -> Style {
@@ -112,7 +112,7 @@ impl<T> Styled for ListView<'_, '_, T> {
     }
 }
 
-impl<'render, T: Copy + 'render> From<Vec<T>> for ListView<'_, 'render, T> {
+impl<'render, T: Copy + 'render> From<Vec<T>> for ListView<'render, T> {
     fn from(value: Vec<T>) -> Self {
         let item_count = value.len();
         let builder = ListBuilder::new(move |context| (value[context.index], 1));
@@ -175,7 +175,7 @@ pub enum ScrollAxis {
     Horizontal,
 }
 
-impl<T: Widget> StatefulWidget for ListView<'_, '_, T> {
+impl<T: Widget> StatefulWidget for ListView<'_, T> {
     type State = ListState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
@@ -363,12 +363,7 @@ mod test {
 
     fn test_data<'render>(
         total_height: u16,
-    ) -> (
-        Rect,
-        Buffer,
-        ListView<'static, 'render, TestItem>,
-        ListState,
-    ) {
+    ) -> (Rect, Buffer, ListView<'static, TestItem>, ListState) {
         let area = Rect::new(0, 0, 5, total_height);
         let list = ListView::new(ListBuilder::new(|_| (TestItem {}, 3)), 3);
         (area, Buffer::empty(area), list, ListState::default())

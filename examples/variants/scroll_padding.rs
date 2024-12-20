@@ -5,7 +5,7 @@ use tui_widget_list::{ListBuilder, ListView};
 pub(crate) struct ScrollPaddingListView;
 
 impl ScrollPaddingListView {
-    pub(crate) fn new<'a, 'r>() -> ListView<'a, 'r, ListItemContainer<'a, Line<'a>>> {
+    pub(crate) fn new<'a>() -> ListView<'a, ListItemContainer<'a, Line<'a>>> {
         let builder = ListBuilder::new(|context| {
             let mut line = ListItemContainer::new(
                 Line::from(format!("Item {0}", context.index)).alignment(Alignment::Center),

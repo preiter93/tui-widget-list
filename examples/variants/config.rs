@@ -42,7 +42,7 @@ impl std::fmt::Display for Variant {
 
 pub struct VariantsListView;
 impl VariantsListView {
-    pub fn new<'a>() -> ListView<'a, 'a, ListItemContainer<'a, Line<'a>>> {
+    pub fn new<'a>() -> ListView<'a, ListItemContainer<'a, Line<'a>>> {
         let builder = ListBuilder::new(move |context| {
             let config = Variant::from_index(context.index);
             let line = Line::from(format!("{config}")).alignment(Alignment::Center);
