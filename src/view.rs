@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -10,12 +12,12 @@ use crate::{utils::layout_on_viewport, ListState};
 /// A struct representing a list view.
 /// The widget displays a scrollable list of items.
 #[allow(clippy::module_name_repetitions)]
-pub struct ListView<'a, T> {
+pub struct ListView<'block, 'render, T> {
     /// The total number of items in the list
     pub item_count: usize,
 
     ///  A `ListBuilder<T>` responsible for constructing the items in the list.
-    pub builder: ListBuilder<T>,
+    pub builder: ListBuilder<'render, T>,
 
     /// Specifies the scroll axis. Either `Vertical` or `Horizontal`.
     pub scroll_axis: ScrollAxis,
@@ -24,7 +26,7 @@ pub struct ListView<'a, T> {
     pub style: Style,
 
     /// The base block surrounding the widget list.
-    pub block: Option<Block<'a>>,
+    pub block: Option<Block<'block>>,
 
     /// The scroll padding.
     pub(crate) scroll_padding: u16,
@@ -34,10 +36,10 @@ pub struct ListView<'a, T> {
     pub(crate) infinite_scrolling: bool,
 }
 
-impl<'a, T> ListView<'a, T> {
+impl<'block, 'render, T> ListView<'block, 'render, T> {
     /// Creates a new `ListView` with a builder an item count.
     #[must_use]
-    pub fn new(builder: ListBuilder<T>, item_count: usize) -> Self {
+    pub fn new(builder: ListBuilder<'render, T>, item_count: usize) -> Self {
         Self {
             builder,
             item_count,
@@ -63,7 +65,7 @@ impl<'a, T> ListView<'a, T> {
 
     /// Sets the block style that surrounds the whole List.
     #[must_use]
-    pub fn block(mut self, block: Block<'a>) -> Self {
+    pub fn block(mut self, block: Block<'block>) -> Self {
         self.block = Some(block);
         self
     }
@@ -97,7 +99,7 @@ impl<'a, T> ListView<'a, T> {
     }
 }
 
-impl<T> Styled for ListView<'_, T> {
+impl<T> Styled for ListView<'_, '_, T> {
     type Item = Self;
 
     fn style(&self) -> Style {
@@ -110,7 +112,7 @@ impl<T> Styled for ListView<'_, T> {
     }
 }
 
-impl<T: Copy + 'static> From<Vec<T>> for ListView<'_, T> {
+impl<'render, T: Copy + 'render> From<Vec<T>> for ListView<'_, 'render, T> {
     fn from(value: Vec<T>) -> Self {
         let item_count = value.len();
         let builder = ListBuilder::new(move |context| (value[context.index], 1));
@@ -136,21 +138,23 @@ pub struct ListBuildContext {
 }
 
 /// A type alias for the closure.
-type ListBuilderClosure<T> = dyn Fn(&ListBuildContext) -> (T, u16);
+type ListBuilderClosure<'render, T> = dyn Fn(&ListBuildContext) -> (T, u16) + 'render;
 
 /// The builder to for constructing list elements in a `ListView<T>`
-pub struct ListBuilder<T> {
-    closure: Box<ListBuilderClosure<T>>,
+pub struct ListBuilder<'render, T> {
+    closure: Box<ListBuilderClosure<'render, T>>,
+    _phantom: PhantomData<&'render T>,
 }
 
-impl<T> ListBuilder<T> {
+impl<'render, T> ListBuilder<'render, T> {
     /// Creates a new `ListBuilder` taking a closure as a parameter
     pub fn new<F>(closure: F) -> Self
     where
-        F: Fn(&ListBuildContext) -> (T, u16) + 'static,
+        F: Fn(&ListBuildContext) -> (T, u16) + 'render,
     {
         ListBuilder {
             closure: Box::new(closure),
+            _phantom: PhantomData::default(),
         }
     }
 
@@ -171,7 +175,7 @@ pub enum ScrollAxis {
     Horizontal,
 }
 
-impl<T: Widget> StatefulWidget for ListView<'_, T> {
+impl<T: Widget> StatefulWidget for ListView<'_, '_, T> {
     type State = ListState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
@@ -357,7 +361,14 @@ mod test {
         }
     }
 
-    fn test_data(total_height: u16) -> (Rect, Buffer, ListView<'static, TestItem>, ListState) {
+    fn test_data<'render>(
+        total_height: u16,
+    ) -> (
+        Rect,
+        Buffer,
+        ListView<'static, 'render, TestItem>,
+        ListState,
+    ) {
         let area = Rect::new(0, 0, 5, total_height);
         let list = ListView::new(ListBuilder::new(|_| (TestItem {}, 3)), 3);
         (area, Buffer::empty(area), list, ListState::default())

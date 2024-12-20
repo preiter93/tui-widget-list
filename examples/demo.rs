@@ -107,7 +107,7 @@ impl TextContainer {
         }
     }
 
-    fn demo(selected_color: Color) -> ListView<'static, TextContainer> {
+    fn demo(selected_color: Color) -> ListView<'static, 'static, TextContainer> {
         let monday: Vec<String> = vec![
             String::from("1. Exercise for 30 minutes"),
             String::from("2. Work on the project for 2 hours"),
@@ -207,7 +207,7 @@ impl ColoredContainer {
         }
     }
 
-    fn demo() -> ListView<'static, ColoredContainer> {
+    fn demo() -> ListView<'static, 'static, ColoredContainer> {
         let colors = demo_colors();
         let builder = ListBuilder::new(move |context| {
             let color = demo_colors()[context.index];
