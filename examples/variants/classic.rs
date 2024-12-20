@@ -7,7 +7,7 @@ pub(crate) struct PaddedListView;
 impl PaddedListView {
     pub(crate) fn new<'a>(
         infinite_scrolling: bool,
-    ) -> ListView<'a, 'a, ListItemContainer<'a, Line<'a>>> {
+    ) -> ListView<'a, ListItemContainer<'a, Line<'a>>> {
         let builder = ListBuilder::new(|context| {
             let mut line = ListItemContainer::new(
                 Line::from(format!("Item {0}", context.index)).alignment(Alignment::Center),
