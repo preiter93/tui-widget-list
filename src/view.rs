@@ -143,7 +143,7 @@ type ListBuilderClosure<'render, T> = dyn Fn(&ListBuildContext) -> (T, u16) + 'r
 /// The builder to for constructing list elements in a `ListView<T>`
 pub struct ListBuilder<'render, T> {
     closure: Box<ListBuilderClosure<'render, T>>,
-    _phantom: PhantomData<&'render T>,
+    // _phantom: PhantomData<&'render T>,
 }
 
 impl<'render, T> ListBuilder<'render, T> {
@@ -154,7 +154,7 @@ impl<'render, T> ListBuilder<'render, T> {
     {
         ListBuilder {
             closure: Box::new(closure),
-            _phantom: PhantomData::default(),
+            // _phantom: PhantomData::default(),
         }
     }
 
