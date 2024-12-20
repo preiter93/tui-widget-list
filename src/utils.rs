@@ -370,18 +370,18 @@ fn calculate_effective_scroll_padding<T>(
     padding_by_element
 }
 
-struct WidgetCacher<'a, 'render, T> {
+struct WidgetCacher<'a, T> {
     cache: HashMap<usize, (T, u16)>,
-    builder: &'a ListBuilder<'render, T>,
+    builder: &'a ListBuilder<'a, T>,
     scroll_axis: ScrollAxis,
     cross_axis_size: u16,
     selected: Option<usize>,
 }
 
-impl<'a, 'render, T> WidgetCacher<'a, 'render, T> {
+impl<'a, T> WidgetCacher<'a, T> {
     // Create a new WidgetCacher
     fn new(
-        builder: &'a ListBuilder<'render, T>,
+        builder: &'a ListBuilder<'a, T>,
         scroll_axis: ScrollAxis,
         cross_axis_size: u16,
         selected: Option<usize>,
