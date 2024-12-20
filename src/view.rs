@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -138,23 +136,22 @@ pub struct ListBuildContext {
 }
 
 /// A type alias for the closure.
-type ListBuilderClosure<'render, T> = dyn Fn(&ListBuildContext) -> (T, u16) + 'render;
+type ListBuilderClosure<'a, T> = dyn Fn(&ListBuildContext) -> (T, u16) + 'a;
 
 /// The builder to for constructing list elements in a `ListView<T>`
-pub struct ListBuilder<'render, T> {
-    closure: Box<ListBuilderClosure<'render, T>>,
-    // _phantom: PhantomData<&'render T>,
+pub struct ListBuilder<'a, T> {
+    closure: Box<ListBuilderClosure<'a, T>>,
+    // _phantom: PhantomData<&'a T>,
 }
 
-impl<'render, T> ListBuilder<'render, T> {
+impl<'a, T> ListBuilder<'a, T> {
     /// Creates a new `ListBuilder` taking a closure as a parameter
     pub fn new<F>(closure: F) -> Self
     where
-        F: Fn(&ListBuildContext) -> (T, u16) + 'render,
+        F: Fn(&ListBuildContext) -> (T, u16) + 'a,
     {
         ListBuilder {
             closure: Box::new(closure),
-            // _phantom: PhantomData::default(),
         }
     }
 
