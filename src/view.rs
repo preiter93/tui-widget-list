@@ -112,7 +112,7 @@ impl<T> Styled for ListView<'_, T> {
     }
 }
 
-impl<'render, T: Copy + 'render> From<Vec<T>> for ListView<'render, T> {
+impl<'a, T: Copy + 'a> From<Vec<T>> for ListView<'a, T> {
     fn from(value: Vec<T>) -> Self {
         let item_count = value.len();
         let builder = ListBuilder::new(move |context| (value[context.index], 1));
@@ -361,9 +361,7 @@ mod test {
         }
     }
 
-    fn test_data<'render>(
-        total_height: u16,
-    ) -> (Rect, Buffer, ListView<'static, TestItem>, ListState) {
+    fn test_data(total_height: u16) -> (Rect, Buffer, ListView<'static, TestItem>, ListState) {
         let area = Rect::new(0, 0, 5, total_height);
         let list = ListView::new(ListBuilder::new(|_| (TestItem {}, 3)), 3);
         (area, Buffer::empty(area), list, ListState::default())
