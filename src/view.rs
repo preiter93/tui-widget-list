@@ -15,7 +15,7 @@ pub struct ListView<'a, T> {
     pub item_count: usize,
 
     ///  A `ListBuilder<T>` responsible for constructing the items in the list.
-    pub builder: ListBuilder<T>,
+    pub builder: ListBuilder<'a, T>,
 
     /// Specifies the scroll axis. Either `Vertical` or `Horizontal`.
     pub scroll_axis: ScrollAxis,
@@ -37,7 +37,7 @@ pub struct ListView<'a, T> {
 impl<'a, T> ListView<'a, T> {
     /// Creates a new `ListView` with a builder an item count.
     #[must_use]
-    pub fn new(builder: ListBuilder<T>, item_count: usize) -> Self {
+    pub fn new(builder: ListBuilder<'a, T>, item_count: usize) -> Self {
         Self {
             builder,
             item_count,
@@ -110,7 +110,7 @@ impl<T> Styled for ListView<'_, T> {
     }
 }
 
-impl<T: Copy + 'static> From<Vec<T>> for ListView<'_, T> {
+impl<'a, T: Copy + 'a> From<Vec<T>> for ListView<'a, T> {
     fn from(value: Vec<T>) -> Self {
         let item_count = value.len();
         let builder = ListBuilder::new(move |context| (value[context.index], 1));
@@ -136,18 +136,19 @@ pub struct ListBuildContext {
 }
 
 /// A type alias for the closure.
-type ListBuilderClosure<T> = dyn Fn(&ListBuildContext) -> (T, u16);
+type ListBuilderClosure<'a, T> = dyn Fn(&ListBuildContext) -> (T, u16) + 'a;
 
 /// The builder to for constructing list elements in a `ListView<T>`
-pub struct ListBuilder<T> {
-    closure: Box<ListBuilderClosure<T>>,
+pub struct ListBuilder<'a, T> {
+    closure: Box<ListBuilderClosure<'a, T>>,
+    // _phantom: PhantomData<&'a T>,
 }
 
-impl<T> ListBuilder<T> {
+impl<'a, T> ListBuilder<'a, T> {
     /// Creates a new `ListBuilder` taking a closure as a parameter
     pub fn new<F>(closure: F) -> Self
     where
-        F: Fn(&ListBuildContext) -> (T, u16) + 'static,
+        F: Fn(&ListBuildContext) -> (T, u16) + 'a,
     {
         ListBuilder {
             closure: Box::new(closure),

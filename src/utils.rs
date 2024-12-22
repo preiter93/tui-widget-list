@@ -372,7 +372,7 @@ fn calculate_effective_scroll_padding<T>(
 
 struct WidgetCacher<'a, T> {
     cache: HashMap<usize, (T, u16)>,
-    builder: &'a ListBuilder<T>,
+    builder: &'a ListBuilder<'a, T>,
     scroll_axis: ScrollAxis,
     cross_axis_size: u16,
     selected: Option<usize>,
@@ -381,7 +381,7 @@ struct WidgetCacher<'a, T> {
 impl<'a, T> WidgetCacher<'a, T> {
     // Create a new WidgetCacher
     fn new(
-        builder: &'a ListBuilder<T>,
+        builder: &'a ListBuilder<'a, T>,
         scroll_axis: ScrollAxis,
         cross_axis_size: u16,
         selected: Option<usize>,
