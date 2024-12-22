@@ -90,7 +90,7 @@ impl<T: PreRender> Styled for List<'_, T> {
     }
 }
 
-impl<'a, T: PreRender> From<Vec<T>> for List<'a, T> {
+impl<T: PreRender> From<Vec<T>> for List<'_, T> {
     /// Instantiates a [`List`] from a vector of elements implementing
     /// the [`PreRender`] trait.
     fn from(items: Vec<T>) -> Self {
@@ -98,7 +98,7 @@ impl<'a, T: PreRender> From<Vec<T>> for List<'a, T> {
     }
 }
 
-impl<'a, T: PreRender> StatefulWidget for List<'a, T> {
+impl<T: PreRender> StatefulWidget for List<'_, T> {
     type State = ListState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
