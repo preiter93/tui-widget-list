@@ -1,6 +1,10 @@
 Released
 --------
 
+0.13.1 - 22 Dec 2024
+===================
+- More flexible listbuilder lifetimes by @nmandrus1
+
 0.13.0 - 22 Okt 2024
 ===================
 - Bump ratatui to v0.29.0
