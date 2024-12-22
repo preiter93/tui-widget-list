@@ -141,7 +141,6 @@ type ListBuilderClosure<'a, T> = dyn Fn(&ListBuildContext) -> (T, u16) + 'a;
 /// The builder to for constructing list elements in a `ListView<T>`
 pub struct ListBuilder<'a, T> {
     closure: Box<ListBuilderClosure<'a, T>>,
-    // _phantom: PhantomData<&'a T>,
 }
 
 impl<'a, T> ListBuilder<'a, T> {
