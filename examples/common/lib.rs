@@ -1,5 +1,5 @@
+#![allow(unused_imports, dead_code)]
 pub mod item_container;
-#[allow(unused_imports)]
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},

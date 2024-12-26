@@ -39,7 +39,7 @@ pub(crate) fn layout_on_viewport<T: PreRender>(
     let mut found = false;
     for widget in widgets.iter_mut().skip(state.view_state.offset) {
         // Get the main axis size of the widget.
-        let is_selected = state.selected.map_or(false, |j| index == j);
+        let is_selected = state.selected == Some(index);
         let context = PreRenderContext::new(is_selected, cross_axis_size, scroll_axis, index);
 
         let main_axis_size = widget.pre_render(&context);
@@ -85,7 +85,7 @@ pub(crate) fn layout_on_viewport<T: PreRender>(
         let main_axis_size = if let Some(main_axis_size) = main_axis_size_cache.remove(&index) {
             main_axis_size
         } else {
-            let is_selected = state.selected.map_or(false, |j| index == j);
+            let is_selected = state.selected == Some(index);
             let context = PreRenderContext::new(is_selected, cross_axis_size, scroll_axis, index);
 
             widget.pre_render(&context)

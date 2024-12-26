@@ -145,6 +145,21 @@ pub struct ListBuilder<'a, T> {
 
 impl<'a, T> ListBuilder<'a, T> {
     /// Creates a new `ListBuilder` taking a closure as a parameter
+    ///
+    /// # Example
+    /// ```
+    /// use ratatui::text::Line;
+    /// use tui_widget_list::ListBuilder;
+    ///
+    /// let builder = ListBuilder::new(|context| {
+    ///     let mut item = Line::from(format!("Item {:0}", context.index));
+    ///
+    ///     // Return the size of the widget along the main axis.
+    ///     let main_axis_size = 1;
+    ///
+    ///     (item, main_axis_size)
+    /// });
+    /// ```
     pub fn new<F>(closure: F) -> Self
     where
         F: Fn(&ListBuildContext) -> (T, u16) + 'a,
