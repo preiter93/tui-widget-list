@@ -339,7 +339,7 @@ fn calculate_effective_scroll_padding<T>(
 
         let context = ListBuildContext {
             index,
-            is_selected: state.selected.map_or(false, |j| index == j),
+            is_selected: state.selected == Some(index),
             scroll_axis,
             cross_axis_size,
         };
@@ -358,7 +358,7 @@ fn calculate_effective_scroll_padding<T>(
 
         let context = ListBuildContext {
             index,
-            is_selected: state.selected.map_or(false, |j| index == j),
+            is_selected: state.selected == Some(index),
             scroll_axis,
             cross_axis_size,
         };
@@ -397,7 +397,7 @@ impl<'a, T> WidgetCacher<'a, T> {
 
     // Gets the widget and the height. Removes the widget from the cache.
     fn get(&mut self, index: usize) -> (T, u16) {
-        let is_selected = self.selected.map_or(false, |j| index == j);
+        let is_selected = self.selected == Some(index);
         // Check if the widget is already in cache
         if let Some((widget, main_axis_size)) = self.cache.remove(&index) {
             return (widget, main_axis_size);
@@ -419,7 +419,7 @@ impl<'a, T> WidgetCacher<'a, T> {
 
     // Gets the height.
     fn get_height(&mut self, index: usize) -> u16 {
-        let is_selected = self.selected.map_or(false, |j| index == j);
+        let is_selected = self.selected == Some(index);
         // Check if the widget is already in cache
         if let Some(&(_, main_axis_size)) = self.cache.get(&index) {
             return main_axis_size;
