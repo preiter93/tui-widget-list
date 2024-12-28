@@ -1,6 +1,10 @@
 Released
 --------
 
+0.13.2 - 28 Dec 2024
+===================
+- Return [ListState::scroll_offset_index]
+ 
 0.13.1 - 22 Dec 2024
 ===================
 - More flexible listbuilder lifetimes by @nmandrus1
