@@ -127,4 +127,10 @@ impl ListState {
     pub(crate) fn set_num_elements(&mut self, num_elements: usize) {
         self.num_elements = num_elements;
     }
+
+    /// Returns the index of the first item currently displayed on the screen.
+    #[must_use]
+    pub fn scroll_offset_index(&self) -> usize {
+        self.view_state.offset
+    }
 }
