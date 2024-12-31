@@ -2,7 +2,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect},
     style::{Style, Styled},
-    widgets::{block::BlockExt, Block, StatefulWidget, Widget},
+    widgets::{block::BlockExt, Block, Scrollbar, StatefulWidget, Widget},
 };
 
 use crate::{utils::layout_on_viewport, ListState};
@@ -26,6 +26,9 @@ pub struct ListView<'a, T> {
     /// The base block surrounding the widget list.
     pub block: Option<Block<'a>>,
 
+    /// The scrollbar.
+    pub scrollbar: Option<Scrollbar<'a>>,
+
     /// The scroll padding.
     pub(crate) scroll_padding: u16,
 
@@ -44,6 +47,7 @@ impl<'a, T> ListView<'a, T> {
             scroll_axis: ScrollAxis::Vertical,
             style: Style::default(),
             block: None,
+            scrollbar: None,
             scroll_padding: 0,
             infinite_scrolling: true,
         }
@@ -65,6 +69,13 @@ impl<'a, T> ListView<'a, T> {
     #[must_use]
     pub fn block(mut self, block: Block<'a>) -> Self {
         self.block = Some(block);
+        self
+    }
+
+    /// Sets the scrollbar of the List.
+    #[must_use]
+    pub fn scrollbar(mut self, scrollbar: Scrollbar<'a>) -> Self {
+        self.scrollbar = Some(scrollbar);
         self
     }
 
@@ -198,7 +209,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
 
         // Set the base block
         self.block.render(area, buf);
-        let area = self.block.inner_if_some(area);
+        let inner_area = self.block.inner_if_some(area);
 
         // List is empty
         if self.item_count == 0 {
@@ -207,14 +218,14 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
 
         // Set the dimension along the scroll axis and the cross axis
         let (main_axis_size, cross_axis_size) = match self.scroll_axis {
-            ScrollAxis::Vertical => (area.height, area.width),
-            ScrollAxis::Horizontal => (area.width, area.height),
+            ScrollAxis::Vertical => (inner_area.height, inner_area.width),
+            ScrollAxis::Horizontal => (inner_area.width, inner_area.height),
         };
 
         // The coordinates of the first item with respect to the top left corner
         let (mut scroll_axis_pos, cross_axis_pos) = match self.scroll_axis {
-            ScrollAxis::Vertical => (area.top(), area.left()),
-            ScrollAxis::Horizontal => (area.left(), area.top()),
+            ScrollAxis::Vertical => (inner_area.top(), inner_area.left()),
+            ScrollAxis::Horizontal => (inner_area.left(), inner_area.top()),
         };
 
         // Determine which widgets to show on the viewport and how much space they
@@ -227,6 +238,13 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             cross_axis_size,
             self.scroll_axis,
             self.scroll_padding,
+        );
+        state.update_scrollbar_state(
+            &self.builder,
+            self.item_count,
+            main_axis_size,
+            cross_axis_size,
+            self.scroll_axis,
         );
 
         let (start, end) = (
@@ -271,6 +289,11 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             }
 
             scroll_axis_pos += visible_main_axis_size;
+        }
+
+        // Render the scrollbar
+        if let Some(scrollbar) = self.scrollbar {
+            scrollbar.render(area, buf, &mut state.scrollbar_state);
         }
     }
 }

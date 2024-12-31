@@ -1,8 +1,12 @@
 #[path = "common/lib.rs"]
 mod common;
+
 use common::{Colors, Result, Terminal};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
-use ratatui::prelude::*;
+use ratatui::{
+    prelude::*,
+    widgets::{Block, Borders, Scrollbar, ScrollbarOrientation},
+};
 use tui_widget_list::{ListBuilder, ListState, ListView};
 
 fn main() -> Result<()> {
@@ -59,7 +63,13 @@ impl StatefulWidget for &App {
 
             return (item, 1);
         });
-        let list = ListView::new(builder, 20);
+
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("┐"))
+            .end_symbol(Some("┘"));
+        let list = ListView::new(builder, 50)
+            .block(Block::default().borders(Borders::ALL))
+            .scrollbar(scrollbar);
 
         list.render(area, buf, state);
     }

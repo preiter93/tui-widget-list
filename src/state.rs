@@ -1,3 +1,7 @@
+use ratatui::widgets::ScrollbarState;
+
+use crate::{ListBuildContext, ListBuilder, ScrollAxis};
+
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone)]
 pub struct ListState {
@@ -17,6 +21,10 @@ pub struct ListState {
     /// The state for the viewport. Keeps track which item to show
     /// first and how much it is truncated.
     pub(crate) view_state: ViewState,
+
+    /// The scrollbar state. This is only used if the view is
+    /// initialzed with a scrollbar.
+    pub(crate) scrollbar_state: ScrollbarState,
 }
 
 #[derive(Debug, Clone, Default, Eq, PartialEq)]
@@ -35,6 +43,7 @@ impl Default for ListState {
             num_elements: 0,
             infinite_scrolling: true,
             view_state: ViewState::default(),
+            scrollbar_state: ScrollbarState::new(0).position(0),
         }
     }
 }
@@ -56,6 +65,7 @@ impl ListState {
         self.selected = index;
         if index.is_none() {
             self.view_state.offset = 0;
+            self.scrollbar_state = self.scrollbar_state.position(0);
         }
     }
 
@@ -126,6 +136,38 @@ impl ListState {
     /// Updates the number of elements that are present in the list.
     pub(crate) fn set_num_elements(&mut self, num_elements: usize) {
         self.num_elements = num_elements;
+    }
+
+    /// Updates the current scrollbar content length and position.
+    pub(crate) fn update_scrollbar_state<T>(
+        &mut self,
+        builder: &ListBuilder<T>,
+        item_count: usize,
+        main_axis_size: u16,
+        cross_axis_size: u16,
+        scroll_axis: ScrollAxis,
+    ) {
+        let mut max_scrollbar_position = 0;
+        let mut cumulative_size = 0;
+
+        for index in (0..item_count).rev() {
+            let context = ListBuildContext {
+                index,
+                is_selected: self.selected == Some(index),
+                scroll_axis,
+                cross_axis_size,
+            };
+            let (_, widget_size) = builder.call_closure(&context);
+            cumulative_size += widget_size;
+
+            if cumulative_size > main_axis_size {
+                max_scrollbar_position = index + 1;
+                break;
+            }
+        }
+
+        self.scrollbar_state = self.scrollbar_state.content_length(max_scrollbar_position);
+        self.scrollbar_state = self.scrollbar_state.position(self.view_state.offset);
     }
 
     /// Returns the index of the first item currently displayed on the screen.

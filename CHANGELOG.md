@@ -1,6 +1,10 @@
 Released
 --------
 
+0.13.3 - 01 Dec 2025
+===================
+- Add support for scrollbars
+
 0.13.2 - 28 Dec 2024
 ===================
 - Return [ListState::scroll_offset_index]
