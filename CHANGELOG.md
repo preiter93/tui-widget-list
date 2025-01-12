@@ -1,7 +1,7 @@
 Released
 --------
 
-0.13.3 - 01 Dec 2025
+0.13.3 - 01 Jan 2025
 ===================
 - Add support for scrollbars
 
