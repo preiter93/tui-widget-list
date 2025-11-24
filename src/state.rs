@@ -175,4 +175,20 @@ impl ListState {
     pub fn scroll_offset_index(&self) -> usize {
         self.view_state.offset
     }
+
+    /// Returns the number of rows/columns of the first visible item that are scrolled off the top/left.
+    ///
+    /// When the first visible item is partially scrolled out of view, this returns how many
+    /// rows (for vertical lists) or columns (for horizontal lists) are hidden above/left of
+    /// the viewport. Returns 0 if the first visible item is fully visible.
+    ///
+    /// # Example
+    ///
+    /// If message #5 is the first visible item but its first 2 rows are scrolled off the top,
+    /// this returns 2. Combined with `scroll_offset_index()`, you can calculate the exact
+    /// scroll position in pixels/rows.
+    #[must_use]
+    pub fn scroll_truncation(&self) -> u16 {
+        self.view_state.first_truncated
+    }
 }
