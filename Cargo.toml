@@ -9,10 +9,6 @@ keywords = ["tui", "ratatui", "widget", "list", "widgetlist"]
 readme = "README.md"
 license = "MIT"
 
-[features]
-default = []
-crossterm = ["ratatui/crossterm"]
-
 [dependencies]
 ratatui = { version = "0.29", default-features = false }
 
