@@ -1,6 +1,6 @@
 #![allow(unused_imports, dead_code)]
 pub mod item_container;
-use crossterm::{
+use ratatui::crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -62,7 +62,7 @@ impl DerefMut for Terminal {
 
 impl Terminal {
     pub fn init() -> Result<Self> {
-        crossterm::execute!(stdout(), EnterAlternateScreen, EnableMouseCapture)?;
+        ratatui::crossterm::execute!(stdout(), EnterAlternateScreen, EnableMouseCapture)?;
         enable_raw_mode()?;
 
         let backend = CrosstermBackend::new(stdout());
@@ -86,7 +86,7 @@ impl Terminal {
 
     pub fn reset() -> Result<()> {
         disable_raw_mode()?;
-        crossterm::execute!(stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
+        ratatui::crossterm::execute!(stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
 
         Ok(())
     }

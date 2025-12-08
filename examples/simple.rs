@@ -2,7 +2,7 @@
 mod common;
 
 use common::{Colors, Result, Terminal};
-use crossterm::event::{self, Event, KeyCode, KeyEventKind};
+use ratatui::crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::{
     prelude::*,
     widgets::{Block, Borders, Scrollbar, ScrollbarOrientation},
