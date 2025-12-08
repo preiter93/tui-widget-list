@@ -1,6 +1,11 @@
 Released
 --------
 
+0.13.3 - 08 Dec 2025
+===================
+- Use crossterm dependency only for examples @bladecoder
+- Expose Trunctation Amount @brycehanscomb
+
 0.13.3 - 01 Jan 2025
 ===================
 - Add support for scrollbars
