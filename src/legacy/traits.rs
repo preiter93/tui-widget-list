@@ -12,7 +12,7 @@ pub trait PreRender: Widget {
     ///
     /// - `self`: Captured by value, allowing modification within the pre-render hook.
     /// - `context`: Rendering context providing additional information like selection
-    ///    status, cross-axis size, scroll direction and the widgets index in the list.
+    ///   status, cross-axis size, scroll direction and the widgets index in the list.
     ///
     /// # Returns
     ///
