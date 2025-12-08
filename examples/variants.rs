@@ -13,9 +13,9 @@ mod scroll_padding;
 use classic::PaddedListView;
 use common::{Block, Colors, Result, Terminal};
 use config::{Controls, Variant, VariantsListView};
-use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use fps::FPSCounter;
 use horizontal::HorizontalListView;
+use ratatui::crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
