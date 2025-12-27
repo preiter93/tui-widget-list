@@ -1,6 +1,10 @@
 Released
 --------
 
+0.14.0 - 27 Dex 2025
+===================
+- Bump ratatui version to v0.30.0
+
 0.13.3 - 08 Dec 2025
 ===================
 - Use crossterm dependency only for examples @bladecoder
