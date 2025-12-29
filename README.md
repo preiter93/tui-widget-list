@@ -1,8 +1,8 @@
-## A versatile widget list for Ratatui
-
 <div align="center">
 
-[![Continuous Integration](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml/badge.svg)](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml)
+## A versatile widget list for Ratatui
+
+[![Crate Badge]](https://crates.io/crates/tui-widget-list) [![Continuous Integration](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml/badge.svg)](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml) [![Deps Status](https://deps.rs/repo/github/preiter93/tui-widget-list/status.svg)](https://deps.rs/repo/github/preiter93/tui-widget-list) [![License Badge]](./LICENSE)
 
 </div>
 
@@ -97,5 +97,8 @@ For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-
 #### Infinite scrolling, scroll padding, horizontal scrolling
 
 ![](examples/tapes/variants.gif?v=1)
+
+[Crate Badge]: https://img.shields.io/crates/v/tui-widget-list?logo=rust&style=flat-square&logoColor=E05D44&color=E05D44
+[License Badge]: https://img.shields.io/crates/l/tui-widget-list?style=flat-square&color=1370D3
 
 License: MIT
