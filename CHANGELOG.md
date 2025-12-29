@@ -1,3 +1,7 @@
+0.14.1 - ?
+===================
+- Switch from ratatui to ratatui-core
+
 Released
 --------
 
