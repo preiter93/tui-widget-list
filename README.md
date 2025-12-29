@@ -88,11 +88,7 @@ For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-
 ### Documentation
 [docs.rs](https://docs.rs/tui-widget-list/)
 
-### Demos
-
-#### Demo
-
-![](examples/tapes/demo.gif?v=1)
+### Demo
 
 #### Infinite scrolling, scroll padding, horizontal scrolling
 

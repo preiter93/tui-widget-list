@@ -88,11 +88,7 @@
 //! ## Documentation
 //! [docs.rs](https://docs.rs/tui-widget-list/)
 //!
-//! ## Demos
-//!
-//! ### Demo
-//!
-//!![](examples/tapes/demo.gif?v=1)
+//! ## Demo
 //!
 //! ### Infinite scrolling, scroll padding, horizontal scrolling
 //!
