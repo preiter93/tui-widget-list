@@ -1,4 +1,4 @@
-use ratatui::widgets::ScrollbarState;
+use ratatui_widgets::scrollbar::ScrollbarState;
 
 use crate::{ListBuildContext, ListBuilder, ScrollAxis};
 

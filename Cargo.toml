@@ -10,7 +10,8 @@ readme = "README.md"
 license = "MIT"
 
 [dependencies]
-ratatui = { version = "0.30", default-features = false }
+ratatui-core = { package = "ratatui-core", version = "0.1" }
+ratatui-widgets = { version = "0.3.0", default-features = false }
 
 [dev-dependencies]
 ratatui = { version = "0.30", features = ["crossterm"] }
