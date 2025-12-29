@@ -1,5 +1,5 @@
 #![allow(deprecated)]
-use ratatui::widgets::Widget;
+use ratatui_core::widgets::Widget;
 
 use crate::ScrollAxis;
 

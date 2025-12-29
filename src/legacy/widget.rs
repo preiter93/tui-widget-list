@@ -1,9 +1,11 @@
 #![allow(clippy::cast_possible_truncation, deprecated)]
-use ratatui::{
-    prelude::{Buffer, Rect},
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
     style::{Style, Styled},
-    widgets::{Block, StatefulWidget, Widget},
+    widgets::{StatefulWidget, Widget},
 };
+use ratatui_widgets::block::Block;
 
 use crate::{legacy::utils::layout_on_viewport, ListState, PreRender, ScrollAxis};
 

@@ -1,9 +1,12 @@
-use ratatui::{
+use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
     style::{Style, Styled},
-    widgets::{Block, BlockExt as _, Scrollbar, StatefulWidget, Widget},
+    widgets::{StatefulWidget, Widget},
 };
+use ratatui_widgets::block::Block;
+use ratatui_widgets::block::BlockExt;
+use ratatui_widgets::scrollbar::Scrollbar;
 
 use crate::{utils::layout_on_viewport, ListState};
 
