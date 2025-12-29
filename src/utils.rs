@@ -480,14 +480,11 @@ impl<T> ViewportElement<T> {
 
 #[cfg(test)]
 mod tests {
-    use ratatui::{
-        prelude::*,
-        widgets::{Block, Borders},
-    };
-
-    use crate::state::ViewState;
-
     use super::*;
+    use crate::state::ViewState;
+    use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
+    use ratatui_widgets::block::Block;
+    use ratatui_widgets::borders::Borders;
 
     #[derive(Debug, Default, PartialEq, Eq)]
     struct TestItem {}
