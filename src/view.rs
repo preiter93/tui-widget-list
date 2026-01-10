@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -190,7 +192,7 @@ impl<'a, T> ListBuilder<'a, T> {
 }
 
 /// Represents the scroll axis of a list.
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum ScrollAxis {
     /// Indicates vertical scrolling. This is the default.
     #[default]
@@ -215,6 +217,8 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             block.render(area, buf);
         }
         let inner_area = self.block.inner_if_some(area);
+        state.set_inner_area(inner_area);
+        state.set_scroll_axis(self.scroll_axis);
 
         // List is empty
         if self.item_count == 0 {
@@ -256,6 +260,9 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             state.view_state.offset,
             viewport.len() + state.view_state.offset,
         );
+        // Cache visible main-axis sizes for hit testing after render
+        let mut cached_sizes: std::collections::HashMap<usize, u16> = HashMap::new();
+
         for i in start..end {
             let Some(element) = viewport.remove(&i) else {
                 break;
@@ -263,6 +270,9 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             let visible_main_axis_size = element
                 .main_axis_size
                 .saturating_sub(element.truncation.value());
+
+            cached_sizes.insert(i, visible_main_axis_size);
+
             let area = match self.scroll_axis {
                 ScrollAxis::Vertical => Rect::new(
                     cross_axis_pos,
@@ -295,6 +305,9 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
 
             scroll_axis_pos += visible_main_axis_size;
         }
+
+        // Save cached visible sizes for hit testing
+        state.set_visible_main_axis_sizes(cached_sizes);
 
         // Render the scrollbar
         if let Some(scrollbar) = self.scrollbar {
@@ -362,7 +375,7 @@ fn render_truncated<T: Widget>(
                 }
             }
         }
-    };
+    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, PartialOrd, Eq, Ord)]

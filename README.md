@@ -18,6 +18,7 @@ The [`ListView`] can be customized with the following options:
 - [`ListView::infinite_scrolling`]: Allows the list to wrap around when scrolling past the first or last element.
 - [`ListView::style`]: Defines the base style of the list.
 - [`ListView::block`]: Optional outer block surrounding the list.
+- [`ListView::scrollbar`]: Optional scrollbar widget.
 
 ### Example
 ```rust
@@ -80,6 +81,29 @@ impl Widget for &mut App {
 
         list.render(area, buf, state);
     }
+}
+```
+
+### Mouse handling
+
+You can handle mouse clicks using `ListState` via `hit_test`:
+```rust
+match event::read()? {
+    Event::Mouse(MouseEvent {
+        kind: MouseEventKind::Down(MouseButton::Left),
+        column, row, ..
+    }) => {
+        if let Some(index) = hit_test(&state, column, row) {
+            state.select(Some(index));
+        }
+    }
+    Event::Mouse(MouseEvent { kind: MouseEventKind::ScrollUp, .. }) => {
+        state.previous();
+    }
+    Event::Mouse(MouseEvent { kind: MouseEventKind::ScrollDown, .. }) => {
+        state.next();
+    }
+    _ => {}
 }
 ```
 

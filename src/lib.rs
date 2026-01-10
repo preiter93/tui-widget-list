@@ -1,7 +1,7 @@
 //!<div align="center">
 //!
 //! # A versatile widget list for Ratatui
-//!     
+//!
 //! [![Crate Badge]](https://crates.io/crates/tui-widget-list) [![Continuous Integration](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml/badge.svg)](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml) [![Deps Status](https://deps.rs/repo/github/preiter93/tui-widget-list/status.svg)](https://deps.rs/repo/github/preiter93/tui-widget-list) [![License Badge]](./LICENSE)
 //!
 //! </div>
@@ -18,6 +18,7 @@
 //! - [`ListView::infinite_scrolling`]: Allows the list to wrap around when scrolling past the first or last element.
 //! - [`ListView::style`]: Defines the base style of the list.
 //! - [`ListView::block`]: Optional outer block surrounding the list.
+//! - [`ListView::scrollbar`]: Optional scrollbar widget.
 //!
 //! ## Example
 //!```
@@ -83,6 +84,29 @@
 //! }
 //!```
 //!
+//! ## Mouse handling
+//!
+//! You can handle mouse clicks using `ListState` via `hit_test`:
+//!```ignore
+//! match event::read()? {
+//!     Event::Mouse(MouseEvent {
+//!         kind: MouseEventKind::Down(MouseButton::Left),
+//!         column, row, ..
+//!     }) => {
+//!         if let Some(index) = hit_test(&state, column, row) {
+//!             state.select(Some(index));
+//!         }
+//!     }
+//!     Event::Mouse(MouseEvent { kind: MouseEventKind::ScrollUp, .. }) => {
+//!         state.previous();
+//!     }
+//!     Event::Mouse(MouseEvent { kind: MouseEventKind::ScrollDown, .. }) => {
+//!         state.next();
+//!     }
+//!     _ => {}
+//! }
+//!```
+//!
 //! For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
 //!
 //! ## Documentation
@@ -96,16 +120,11 @@
 //!
 //! [Crate Badge]: https://img.shields.io/crates/v/tui-widget-list?logo=rust&style=flat-square&logoColor=E05D44&color=E05D44
 //! [License Badge]: https://img.shields.io/crates/l/tui-widget-list?style=flat-square&color=1370D3
-pub(crate) mod legacy;
+pub(crate) mod hit_test;
 pub(crate) mod state;
 pub(crate) mod utils;
 pub(crate) mod view;
 
+pub use hit_test::hit_test;
 pub use state::ListState;
 pub use view::{ListBuildContext, ListBuilder, ListView, ScrollAxis};
-
-#[allow(deprecated)]
-pub use legacy::{
-    traits::{PreRender, PreRenderContext},
-    widget::List,
-};

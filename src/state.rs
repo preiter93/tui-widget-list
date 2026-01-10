@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+use ratatui_core::layout::Rect;
 use ratatui_widgets::scrollbar::ScrollbarState;
 
 use crate::{ListBuildContext, ListBuilder, ScrollAxis};
@@ -27,13 +30,35 @@ pub struct ListState {
     pub(crate) scrollbar_state: ScrollbarState,
 }
 
-#[derive(Debug, Clone, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct ViewState {
     /// The index of the first item displayed on the screen.
     pub(crate) offset: usize,
 
     /// The truncation in rows/columns of the first item displayed on the screen.
     pub(crate) first_truncated: u16,
+
+    /// Cached visible sizes from the last render: map from item index to its visible main-axis size.
+    /// This avoids re-evaluating the builder for hit testing and other post-render queries.
+    pub(crate) visible_main_axis_sizes: HashMap<usize, u16>,
+
+    /// The inner area used during the last render (after applying the optional block).
+    pub(crate) inner_area: Rect,
+
+    /// The scroll axis used during the last render.
+    pub(crate) scroll_axis: ScrollAxis,
+}
+
+impl Default for ViewState {
+    fn default() -> Self {
+        Self {
+            offset: 0,
+            first_truncated: 0,
+            visible_main_axis_sizes: HashMap::new(),
+            inner_area: Rect::default(),
+            scroll_axis: ScrollAxis::Vertical,
+        }
+    }
 }
 
 impl Default for ListState {
@@ -133,6 +158,28 @@ impl ListState {
         self.select(Some(i));
     }
 
+    /// Returns the index of the first item currently displayed on the screen.
+    #[must_use]
+    pub fn scroll_offset_index(&self) -> usize {
+        self.view_state.offset
+    }
+
+    /// Returns the number of rows/columns of the first visible item that are scrolled off the top/left.
+    ///
+    /// When the first visible item is partially scrolled out of view, this returns how many
+    /// rows (for vertical lists) or columns (for horizontal lists) are hidden above/left of
+    /// the viewport. Returns 0 if the first visible item is fully visible.
+    ///
+    /// # Example
+    ///
+    /// If message #5 is the first visible item but its first 2 rows are scrolled off the top,
+    /// this returns 2. Combined with `scroll_offset_index()`, you can calculate the exact
+    /// scroll position in pixels/rows.
+    #[must_use]
+    pub fn scroll_truncation(&self) -> u16 {
+        self.view_state.first_truncated
+    }
+
     /// Updates the number of elements that are present in the list.
     pub(crate) fn set_num_elements(&mut self, num_elements: usize) {
         self.num_elements = num_elements;
@@ -170,25 +217,37 @@ impl ListState {
         self.scrollbar_state = self.scrollbar_state.position(self.view_state.offset);
     }
 
-    /// Returns the index of the first item currently displayed on the screen.
-    #[must_use]
-    pub fn scroll_offset_index(&self) -> usize {
-        self.view_state.offset
+    /// Replace the cached visible sizes with a new map computed during render.
+    /// The values should be the actually visible size (after truncation) along the main axis.
+    pub(crate) fn set_visible_main_axis_sizes(&mut self, sizes: HashMap<usize, u16>) {
+        self.view_state.visible_main_axis_sizes = sizes;
     }
 
-    /// Returns the number of rows/columns of the first visible item that are scrolled off the top/left.
-    ///
-    /// When the first visible item is partially scrolled out of view, this returns how many
-    /// rows (for vertical lists) or columns (for horizontal lists) are hidden above/left of
-    /// the viewport. Returns 0 if the first visible item is fully visible.
-    ///
-    /// # Example
-    ///
-    /// If message #5 is the first visible item but its first 2 rows are scrolled off the top,
-    /// this returns 2. Combined with `scroll_offset_index()`, you can calculate the exact
-    /// scroll position in pixels/rows.
+    /// Get a reference to the cached visible sizes map from the last render.
     #[must_use]
-    pub fn scroll_truncation(&self) -> u16 {
-        self.view_state.first_truncated
+    pub(crate) fn visible_main_axis_sizes(&self) -> &HashMap<usize, u16> {
+        &self.view_state.visible_main_axis_sizes
+    }
+
+    /// Set the inner area used during the last render.
+    pub(crate) fn set_inner_area(&mut self, inner_area: Rect) {
+        self.view_state.inner_area = inner_area;
+    }
+
+    /// Get the inner area used during the last render.
+    #[must_use]
+    pub(crate) fn inner_area(&self) -> Rect {
+        self.view_state.inner_area
+    }
+
+    /// Set the scroll axis used during the last render.
+    pub(crate) fn set_scroll_axis(&mut self, scroll_axis: ScrollAxis) {
+        self.view_state.scroll_axis = scroll_axis;
+    }
+
+    /// Get the scroll axis used during the last render.
+    #[must_use]
+    pub(crate) fn last_scroll_axis(&self) -> ScrollAxis {
+        self.view_state.scroll_axis
     }
 }
