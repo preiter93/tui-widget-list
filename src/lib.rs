@@ -49,6 +49,39 @@
 //! pub struct App {
 //!     state: ListState,
 //! }
+//!
+//! impl Widget for &mut App {
+//!     fn render(self, area: Rect, buf: &mut Buffer) {
+//!         let builder = ListBuilder::new(|context| {
+//!            let mut item = ListItem::new(&format!("Item {:0}", context.index));
+//!
+//!            // Alternating styles
+//!            if context.index % 2 == 0 {
+//!                item.style = Style::default().bg(Color::Rgb(28, 28, 32));
+//!            } else {
+//!                item.style = Style::default().bg(Color::Rgb(0, 0, 0));
+//!            }
+//!
+//!            // Style the selected element
+//!            if context.is_selected {
+//!                item.style = Style::default()
+//!                    .bg(Color::Rgb(255, 153, 0))
+//!                    .fg(Color::Rgb(28, 28, 32));
+//!            };
+//!
+//!            // Return the size of the widget along the main axis.
+//!            let main_axis_size = 1;
+//!
+//!            (item, main_axis_size)
+//!         });
+//!
+//!         let item_count = 2;
+//!         let list = ListView::new(builder, item_count);
+//!         let state = &mut self.state;
+//!
+//!         list.render(area, buf, state);
+//!     }
+//! }
 //!```
 //!
 //! ## Mouse handling
@@ -88,7 +121,6 @@
 //! [Crate Badge]: https://img.shields.io/crates/v/tui-widget-list?logo=rust&style=flat-square&logoColor=E05D44&color=E05D44
 //! [License Badge]: https://img.shields.io/crates/l/tui-widget-list?style=flat-square&color=1370D3
 pub(crate) mod hit_test;
-pub(crate) mod legacy;
 pub(crate) mod state;
 pub(crate) mod utils;
 pub(crate) mod view;
@@ -96,9 +128,3 @@ pub(crate) mod view;
 pub use hit_test::hit_test;
 pub use state::ListState;
 pub use view::{ListBuildContext, ListBuilder, ListView, ScrollAxis};
-
-#[allow(deprecated)]
-pub use legacy::{
-    traits::{PreRender, PreRenderContext},
-    widget::List,
-};

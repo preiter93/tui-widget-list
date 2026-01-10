@@ -531,9 +531,7 @@ mod tests {
         let expected_view_state = ViewState {
             offset: 0,
             first_truncated: 0,
-            visible_main_axis_sizes: std::collections::HashMap::new(),
-            inner_area: Rect::default(),
-            scroll_axis: ScrollAxis::Vertical,
+            ..Default::default()
         };
         let expected_viewport = HashMap::from([
             (0, ViewportElement::new(TestItem {}, 2, Truncation::None)),
@@ -579,9 +577,7 @@ mod tests {
         let view_state = ViewState {
             offset: 0,
             first_truncated: 1,
-            visible_main_axis_sizes: std::collections::HashMap::new(),
-            inner_area: Rect::default(),
-            scroll_axis: ScrollAxis::Vertical,
+            ..Default::default()
         };
         let mut state = ListState {
             num_elements: 3,
@@ -596,9 +592,7 @@ mod tests {
         let expected_view_state = ViewState {
             offset: 0,
             first_truncated: 0,
-            visible_main_axis_sizes: std::collections::HashMap::new(),
-            inner_area: Rect::default(),
-            scroll_axis: ScrollAxis::Vertical,
+            ..Default::default()
         };
         let expected_viewport = HashMap::from([
             (0, ViewportElement::new(TestItem {}, 2, Truncation::None)),
@@ -653,9 +647,7 @@ mod tests {
         let expected_view_state = ViewState {
             offset: 0,
             first_truncated: 1,
-            visible_main_axis_sizes: std::collections::HashMap::new(),
-            inner_area: Rect::default(),
-            scroll_axis: ScrollAxis::Vertical,
+            ..Default::default()
         };
         let expected_viewport = HashMap::from([
             (0, ViewportElement::new(TestItem {}, 2, Truncation::Top(1))),
@@ -713,9 +705,7 @@ mod tests {
         let expected_view_state = ViewState {
             offset: 0,
             first_truncated: 1,
-            visible_main_axis_sizes: std::collections::HashMap::new(),
-            inner_area: Rect::default(),
-            scroll_axis: ScrollAxis::Vertical,
+            ..Default::default()
         };
         let expected_viewport = HashMap::from([
             (0, ViewportElement::new(TestItem {}, 2, Truncation::Top(1))),
@@ -765,9 +755,7 @@ mod tests {
         let view_state = ViewState {
             offset: 2,
             first_truncated: 0,
-            visible_main_axis_sizes: std::collections::HashMap::new(),
-            inner_area: Rect::default(),
-            scroll_axis: ScrollAxis::Vertical,
+            ..Default::default()
         };
         let mut state = ListState {
             num_elements: 3,
@@ -782,9 +770,7 @@ mod tests {
         let expected_view_state = ViewState {
             offset: 0,
             first_truncated: 1,
-            visible_main_axis_sizes: std::collections::HashMap::new(),
-            inner_area: Rect::default(),
-            scroll_axis: ScrollAxis::Vertical,
+            ..Default::default()
         };
         let expected_viewport = HashMap::from([
             (0, ViewportElement::new(TestItem {}, 2, Truncation::Top(1))),
@@ -831,9 +817,7 @@ mod tests {
         let view_state = ViewState {
             offset: 1,
             first_truncated: 0,
-            visible_main_axis_sizes: std::collections::HashMap::new(),
-            inner_area: Rect::default(),
-            scroll_axis: ScrollAxis::Vertical,
+            ..Default::default()
         };
         let mut state = ListState {
             num_elements: 3,
@@ -848,9 +832,7 @@ mod tests {
         let expected_view_state = ViewState {
             offset: 0,
             first_truncated: 0,
-            visible_main_axis_sizes: std::collections::HashMap::new(),
-            inner_area: Rect::default(),
-            scroll_axis: ScrollAxis::Vertical,
+            ..Default::default()
         };
         let expected_viewport = HashMap::from([
             (0, ViewportElement::new(TestItem {}, 2, Truncation::None)),
@@ -902,9 +884,7 @@ mod tests {
         let view_state = ViewState {
             offset: 0,
             first_truncated: 1,
-            visible_main_axis_sizes: std::collections::HashMap::new(),
-            inner_area: Rect::default(),
-            scroll_axis: ScrollAxis::Vertical,
+            ..Default::default()
         };
         let mut state = ListState {
             num_elements: 3,
@@ -919,9 +899,7 @@ mod tests {
         let expected_view_state = ViewState {
             offset: 0,
             first_truncated: 1,
-            visible_main_axis_sizes: std::collections::HashMap::new(),
-            inner_area: Rect::default(),
-            scroll_axis: ScrollAxis::Vertical,
+            ..Default::default()
         };
         let expected_viewport = HashMap::from([
             (0, ViewportElement::new(TestItem {}, 2, Truncation::Top(1))),

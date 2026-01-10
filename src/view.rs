@@ -270,7 +270,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             let visible_main_axis_size = element
                 .main_axis_size
                 .saturating_sub(element.truncation.value());
-            // Store the visible size for this index
+
             cached_sizes.insert(i, visible_main_axis_size);
 
             let area = match self.scroll_axis {
@@ -306,7 +306,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             scroll_axis_pos += visible_main_axis_size;
         }
 
-        // Save cached visible sizes into state for hit testing
+        // Save cached visible sizes for hit testing
         state.set_visible_main_axis_sizes(cached_sizes);
 
         // Render the scrollbar
@@ -315,11 +315,6 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
         }
     }
 }
-
-// Hit testing: check if a mouse click is within a list item and return its index.
-// This respects the widget's position on screen, scroll axis, block padding,
-// current scroll offset and uses cached visible sizes from the last render.
-impl<T: Widget> ListView<'_, T> {}
 
 /// Render a truncated widget into a buffer. The method renders the widget fully into
 /// a hidden buffer and moves the visible content into `buf`.
@@ -564,12 +559,6 @@ mod test {
             ]),
         )
     }
-
-    // moved: hit_test_basic_clicks is now in hit_test.rs tests
-
-    // moved: hit_test_arbitrary_position_on_screen is now in hit_test.rs tests
-
-    // moved: hit_test_truncated_first_item is now in hit_test.rs tests
 
     fn assert_buffer_eq(actual: Buffer, expected: Buffer) {
         if actual.area != expected.area {
