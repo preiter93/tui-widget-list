@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -190,7 +192,7 @@ impl<'a, T> ListBuilder<'a, T> {
 }
 
 /// Represents the scroll axis of a list.
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum ScrollAxis {
     /// Indicates vertical scrolling. This is the default.
     #[default]
@@ -215,6 +217,8 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             block.render(area, buf);
         }
         let inner_area = self.block.inner_if_some(area);
+        state.set_inner_area(inner_area);
+        state.set_scroll_axis(self.scroll_axis);
 
         // List is empty
         if self.item_count == 0 {
@@ -256,6 +260,9 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             state.view_state.offset,
             viewport.len() + state.view_state.offset,
         );
+        // Cache visible main-axis sizes for hit testing after render
+        let mut cached_sizes: std::collections::HashMap<usize, u16> = HashMap::new();
+
         for i in start..end {
             let Some(element) = viewport.remove(&i) else {
                 break;
@@ -263,6 +270,9 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             let visible_main_axis_size = element
                 .main_axis_size
                 .saturating_sub(element.truncation.value());
+            // Store the visible size for this index
+            cached_sizes.insert(i, visible_main_axis_size);
+
             let area = match self.scroll_axis {
                 ScrollAxis::Vertical => Rect::new(
                     cross_axis_pos,
@@ -296,12 +306,20 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             scroll_axis_pos += visible_main_axis_size;
         }
 
+        // Save cached visible sizes into state for hit testing
+        state.set_visible_main_axis_sizes(cached_sizes);
+
         // Render the scrollbar
         if let Some(scrollbar) = self.scrollbar {
             scrollbar.render(area, buf, &mut state.scrollbar_state);
         }
     }
 }
+
+// Hit testing: check if a mouse click is within a list item and return its index.
+// This respects the widget's position on screen, scroll axis, block padding,
+// current scroll offset and uses cached visible sizes from the last render.
+impl<T: Widget> ListView<'_, T> {}
 
 /// Render a truncated widget into a buffer. The method renders the widget fully into
 /// a hidden buffer and moves the visible content into `buf`.
@@ -362,7 +380,7 @@ fn render_truncated<T: Widget>(
                 }
             }
         }
-    };
+    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, PartialOrd, Eq, Ord)]
@@ -546,6 +564,12 @@ mod test {
             ]),
         )
     }
+
+    // moved: hit_test_basic_clicks is now in hit_test.rs tests
+
+    // moved: hit_test_arbitrary_position_on_screen is now in hit_test.rs tests
+
+    // moved: hit_test_truncated_first_item is now in hit_test.rs tests
 
     fn assert_buffer_eq(actual: Buffer, expected: Buffer) {
         if actual.area != expected.area {

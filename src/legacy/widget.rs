@@ -244,7 +244,7 @@ fn render_trunc<T: Widget>(
                 }
             }
         }
-    };
+    }
 }
 
 #[cfg(test)]
