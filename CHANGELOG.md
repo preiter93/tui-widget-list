@@ -1,7 +1,7 @@
 Released
 --------
 
-0.15.0 - 12 Jan 2026
+0.15.0 - 11 Jan 2026
 ===================
 - Switch from ratatui to ratatui-core
 - Add ListState::hit_test for mouse support
