@@ -93,7 +93,7 @@ match event::read()? {
         kind: MouseEventKind::Down(MouseButton::Left),
         column, row, ..
     }) => {
-        if let Some(index) = hit_test(&state, column, row) {
+        if let Some(index) = state.hit_test(column, row) {
             state.select(Some(index));
         }
     }
