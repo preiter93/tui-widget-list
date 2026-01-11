@@ -9,7 +9,8 @@ use ratatui::{
     prelude::*,
     widgets::{Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation},
 };
-use tui_widget_list::{hit_test, ListBuilder, ListState, ListView};
+use tui_widget_list::hit_test::Hit;
+use tui_widget_list::{ListBuilder, ListState, ListView};
 
 fn main() -> Result<()> {
     let mut terminal = Terminal::init()?;
@@ -41,11 +42,10 @@ impl App {
                     column,
                     row,
                     ..
-                }) => {
-                    if let Some(index) = hit_test(&state, column, row) {
-                        state.select(Some(index));
-                    }
-                }
+                }) => match state.hit_test(column, row) {
+                    Some(Hit::Item(index)) => state.select(Some(index)),
+                    Some(Hit::Area) | None => {}
+                },
                 Event::Mouse(MouseEvent {
                     kind: MouseEventKind::ScrollUp,
                     ..

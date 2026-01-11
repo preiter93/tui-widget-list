@@ -1,75 +1,85 @@
+use crate::ListState;
 use ratatui_core::layout::Rect;
 
-use crate::state::ListState;
+/// Result of a hit-test within the list's inner area.
+#[derive(Debug, PartialEq)]
+pub enum Hit {
+    /// Area hit, but no item
+    Area,
+    /// Specific item hit at the given index
+    Item(usize),
+}
 
-/// Hit-test using last rendered view state. Used for mouse click handling.
-///
-/// Returns `Some(index)` if a visible item was hit, otherwise `None`.
-#[must_use]
-pub fn hit_test(state: &ListState, mouse_x: u16, mouse_y: u16) -> Option<usize> {
-    let sizes = state.visible_main_axis_sizes();
+impl ListState {
+    /// Hit-test using last rendered view self. Used for mouse click handling.
+    ///
+    /// Returns `Some(index)` if a visible item was hit, otherwise `None`.
+    #[must_use]
+    pub fn hit_test(&self, mouse_x: u16, mouse_y: u16) -> Option<Hit> {
+        let sizes = self.visible_main_axis_sizes();
 
-    if sizes.is_empty() {
-        return None;
-    }
-
-    let inner_area = state.inner_area();
-    let scroll_axis = state.last_scroll_axis();
-
-    let point_in_rect = |rect: ratatui_core::layout::Rect, x: u16, y: u16| {
-        x >= rect.left() && x < rect.right() && y >= rect.top() && y < rect.bottom()
-    };
-
-    if !point_in_rect(inner_area, mouse_x, mouse_y) {
-        return None;
-    }
-
-    let cross_axis_size = match scroll_axis {
-        crate::ScrollAxis::Vertical => inner_area.width,
-        crate::ScrollAxis::Horizontal => inner_area.height,
-    };
-    let (mut scroll_axis_pos, cross_axis_pos) = match scroll_axis {
-        crate::ScrollAxis::Vertical => (inner_area.top(), inner_area.left()),
-        crate::ScrollAxis::Horizontal => (inner_area.left(), inner_area.top()),
-    };
-
-    let start_index = state.scroll_offset_index();
-    let mut index = start_index;
-
-    loop {
-        let Some(visible_main_axis_size) = sizes.get(&index).copied() else {
-            break;
-        };
-
-        let rect = match scroll_axis {
-            crate::ScrollAxis::Vertical => Rect::new(
-                cross_axis_pos,
-                scroll_axis_pos,
-                cross_axis_size,
-                visible_main_axis_size,
-            ),
-            crate::ScrollAxis::Horizontal => Rect::new(
-                scroll_axis_pos,
-                cross_axis_pos,
-                visible_main_axis_size,
-                cross_axis_size,
-            ),
-        };
-
-        if point_in_rect(rect, mouse_x, mouse_y) {
-            return Some(index);
+        if sizes.is_empty() {
+            return None;
         }
 
-        scroll_axis_pos = scroll_axis_pos.saturating_add(visible_main_axis_size);
-        index += 1;
-    }
+        let inner_area = self.inner_area();
+        let scroll_axis = self.last_scroll_axis();
 
-    None
+        let point_in_rect = |rect: ratatui_core::layout::Rect, x: u16, y: u16| {
+            x >= rect.left() && x < rect.right() && y >= rect.top() && y < rect.bottom()
+        };
+
+        if !point_in_rect(inner_area, mouse_x, mouse_y) {
+            return None;
+        }
+
+        let cross_axis_size = match scroll_axis {
+            crate::ScrollAxis::Vertical => inner_area.width,
+            crate::ScrollAxis::Horizontal => inner_area.height,
+        };
+        let (mut scroll_axis_pos, cross_axis_pos) = match scroll_axis {
+            crate::ScrollAxis::Vertical => (inner_area.top(), inner_area.left()),
+            crate::ScrollAxis::Horizontal => (inner_area.left(), inner_area.top()),
+        };
+
+        let start_index = self.scroll_offset_index();
+        let mut index = start_index;
+
+        loop {
+            let Some(visible_main_axis_size) = sizes.get(&index).copied() else {
+                break;
+            };
+
+            let rect = match scroll_axis {
+                crate::ScrollAxis::Vertical => Rect::new(
+                    cross_axis_pos,
+                    scroll_axis_pos,
+                    cross_axis_size,
+                    visible_main_axis_size,
+                ),
+                crate::ScrollAxis::Horizontal => Rect::new(
+                    scroll_axis_pos,
+                    cross_axis_pos,
+                    visible_main_axis_size,
+                    cross_axis_size,
+                ),
+            };
+
+            if point_in_rect(rect, mouse_x, mouse_y) {
+                return Some(Hit::Item(index));
+            }
+
+            scroll_axis_pos = scroll_axis_pos.saturating_add(visible_main_axis_size);
+            index += 1;
+        }
+
+        Some(Hit::Area)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::hit_test;
+    use crate::hit_test::Hit;
     use crate::{ListBuilder, ListState, ListView, ScrollAxis};
     use ratatui::buffer::Buffer;
     use ratatui::prelude::{Rect, StatefulWidget, Style};
@@ -130,7 +140,10 @@ mod tests {
             // middle point within the item's rect
             let mid_y = scroll_pos.saturating_add(visible / 2);
             let mid_x = cross_pos.saturating_add(cross_size / 2);
-            assert_eq!(hit_test(&state, mid_x, mid_y), Some(expected_index));
+            assert_eq!(
+                state.hit_test(mid_x, mid_y),
+                Some(Hit::Item(expected_index))
+            );
             scroll_pos = scroll_pos.saturating_add(*visible);
             expected_index += 1;
         }
@@ -153,8 +166,8 @@ mod tests {
         let mid_y = inner.top() + first_visible / 2;
         let mid_x = inner.left() + inner.width / 2;
         assert_eq!(
-            hit_test(&state, mid_x, mid_y),
-            Some(state.scroll_offset_index())
+            state.hit_test(mid_x, mid_y),
+            Some(Hit::Item(state.scroll_offset_index()))
         );
     }
 
@@ -177,7 +190,7 @@ mod tests {
         while let Some(visible) = sizes.get(&index) {
             let mid_y = scroll_pos.saturating_add(visible / 2);
             let mid_x = inner.left() + inner.width / 2;
-            assert_eq!(hit_test(&state, mid_x, mid_y), Some(index));
+            assert_eq!(state.hit_test(mid_x, mid_y), Some(Hit::Item(index)));
             scroll_pos = scroll_pos.saturating_add(*visible);
             index += 1;
         }

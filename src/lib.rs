@@ -93,8 +93,10 @@
 //!         kind: MouseEventKind::Down(MouseButton::Left),
 //!         column, row, ..
 //!     }) => {
-//!         if let Some(index) = hit_test(&state, column, row) {
-//!             state.select(Some(index));
+//!         match state.hit_test(column, row) {
+//!             Some(tui_widget_list::hit_test::Hit::Item(index)) => state.select(Some(index)),
+//!             Some(tui_widget_list::hit_test::Hit::Area) | None => {}
+//!         }
 //!         }
 //!     }
 //!     Event::Mouse(MouseEvent { kind: MouseEventKind::ScrollUp, .. }) => {
@@ -120,11 +122,10 @@
 //!
 //! [Crate Badge]: https://img.shields.io/crates/v/tui-widget-list?logo=rust&style=flat-square&logoColor=E05D44&color=E05D44
 //! [License Badge]: https://img.shields.io/crates/l/tui-widget-list?style=flat-square&color=1370D3
-pub(crate) mod hit_test;
+pub mod hit_test;
 pub(crate) mod state;
 pub(crate) mod utils;
 pub(crate) mod view;
 
-pub use hit_test::hit_test;
 pub use state::ListState;
 pub use view::{ListBuildContext, ListBuilder, ListView, ScrollAxis};
