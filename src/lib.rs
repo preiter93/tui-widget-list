@@ -88,21 +88,28 @@
 //!
 //! You can handle mouse clicks using `ListState` via `hit_test`:
 //!```ignore
+//! use tui_widget_list::hit_test::Hit;
+//!
 //! match event::read()? {
 //!     Event::Mouse(MouseEvent {
 //!         kind: MouseEventKind::Down(MouseButton::Left),
-//!         column, row, ..
+//!         column,
+//!         row,
+//!         ..
+//!     }) => match state.hit_test(column, row) {
+//!         Some(Hit::Item(index)) => state.select(Some(index)),
+//!         Some(Hit::Area) | None => {}
+//!     },
+//!     Event::Mouse(MouseEvent {
+//!         kind: MouseEventKind::ScrollUp,
+//!         ..
 //!     }) => {
-//!         match state.hit_test(column, row) {
-//!             Some(tui_widget_list::hit_test::Hit::Item(index)) => state.select(Some(index)),
-//!             Some(tui_widget_list::hit_test::Hit::Area) | None => {}
-//!         }
-//!         }
-//!     }
-//!     Event::Mouse(MouseEvent { kind: MouseEventKind::ScrollUp, .. }) => {
 //!         state.previous();
 //!     }
-//!     Event::Mouse(MouseEvent { kind: MouseEventKind::ScrollDown, .. }) => {
+//!     Event::Mouse(MouseEvent {
+//!         kind: MouseEventKind::ScrollDown,
+//!         ..
+//!     }) => {
 //!         state.next();
 //!     }
 //!     _ => {}

@@ -1,3 +1,5 @@
+# tui-widget-list
+
 <div align="center">
 
 ## A versatile widget list for Ratatui
@@ -88,19 +90,28 @@ impl Widget for &mut App {
 
 You can handle mouse clicks using `ListState` via `hit_test`:
 ```rust
+use tui_widget_list::hit_test::Hit;
+
 match event::read()? {
     Event::Mouse(MouseEvent {
         kind: MouseEventKind::Down(MouseButton::Left),
-        column, row, ..
+        column,
+        row,
+        ..
+    }) => match state.hit_test(column, row) {
+        Some(Hit::Item(index)) => state.select(Some(index)),
+        Some(Hit::Area) | None => {}
+    },
+    Event::Mouse(MouseEvent {
+        kind: MouseEventKind::ScrollUp,
+        ..
     }) => {
-        if let Some(index) = state.hit_test(column, row) {
-            state.select(Some(index));
-        }
-    }
-    Event::Mouse(MouseEvent { kind: MouseEventKind::ScrollUp, .. }) => {
         state.previous();
     }
-    Event::Mouse(MouseEvent { kind: MouseEventKind::ScrollDown, .. }) => {
+    Event::Mouse(MouseEvent {
+        kind: MouseEventKind::ScrollDown,
+        ..
+    }) => {
         state.next();
     }
     _ => {}
