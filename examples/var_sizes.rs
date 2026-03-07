@@ -1,7 +1,7 @@
 #[path = "common/lib.rs"]
 mod common;
 use common::{Colors, Result, Terminal};
-use ratatui::crossterm::event::{self, Event, KeyCode, KeyEventKind};
+use ratatui::crossterm::event::{self, Event, KeyCode, KeyEventKind, MouseEvent, MouseEventKind};
 use ratatui::{
     prelude::*,
     widgets::{Block, Borders, Widget},
@@ -30,15 +30,29 @@ impl App {
         loop {
             terminal.draw_app(self, &mut state)?;
 
-            if let Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press {
-                    match key.code {
-                        KeyCode::Char('q') => return Ok(()),
-                        KeyCode::Up | KeyCode::Char('k') => state.previous(),
-                        KeyCode::Down | KeyCode::Char('j') => state.next(),
-                        _ => {}
-                    }
+            match event::read()? {
+                Event::Key(key) if key.kind == KeyEventKind::Press => match key.code {
+                    KeyCode::Char('q') => return Ok(()),
+                    KeyCode::Char('k') => state.select_previous(true),
+                    KeyCode::Char('j') => state.select_next(true),
+                    KeyCode::Up => state.scroll_up(),
+                    KeyCode::Down => state.scroll_down(),
+                    _ => {}
+                },
+
+                Event::Mouse(MouseEvent {
+                    kind: MouseEventKind::ScrollUp,
+                    ..
+                }) => {
+                    state.scroll_up();
                 }
+                Event::Mouse(MouseEvent {
+                    kind: MouseEventKind::ScrollDown,
+                    ..
+                }) => {
+                    state.scroll_down();
+                }
+                _ => {}
             }
         }
     }

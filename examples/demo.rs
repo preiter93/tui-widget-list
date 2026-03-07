@@ -41,10 +41,10 @@ impl App {
                 if key.kind == KeyEventKind::Press {
                     match key.code {
                         KeyCode::Char('q') => return Ok(()),
-                        KeyCode::Up | KeyCode::Char('k') => state.text_list_state.previous(),
-                        KeyCode::Down | KeyCode::Char('j') => state.text_list_state.next(),
-                        KeyCode::Left | KeyCode::Char('h') => state.color_list_state.previous(),
-                        KeyCode::Right | KeyCode::Char('l') => state.color_list_state.next(),
+                        KeyCode::Up | KeyCode::Char('k') => state.text_list_state.select_previous(true),
+                        KeyCode::Down | KeyCode::Char('j') => state.text_list_state.select_next(true),
+                        KeyCode::Left | KeyCode::Char('h') => state.color_list_state.select_previous(true),
+                        KeyCode::Right | KeyCode::Char('l') => state.color_list_state.select_next(true),
                         _ => {}
                     }
                 }

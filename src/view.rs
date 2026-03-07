@@ -267,9 +267,17 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             let Some(element) = viewport.remove(&i) else {
                 break;
             };
+            let remaining = main_axis_size.saturating_sub(
+                scroll_axis_pos
+                    - match self.scroll_axis {
+                        ScrollAxis::Vertical => inner_area.top(),
+                        ScrollAxis::Horizontal => inner_area.left(),
+                    },
+            );
             let visible_main_axis_size = element
                 .main_axis_size
-                .saturating_sub(element.truncation.value());
+                .saturating_sub(element.truncation.value())
+                .min(remaining);
 
             cached_sizes.insert(i, visible_main_axis_size);
 

@@ -106,13 +106,13 @@ match event::read()? {
         kind: MouseEventKind::ScrollUp,
         ..
     }) => {
-        state.previous();
+        state.select_previous(true);
     }
     Event::Mouse(MouseEvent {
         kind: MouseEventKind::ScrollDown,
         ..
     }) => {
-        state.next();
+        state.select_next(true);
     }
     _ => {}
 }

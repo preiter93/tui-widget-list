@@ -33,8 +33,8 @@ impl App {
                 if key.kind == KeyEventKind::Press {
                     match key.code {
                         KeyCode::Char('q') => return Ok(()),
-                        KeyCode::Up | KeyCode::Char('k') => state.previous(),
-                        KeyCode::Down | KeyCode::Char('j') => state.next(),
+                        KeyCode::Up | KeyCode::Char('k') => state.select_previous(true),
+                        KeyCode::Down | KeyCode::Char('j') => state.select_next(true),
                         _ => {}
                     }
                 }

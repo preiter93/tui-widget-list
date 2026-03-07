@@ -35,6 +35,87 @@ pub(crate) fn layout_on_viewport<T>(
     // Cache the widgets and sizes to evaluate the builder less often.
     let mut cacher = WidgetCacher::new(builder, scroll_axis, cross_axis_size, state.selected);
 
+    let pending = state.view_state.pending_scroll;
+    state.view_state.pending_scroll = 0;
+
+    if pending > 0 {
+        // Apply downward scroll.
+        state.view_state.first_truncated += pending as u16;
+
+        // Normalize forward: advance offset when first_truncated >= item height.
+        while state.view_state.offset < item_count {
+            let item_size = cacher.get_height(state.view_state.offset);
+            if state.view_state.first_truncated < item_size {
+                break;
+            }
+            state.view_state.first_truncated -= item_size;
+            state.view_state.offset += 1;
+        }
+        if state.view_state.offset >= item_count && item_count > 0 {
+            state.view_state.offset = item_count - 1;
+            state.view_state.first_truncated = 0;
+        }
+
+        // Clamp at the bottom: don't let content end above the viewport bottom.
+        let mut content_height: u16 = 0;
+        for i in state.view_state.offset..item_count {
+            let h = cacher.get_height(i);
+            if i == state.view_state.offset {
+                content_height = content_height
+                    .saturating_add(h.saturating_sub(state.view_state.first_truncated));
+            } else {
+                content_height = content_height.saturating_add(h);
+            }
+            if content_height >= total_main_axis_size {
+                break;
+            }
+        }
+        if content_height < total_main_axis_size {
+            let mut remaining = total_main_axis_size;
+            for i in (0..item_count).rev() {
+                let h = cacher.get_height(i);
+                if h >= remaining {
+                    state.view_state.offset = i;
+                    state.view_state.first_truncated = h - remaining;
+                    break;
+                }
+                remaining -= h;
+                if i == 0 {
+                    state.view_state.offset = 0;
+                    state.view_state.first_truncated = 0;
+                }
+            }
+        }
+    } else if pending < 0 {
+        // Apply upward scroll.
+        let mut scroll_up = pending.unsigned_abs();
+
+        // First consume from first_truncated.
+        if state.view_state.first_truncated >= scroll_up {
+            state.view_state.first_truncated -= scroll_up;
+            scroll_up = 0;
+        } else {
+            scroll_up -= state.view_state.first_truncated;
+            state.view_state.first_truncated = 0;
+        }
+
+        // Then walk backward through preceding items.
+        while scroll_up > 0 && state.view_state.offset > 0 {
+            state.view_state.offset -= 1;
+            let item_size = cacher.get_height(state.view_state.offset);
+            if item_size >= scroll_up {
+                state.view_state.first_truncated = item_size - scroll_up;
+                scroll_up = 0;
+            } else {
+                scroll_up -= item_size;
+            }
+        }
+        // Reached the top — clamp.
+        if scroll_up > 0 {
+            state.view_state.first_truncated = 0;
+        }
+    }
+
     // The items heights on the viewport will be calculated on the fly.
     let mut viewport: HashMap<usize, ViewportElement<T>> = HashMap::new();
 
@@ -51,14 +132,24 @@ pub(crate) fn layout_on_viewport<T>(
         scroll_padding,
     );
 
-    update_offset(
-        state,
-        &mut cacher,
-        selected,
-        &effective_scroll_padding_by_index,
-    );
+    // Only adjust the viewport to follow the selected item when
+    // explicitly requested (e.g. via `next(true)` / `previous(true)`).
+    let needs_selected_visible = state.scroll_to_selected;
+    state.scroll_to_selected = false;
+
+    if needs_selected_visible {
+        update_offset(
+            state,
+            &mut cacher,
+            selected,
+            &effective_scroll_padding_by_index,
+        );
+    }
 
     // Begin a forward pass, starting from `view_state.offset`.
+    // When the viewport doesn't need to track the selected item,
+    // start with found=true so the pass fills the entire viewport
+    // without reserving scroll-padding space.
     let found_selected = forward_pass(
         &mut viewport,
         state,
@@ -68,9 +159,10 @@ pub(crate) fn layout_on_viewport<T>(
         total_main_axis_size,
         selected,
         &effective_scroll_padding_by_index,
+        !needs_selected_visible,
     );
 
-    if found_selected {
+    if found_selected || !needs_selected_visible {
         return viewport;
     }
 
@@ -155,10 +247,11 @@ fn forward_pass<T>(
     total_main_axis_size: u16,
     selected: usize,
     scroll_padding_by_index: &HashMap<usize, u16>,
+    initial_found: bool,
 ) -> bool {
     // Check if the selected item is in the current view
     let mut found_last = false;
-    let mut found_selected = false;
+    let mut found_selected = initial_found;
     let mut available_size = total_main_axis_size;
     for index in offset..item_count {
         let is_first = index == state.view_state.offset;
@@ -199,11 +292,14 @@ fn forward_pass<T>(
             // We found the last element but it needs to be truncated
             Ordering::Less => {
                 found_last = true;
-                let value = main_axis_size.saturating_sub(available_size);
                 if is_first {
-                    state.view_state.first_truncated = value;
+                    // The first item is top-truncated and also overflows
+                    // the viewport bottom. Render from the top-truncation
+                    // point; don't overwrite first_truncated.
+                    Truncation::Top(state.view_state.first_truncated)
+                } else {
+                    Truncation::Bot(main_axis_size.saturating_sub(available_size))
                 }
-                Truncation::Bot(value)
             }
             Ordering::Greater => {
                 // The first element was truncated in the last layout run,
@@ -582,6 +678,7 @@ mod tests {
         let mut state = ListState {
             num_elements: 3,
             selected: Some(0),
+            scroll_to_selected: true,
             view_state,
             ..ListState::default()
         };
@@ -638,6 +735,7 @@ mod tests {
         let mut state = ListState {
             num_elements: 2,
             selected: Some(1),
+            scroll_to_selected: true,
             ..ListState::default()
         };
         let given_sizes = vec![2, 2];
@@ -696,6 +794,7 @@ mod tests {
         let mut state = ListState {
             num_elements: 3,
             selected: Some(1),
+            scroll_to_selected: true,
             ..ListState::default()
         };
         let given_sizes = vec![2, 2, 2];
@@ -760,6 +859,7 @@ mod tests {
         let mut state = ListState {
             num_elements: 3,
             selected: Some(1),
+            scroll_to_selected: true,
             view_state,
             ..ListState::default()
         };
@@ -822,6 +922,7 @@ mod tests {
         let mut state = ListState {
             num_elements: 3,
             selected: Some(0),
+            scroll_to_selected: true,
             view_state,
             ..ListState::default()
         };
@@ -889,6 +990,7 @@ mod tests {
         let mut state = ListState {
             num_elements: 3,
             selected: Some(1),
+            scroll_to_selected: true,
             view_state,
             ..ListState::default()
         };
@@ -950,5 +1052,224 @@ mod tests {
         assert_eq!(*scroll_padding.get(&2).unwrap(), 3);
         assert_eq!(*scroll_padding.get(&3).unwrap(), 2);
         assert_eq!(*scroll_padding.get(&4).unwrap(), 0);
+    }
+
+    #[test]
+    fn scroll_up_through_large_item() {
+        // Items [3, 4, 64, 6], viewport=10
+        // Start past the 64-item (index 2), scroll up by 1
+        let given_sizes: Vec<u16> = vec![3, 4, 64, 6];
+        let item_count = given_sizes.len();
+        let viewport_size = 10;
+
+        let mut state = ListState {
+            num_elements: item_count,
+            selected: None,
+            ..ListState::default()
+        };
+        state.view_state.offset = 3;
+        state.view_state.first_truncated = 0;
+
+        // Scroll up by 1
+        state.scroll_by(-1);
+
+        let viewport = layout_on_viewport(
+            &mut state,
+            &ListBuilder::new(move |context| (TestItem {}, given_sizes[context.index])),
+            item_count,
+            viewport_size,
+            1,
+            ScrollAxis::Vertical,
+            0,
+        );
+
+        // Should show last 1 row of item 2 (64-height) + full item 3 (6-height)
+        assert_eq!(
+            state.view_state.offset, 2,
+            "offset should point to the 64-item"
+        );
+        assert_eq!(
+            state.view_state.first_truncated, 63,
+            "should truncate to show last row"
+        );
+        assert!(viewport.contains_key(&2), "64-item should be in viewport");
+        assert!(viewport.contains_key(&3), "item 3 should be in viewport");
+    }
+
+    // Items: [3, 4, 64, 6], viewport = 10
+
+    #[test]
+    fn scroll_down_advances_truncation() {
+        // Scrolling down by 1 from the top increases first_truncated.
+        let given_sizes: Vec<u16> = vec![3, 4, 64, 6];
+        let item_count = given_sizes.len();
+        let mut state = ListState {
+            num_elements: item_count,
+            selected: None,
+            ..ListState::default()
+        };
+
+        state.scroll_by(1);
+        layout_on_viewport(
+            &mut state,
+            &ListBuilder::new(move |ctx| (TestItem {}, given_sizes[ctx.index])),
+            item_count,
+            10,
+            1,
+            ScrollAxis::Vertical,
+            0,
+        );
+
+        assert_eq!(state.view_state.offset, 0);
+        assert_eq!(state.view_state.first_truncated, 1);
+    }
+
+    #[test]
+    fn scroll_down_crosses_item_boundary() {
+        // Scrolling past the first item (size 3) advances offset to 1.
+        let given_sizes: Vec<u16> = vec![3, 4, 64, 6];
+        let item_count = given_sizes.len();
+        let mut state = ListState {
+            num_elements: item_count,
+            selected: None,
+            ..ListState::default()
+        };
+
+        state.scroll_by(3);
+        layout_on_viewport(
+            &mut state,
+            &ListBuilder::new(move |ctx| (TestItem {}, given_sizes[ctx.index])),
+            item_count,
+            10,
+            1,
+            ScrollAxis::Vertical,
+            0,
+        );
+
+        assert_eq!(state.view_state.offset, 1);
+        assert_eq!(state.view_state.first_truncated, 0);
+    }
+
+    #[test]
+    fn scroll_down_clamps_at_bottom() {
+        // Scrolling far past the end clamps so the last item is fully visible.
+        // Total content = 3+4+64+6 = 77. Viewport = 10.
+        // Bottom position: offset=2, trunc=60 (4 rows of item 2 + 6 of item 3 = 10).
+        let given_sizes: Vec<u16> = vec![3, 4, 64, 6];
+        let item_count = given_sizes.len();
+        let mut state = ListState {
+            num_elements: item_count,
+            selected: None,
+            ..ListState::default()
+        };
+
+        state.scroll_by(200);
+        layout_on_viewport(
+            &mut state,
+            &ListBuilder::new(move |ctx| (TestItem {}, given_sizes[ctx.index])),
+            item_count,
+            10,
+            1,
+            ScrollAxis::Vertical,
+            0,
+        );
+
+        assert_eq!(state.view_state.offset, 2);
+        assert_eq!(state.view_state.first_truncated, 60);
+    }
+
+    #[test]
+    fn scroll_up_clamps_at_top() {
+        // Scrolling up from the top stays at offset=0, trunc=0.
+        let given_sizes: Vec<u16> = vec![3, 4, 64, 6];
+        let item_count = given_sizes.len();
+        let mut state = ListState {
+            num_elements: item_count,
+            selected: None,
+            ..ListState::default()
+        };
+
+        state.scroll_by(-10);
+        layout_on_viewport(
+            &mut state,
+            &ListBuilder::new(move |ctx| (TestItem {}, given_sizes[ctx.index])),
+            item_count,
+            10,
+            1,
+            ScrollAxis::Vertical,
+            0,
+        );
+
+        assert_eq!(state.view_state.offset, 0);
+        assert_eq!(state.view_state.first_truncated, 0);
+    }
+
+    #[test]
+    fn scroll_down_and_up_returns_to_origin() {
+        // Scrolling down N rows then up N rows returns to the start.
+        let given_sizes: Vec<u16> = vec![3, 4, 64, 6];
+        let item_count = given_sizes.len();
+        let mut state = ListState {
+            num_elements: item_count,
+            selected: None,
+            ..ListState::default()
+        };
+
+        let do_layout = |s: &mut ListState| {
+            let sizes = vec![3u16, 4, 64, 6];
+            layout_on_viewport(
+                s,
+                &ListBuilder::new(move |ctx| (TestItem {}, sizes[ctx.index])),
+                item_count,
+                10,
+                1,
+                ScrollAxis::Vertical,
+                0,
+            );
+        };
+
+        // Scroll down 40 rows one at a time.
+        for _ in 0..40 {
+            state.scroll_by(1);
+            do_layout(&mut state);
+        }
+        let mid_offset = state.view_state.offset;
+        let mid_trunc = state.view_state.first_truncated;
+        assert!(mid_offset > 0 || mid_trunc > 0);
+
+        // Scroll back up 40 rows one at a time.
+        for _ in 0..40 {
+            state.scroll_by(-1);
+            do_layout(&mut state);
+        }
+        assert_eq!(state.view_state.offset, 0);
+        assert_eq!(state.view_state.first_truncated, 0);
+    }
+
+    #[test]
+    fn scroll_down_up_cancel_out() {
+        // Opposing scroll deltas within the same frame cancel out.
+        let given_sizes: Vec<u16> = vec![3, 4, 64, 6];
+        let item_count = given_sizes.len();
+        let mut state = ListState {
+            num_elements: item_count,
+            selected: None,
+            ..ListState::default()
+        };
+
+        state.scroll_by(5);
+        state.scroll_by(-5);
+        layout_on_viewport(
+            &mut state,
+            &ListBuilder::new(move |ctx| (TestItem {}, given_sizes[ctx.index])),
+            item_count,
+            10,
+            1,
+            ScrollAxis::Vertical,
+            0,
+        );
+
+        assert_eq!(state.view_state.offset, 0);
+        assert_eq!(state.view_state.first_truncated, 0);
     }
 }

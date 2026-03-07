@@ -96,8 +96,8 @@ impl App {
                 };
                 match key.code {
                     KeyCode::Char('q') => return Ok(true),
-                    KeyCode::Up | KeyCode::Char('k') => list_state.previous(),
-                    KeyCode::Down | KeyCode::Char('j') => list_state.next(),
+                    KeyCode::Up | KeyCode::Char('k') => list_state.select_previous(true),
+                    KeyCode::Down | KeyCode::Char('j') => list_state.select_next(true),
                     KeyCode::Char('f') => state.fps_counter.toggle(),
                     KeyCode::Tab
                     | KeyCode::Left

@@ -33,8 +33,10 @@ impl App {
             match event::read()? {
                 Event::Key(key) if key.kind == KeyEventKind::Press => match key.code {
                     KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Up | KeyCode::Char('k') => state.previous(),
-                    KeyCode::Down | KeyCode::Char('j') => state.next(),
+                    KeyCode::Char('k') => state.select_previous(true),
+                    KeyCode::Char('j') => state.select_next(true),
+                    KeyCode::Up => state.scroll_up(),
+                    KeyCode::Down => state.scroll_down(),
                     _ => {}
                 },
                 Event::Mouse(MouseEvent {
@@ -50,13 +52,13 @@ impl App {
                     kind: MouseEventKind::ScrollUp,
                     ..
                 }) => {
-                    state.previous();
+                    state.scroll_up();
                 }
                 Event::Mouse(MouseEvent {
                     kind: MouseEventKind::ScrollDown,
                     ..
                 }) => {
-                    state.next();
+                    state.scroll_down();
                 }
                 _ => {}
             }

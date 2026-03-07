@@ -21,6 +21,11 @@ pub struct ListState {
     /// True by default.
     pub(crate) infinite_scrolling: bool,
 
+    /// When true, the next render will adjust the viewport to ensure the
+    /// selected item is visible. Set by `select_next(true)` / `select_previous(true)`
+    /// and cleared after the viewport layout pass.
+    pub(crate) scroll_to_selected: bool,
+
     /// The state for the viewport. Keeps track which item to show
     /// first and how much it is truncated.
     pub(crate) view_state: ViewState,
@@ -38,6 +43,11 @@ pub(crate) struct ViewState {
     /// The truncation in rows/columns of the first item displayed on the screen.
     pub(crate) first_truncated: u16,
 
+    /// Pending scroll delta in rows/columns, resolved by `layout_on_viewport`.
+    /// Positive values scroll forward (down/right), negative values scroll
+    /// backward (up/left).
+    pub(crate) pending_scroll: i16,
+
     /// Cached visible sizes from the last render: map from item index to its visible main-axis size.
     /// This avoids re-evaluating the builder for hit testing and other post-render queries.
     pub(crate) visible_main_axis_sizes: HashMap<usize, u16>,
@@ -54,6 +64,7 @@ impl Default for ViewState {
         Self {
             offset: 0,
             first_truncated: 0,
+            pending_scroll: 0,
             visible_main_axis_sizes: HashMap::new(),
             inner_area: Rect::default(),
             scroll_axis: ScrollAxis::Vertical,
@@ -67,6 +78,7 @@ impl Default for ListState {
             selected: None,
             num_elements: 0,
             infinite_scrolling: true,
+            scroll_to_selected: false,
             view_state: ViewState::default(),
             scrollbar_state: ScrollbarState::new(0).position(0),
         }
@@ -85,17 +97,20 @@ impl ListState {
         self.selected
     }
 
-    /// Selects an item by its index.
+    /// Selects an item by its index. The viewport will be adjusted
+    /// on the next render to ensure the selected item is visible.
     pub fn select(&mut self, index: Option<usize>) {
         self.selected = index;
+        self.scroll_to_selected = index.is_some();
         if index.is_none() {
             self.view_state.offset = 0;
             self.scrollbar_state = self.scrollbar_state.position(0);
         }
     }
 
-    /// Selects the next element of the list. If circular is true,
-    /// calling next on the last element selects the first.
+    /// Selects the next element of the list and scrolls the viewport
+    /// to keep it visible. If circular is true, calling next on the
+    /// last element selects the first.
     ///
     /// # Example
     ///
@@ -105,7 +120,43 @@ impl ListState {
     /// let mut list_state = ListState::default();
     /// list_state.next();
     /// ```
+    #[deprecated(since = "0.15.0", note = "Use `select_next()` instead.")]
     pub fn next(&mut self) {
+        self.select_next(true);
+    }
+
+    /// Selects the previous element of the list and scrolls the viewport
+    /// to keep it visible. If circular is true, calling previous on the
+    /// first element selects the last.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use tui_widget_list::ListState;
+    ///
+    /// let mut list_state = ListState::default();
+    /// list_state.previous();
+    /// ```
+    #[deprecated(since = "0.15.0", note = "Use `select_previous()` instead.")]
+    pub fn previous(&mut self) {
+        self.select_previous(true);
+    }
+
+    /// Selects the next element of the list. If circular is true,
+    /// calling `select_next` on the last element selects the first.
+    ///
+    /// When `scroll_to` is true, the viewport will be adjusted on the
+    /// next render to ensure the selected item is visible.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use tui_widget_list::ListState;
+    ///
+    /// let mut list_state = ListState::default();
+    /// list_state.select_next(true);
+    /// ```
+    pub fn select_next(&mut self, scroll_to: bool) {
         if self.num_elements == 0 {
             return;
         }
@@ -124,10 +175,14 @@ impl ListState {
             None => 0,
         };
         self.select(Some(i));
+        self.scroll_to_selected = scroll_to;
     }
 
     /// Selects the previous element of the list. If circular is true,
-    /// calling previous on the first element selects the last.
+    /// calling `select_previous` on the first element selects the last.
+    ///
+    /// When `scroll_to` is true, the viewport will be adjusted on the
+    /// next render to ensure the selected item is visible.
     ///
     /// # Example
     ///
@@ -135,9 +190,9 @@ impl ListState {
     /// use tui_widget_list::ListState;
     ///
     /// let mut list_state = ListState::default();
-    /// list_state.previous();
+    /// list_state.select_previous(true);
     /// ```
-    pub fn previous(&mut self) {
+    pub fn select_previous(&mut self, scroll_to: bool) {
         if self.num_elements == 0 {
             return;
         }
@@ -156,6 +211,24 @@ impl ListState {
             None => 0,
         };
         self.select(Some(i));
+        self.scroll_to_selected = scroll_to;
+    }
+
+    /// Scrolls the viewport down by one row/column without changing the selection.
+    pub fn scroll_down(&mut self) {
+        self.scroll_by(1);
+    }
+
+    /// Scrolls the viewport up by one row/column without changing the selection.
+    pub fn scroll_up(&mut self) {
+        self.scroll_by(-1);
+    }
+
+    /// Scrolls the viewport by `delta` rows/columns without changing the selection.
+    /// Positive values scroll forward (down/right), negative values scroll
+    /// backward (up/left).
+    pub fn scroll_by(&mut self, delta: i16) {
+        self.view_state.pending_scroll = self.view_state.pending_scroll.saturating_add(delta);
     }
 
     /// Returns the index of the first item currently displayed on the screen.
