@@ -135,4 +135,4 @@ pub(crate) mod utils;
 pub(crate) mod view;
 
 pub use state::ListState;
-pub use view::{ListBuildContext, ListBuilder, ListView, ScrollAxis};
+pub use view::{ListBuildContext, ListBuilder, ListView, ScrollAxis, ScrollDirection};

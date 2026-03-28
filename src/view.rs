@@ -25,6 +25,9 @@ pub struct ListView<'a, T> {
     /// Specifies the scroll axis. Either `Vertical` or `Horizontal`.
     pub scroll_axis: ScrollAxis,
 
+    /// Specifies the scroll direction. Either `Forward` or `Backward`.
+    pub scroll_direction: ScrollDirection,
+
     /// The base style of the list view.
     pub style: Style,
 
@@ -50,6 +53,7 @@ impl<'a, T> ListView<'a, T> {
             builder,
             item_count,
             scroll_axis: ScrollAxis::Vertical,
+            scroll_direction: ScrollDirection::Forward,
             style: Style::default(),
             block: None,
             scrollbar: None,
@@ -95,6 +99,12 @@ impl<'a, T> ListView<'a, T> {
     #[must_use]
     pub fn scroll_axis(mut self, scroll_axis: ScrollAxis) -> Self {
         self.scroll_axis = scroll_axis;
+        self
+    }
+
+    #[must_use]
+    pub fn scroll_direction(mut self, scroll_direction: ScrollDirection) -> Self {
+        self.scroll_direction = scroll_direction;
         self
     }
 
@@ -202,6 +212,17 @@ pub enum ScrollAxis {
     Horizontal,
 }
 
+/// Represents the scroll direction of a list.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum ScrollDirection {
+    /// Indicates forward scrolling (top to bottom or left to right). This is the default.
+    #[default]
+    Forward,
+
+    /// Indicates backward scrolling (bottom to top or right to left).
+    Backward,
+}
+
 impl<T: Widget> StatefulWidget for ListView<'_, T> {
     type State = ListState;
 
@@ -219,6 +240,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
         let inner_area = self.block.inner_if_some(area);
         state.set_inner_area(inner_area);
         state.set_scroll_axis(self.scroll_axis);
+        state.set_scroll_direction(self.scroll_direction);
 
         // List is empty
         if self.item_count == 0 {
@@ -260,6 +282,16 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             state.view_state.offset,
             viewport.len() + state.view_state.offset,
         );
+
+        // For reversed scroll direction, align items to the end of the axis
+        if self.scroll_direction == ScrollDirection::Backward {
+            let total_visible: u16 = (start..end)
+                .filter_map(|i| viewport.get(&i))
+                .map(|e| e.main_axis_size.saturating_sub(e.truncation.value()))
+                .sum();
+            scroll_axis_pos += main_axis_size.saturating_sub(total_visible);
+        }
+
         // Cache visible main-axis sizes for hit testing after render
         let mut cached_sizes: std::collections::HashMap<usize, u16> = HashMap::new();
 

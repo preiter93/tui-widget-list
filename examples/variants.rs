@@ -1,3 +1,6 @@
+#[path = "variants/backward.rs"]
+mod backward;
+
 #[path = "variants/classic.rs"]
 mod classic;
 #[path = "common/lib.rs"]
@@ -10,6 +13,7 @@ mod fps;
 mod horizontal;
 #[path = "variants/scroll_padding.rs"]
 mod scroll_padding;
+use backward::BackwardListView;
 use classic::PaddedListView;
 use common::{Block, Colors, Result, Terminal};
 use config::{Controls, Variant, VariantsListView};
@@ -164,6 +168,11 @@ impl StatefulWidget for &App {
                 &mut state.list_state,
             ),
             Variant::Horizontal => HorizontalListView::new().block(block).fg(fg).render(
+                right,
+                buf,
+                &mut state.list_state,
+            ),
+            Variant::Backward => BackwardListView::new().block(block).fg(fg).render(
                 right,
                 buf,
                 &mut state.list_state,

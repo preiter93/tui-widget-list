@@ -1,12 +1,16 @@
 Released
 --------
 
+0.15.1 - 28 Mar 2026
+===================
+- feat: Add ScrollDirection with forward/backward direction
+
 0.15.0 - 11 Jan 2026
 ===================
 - Switch from ratatui to ratatui-core
 - Add ListState::hit_test for mouse support
 
-0.14.0 - 27 Dex 2025
+0.14.0 - 27 Dec 2025
 ===================
 - Bump ratatui version to v0.30.0
 

@@ -37,10 +37,21 @@ impl ListState {
             crate::ScrollAxis::Vertical => inner_area.width,
             crate::ScrollAxis::Horizontal => inner_area.height,
         };
+        let scroll_direction = self.last_scroll_direction();
+
         let (mut scroll_axis_pos, cross_axis_pos) = match scroll_axis {
             crate::ScrollAxis::Vertical => (inner_area.top(), inner_area.left()),
             crate::ScrollAxis::Horizontal => (inner_area.left(), inner_area.top()),
         };
+
+        if scroll_direction == crate::ScrollDirection::Backward {
+            let main_axis_size = match scroll_axis {
+                crate::ScrollAxis::Vertical => inner_area.height,
+                crate::ScrollAxis::Horizontal => inner_area.width,
+            };
+            let total_visible: u16 = sizes.values().sum();
+            scroll_axis_pos += main_axis_size.saturating_sub(total_visible);
+        }
 
         let start_index = self.scroll_offset_index();
         let mut index = start_index;
