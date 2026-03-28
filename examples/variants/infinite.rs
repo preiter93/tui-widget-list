@@ -1,4 +1,5 @@
 use crate::common::{item_container::ListItemContainer, Colors};
+use ratatui::widgets::Scrollbar;
 use ratatui::{layout::Alignment, style::Stylize, text::Line, widgets::Padding};
 use tui_widget_list::{ListBuilder, ListView};
 
@@ -40,6 +41,8 @@ impl InfiniteListView {
             (item, 3)
         });
 
-        ListView::new(builder, TRACKS.len()).infinite_scrolling(true)
+        ListView::new(builder, TRACKS.len())
+            .infinite_scrolling(true)
+            .scrollbar(Scrollbar::default())
     }
 }

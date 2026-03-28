@@ -2,7 +2,7 @@ use crate::common::{item_container::ListItemContainer, Colors};
 use ratatui::{
     style::{Color, Stylize},
     text::{Line, Span},
-    widgets::Padding,
+    widgets::{Padding, Scrollbar},
 };
 use tui_widget_list::{ListBuilder, ListView};
 
@@ -80,6 +80,8 @@ impl ClassicListView {
             (item, 1)
         });
 
-        ListView::new(builder, FILES.len()).infinite_scrolling(false)
+        ListView::new(builder, FILES.len())
+            .infinite_scrolling(false)
+            .scrollbar(Scrollbar::default())
     }
 }

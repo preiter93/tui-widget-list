@@ -1,5 +1,6 @@
 use crate::common::{item_container::ListItemContainer, Colors};
 use crate::infinite::TRACKS;
+use ratatui::widgets::Scrollbar;
 use ratatui::{layout::Alignment, style::Stylize, text::Line, widgets::Padding};
 use tui_widget_list::{ListBuilder, ListView};
 
@@ -27,5 +28,6 @@ impl ScrollPaddingListView {
         ListView::new(builder, TRACKS.len())
             .infinite_scrolling(false)
             .scroll_padding(5)
+            .scrollbar(Scrollbar::default())
     }
 }

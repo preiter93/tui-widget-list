@@ -126,10 +126,10 @@ impl App {
 impl StatefulWidget for &App {
     type State = AppState;
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        use Constraint::{Length, Min, Percentage};
+        use Constraint::{Length, Min};
 
         let [top, main] = Layout::vertical([Length(1), Min(0)]).areas(area);
-        let [left, right] = Layout::horizontal([Percentage(25), Min(0)]).areas(main);
+        let [left, right] = Layout::horizontal([Length(28), Min(0)]).areas(main);
 
         // Key mappings
         let [top_left, top_right] = Layout::horizontal([Min(0), Length(10)]).areas(top);
