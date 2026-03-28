@@ -24,14 +24,18 @@ impl BackwardListView {
         let builder = ListBuilder::new(|context| {
             let (author, body) = MESSAGES[context.index % MESSAGES.len()];
 
-            let author_style = match author {
-                "Alice" => ratatui::style::Style::default().fg(Colors::ORANGE),
-                "Bob" => ratatui::style::Style::default().fg(Colors::TEAL),
-                _ => ratatui::style::Style::default().fg(Colors::GRAY),
+            let author_color = if context.is_selected {
+                Colors::WHITE
+            } else {
+                match author {
+                    "Alice" => Colors::ORANGE,
+                    "Bob" => Colors::TEAL,
+                    _ => Colors::GRAY,
+                }
             };
 
             let text = Text::from(vec![
-                Line::from(author).style(author_style),
+                Line::from(author).style(ratatui::style::Style::default().fg(author_color)),
                 Line::from(body),
             ]);
 

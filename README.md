@@ -14,13 +14,13 @@ The list view support both horizontal and vertical scrolling.
 
 ### Configuration
 The [`ListView`] can be customized with the following options:
-- [`ListView::scroll_axis`]: Specifies whether the list is vertically or horizontally scrollable.
-- [`ListView::scroll_padding`]: Specifies whether content should remain visible while scrolling, ensuring that a
-  specified amount of padding is preserved above/below the selected item during scrolling.
-- [`ListView::infinite_scrolling`]: Allows the list to wrap around when scrolling past the first or last element.
-- [`ListView::style`]: Defines the base style of the list.
-- [`ListView::block`]: Optional outer block surrounding the list.
-- [`ListView::scrollbar`]: Optional scrollbar widget.
+- [`ListView::scroll_axis`]: Vertical or horizontal scrolling.
+- [`ListView::scroll_direction`]: Forward or backward layout direction.
+- [`ListView::scroll_padding`]: Padding preserved around the selected item while scrolling.
+- [`ListView::infinite_scrolling`]: Wrap around when scrolling past the first or last element.
+- [`ListView::style`]: Base style of the list.
+- [`ListView::block`]: Optional outer block.
+- [`ListView::scrollbar`]: Optional scrollbar.
 
 ### Example
 ```rust

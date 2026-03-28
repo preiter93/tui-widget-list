@@ -10,7 +10,7 @@ Set PlaybackSpeed 1.0
 Hide
 Type "cargo run --example variants"
 Enter
-Sleep 0.5s
+Sleep 1.5s
 Show
 
 # Classic
