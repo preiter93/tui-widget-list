@@ -1,24 +1,24 @@
 //!<div align="center">
 //!
-//! # A versatile widget list for Ratatui
+//! # tui-widget-list: A versatile widget list for Ratatui
 //!
 //! [![Crate Badge]](https://crates.io/crates/tui-widget-list) [![Continuous Integration](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml/badge.svg)](https://github.com/preiter93/tui-widget-list/actions/workflows/ci.yml) [![Deps Status](https://deps.rs/repo/github/preiter93/tui-widget-list/status.svg)](https://deps.rs/repo/github/preiter93/tui-widget-list) [![License Badge]](./LICENSE)
 //!
 //! </div>
 //!
-//! This crate provides a stateful widget [`ListView`] implementation for `Ratatui`.
-//! The associated [`ListState`], offers functionalities such as navigating to the next and previous items.
+//! This crate provides a stateful widget `ListView` implementation for `Ratatui`.
+//! The associated `ListState`, offers functionalities such as navigating to the next and previous items.
 //! The list view support both horizontal and vertical scrolling.
 //!
 //! ## Configuration
-//! The [`ListView`] can be customized with the following options:
-//! - [`ListView::scroll_axis`]: Vertical or horizontal scrolling.
-//! - [`ListView::scroll_direction`]: Forward or backward layout direction.
-//! - [`ListView::scroll_padding`]: Padding preserved around the selected item while scrolling.
-//! - [`ListView::infinite_scrolling`]: Wrap around when scrolling past the first or last element.
-//! - [`ListView::style`]: Base style of the list.
-//! - [`ListView::block`]: Optional outer block.
-//! - [`ListView::scrollbar`]: Optional scrollbar.
+//! The `ListView` can be customized with the following options:
+//! - `ListView::scroll_axis`: Vertical or horizontal scrolling.
+//! - `ListView::scroll_direction`: Forward or backward layout direction.
+//! - `ListView::scroll_padding`: Padding preserved around the selected item while scrolling.
+//! - `ListView::infinite_scrolling`: Wrap around when scrolling past the first or last element.
+//! - `ListView::style`: Base style of the list.
+//! - `ListView::block`: Optional outer block.
+//! - `ListView::scrollbar`: Optional scrollbar.
 //!
 //! ## Example
 //!```
@@ -73,7 +73,7 @@
 //!
 //! ## Demo
 //!
-//!![](examples/tapes/variants.gif?v=1)
+//!![](https://raw.githubusercontent.com/preiter93/tui-widget-list/main/examples/tapes/variants.gif?v=1)
 //!
 //! ## Documentation
 //! [docs.rs](https://docs.rs/tui-widget-list/)
