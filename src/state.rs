@@ -21,6 +21,10 @@ pub struct ListState {
     /// True by default.
     pub(crate) infinite_scrolling: bool,
 
+    /// Scroll offset within the currently selected item. When an item is larger
+    /// than the viewport, this tracks how far we've scrolled into it.
+    pub(crate) item_scroll: u16,
+
     /// The state for the viewport. Keeps track which item to show
     /// first and how much it is truncated.
     pub(crate) view_state: ViewState,
@@ -50,6 +54,12 @@ pub(crate) struct ViewState {
 
     /// The scroll direction used during the last render.
     pub(crate) scroll_direction: ScrollDirection,
+
+    /// The viewport's main axis size from the last render.
+    pub(crate) last_main_axis_size: u16,
+
+    /// Full (untruncated) main-axis sizes of items from the last render.
+    pub(crate) total_main_axis_sizes: HashMap<usize, u16>,
 }
 
 impl Default for ViewState {
@@ -61,6 +71,8 @@ impl Default for ViewState {
             inner_area: Rect::default(),
             scroll_axis: ScrollAxis::Vertical,
             scroll_direction: ScrollDirection::Forward,
+            last_main_axis_size: 0,
+            total_main_axis_sizes: HashMap::new(),
         }
     }
 }
@@ -71,6 +83,7 @@ impl Default for ListState {
             selected: None,
             num_elements: 0,
             infinite_scrolling: true,
+            item_scroll: 0,
             view_state: ViewState::default(),
             scrollbar_state: ScrollbarState::new(0).position(0),
         }
@@ -92,6 +105,7 @@ impl ListState {
     /// Selects an item by its index.
     pub fn select(&mut self, index: Option<usize>) {
         self.selected = index;
+        self.item_scroll = 0;
         if index.is_none() {
             self.view_state.offset = 0;
             self.scrollbar_state = self.scrollbar_state.position(0);
@@ -112,6 +126,14 @@ impl ListState {
     pub fn next(&mut self) {
         if self.num_elements == 0 {
             return;
+        }
+        // If the current item overflows the viewport, scroll within it first
+        if let Some(selected) = self.selected {
+            let overflow = self.item_overflow(selected);
+            if overflow > 0 && self.item_scroll < overflow {
+                self.item_scroll += 1;
+                return;
+            }
         }
         let i = match self.selected {
             Some(i) => {
@@ -145,6 +167,11 @@ impl ListState {
         if self.num_elements == 0 {
             return;
         }
+        // If the current item overflows the viewport, scroll back within it first
+        if self.item_scroll > 0 {
+            self.item_scroll -= 1;
+            return;
+        }
         let i = match self.selected {
             Some(i) => {
                 if i == 0 {
@@ -159,6 +186,13 @@ impl ListState {
             }
             None => self.num_elements - 1,
         };
+        // If the previous item overflows the viewport, start at its bottom
+        let overflow = self.item_overflow(i);
+        if overflow > 0 {
+            self.selected = Some(i);
+            self.item_scroll = overflow;
+            return;
+        }
         self.select(Some(i));
     }
 
@@ -264,5 +298,31 @@ impl ListState {
     #[must_use]
     pub(crate) fn last_scroll_direction(&self) -> ScrollDirection {
         self.view_state.scroll_direction
+    }
+
+    /// Returns how many rows/cols of the item extend beyond the viewport,
+    /// or 0 if the item fits or its size is not cached.
+    fn item_overflow(&self, index: usize) -> u16 {
+        self.view_state
+            .total_main_axis_sizes
+            .get(&index)
+            .map(|&total| total.saturating_sub(self.view_state.last_main_axis_size))
+            .unwrap_or(0)
+    }
+
+    /// Set the viewport's main axis size from the last render.
+    pub(crate) fn set_last_main_axis_size(&mut self, size: u16) {
+        self.view_state.last_main_axis_size = size;
+    }
+
+    /// Set the full (untruncated) main-axis sizes of items from the last render.
+    pub(crate) fn set_total_main_axis_sizes(&mut self, sizes: HashMap<usize, u16>) {
+        self.view_state.total_main_axis_sizes = sizes;
+    }
+
+    /// Get the scroll offset within the currently selected item.
+    #[must_use]
+    pub(crate) fn item_scroll(&self) -> u16 {
+        self.item_scroll
     }
 }

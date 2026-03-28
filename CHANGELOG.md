@@ -1,6 +1,10 @@
 Released
 --------
 
+0.15.2 - 28 Mar 2026
+===================
+- feat: Scroll within large items before selecting the next (co-authored by @orlandohohmeier)
+
 0.15.1 - 28 Mar 2026
 ===================
 - feat: Add ScrollDirection with forward/backward direction
