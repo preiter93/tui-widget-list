@@ -320,20 +320,15 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
                 ),
             };
 
-            // Render truncated widgets.
-            if element.truncation.value() > 0 {
-                render_truncated(
-                    element.widget,
-                    area,
-                    buf,
-                    element.main_axis_size,
-                    &element.truncation,
-                    self.style,
-                    self.scroll_axis,
-                );
-            } else {
-                element.widget.render(area, buf);
-            }
+            render_clipped(
+                element.widget,
+                area,
+                buf,
+                element.main_axis_size,
+                &element.truncation,
+                self.style,
+                self.scroll_axis,
+            );
 
             scroll_axis_pos += visible_main_axis_size;
         }
@@ -348,9 +343,8 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
     }
 }
 
-/// Render a truncated widget into a buffer. The method renders the widget fully into
-/// a hidden buffer and moves the visible content into `buf`.
-fn render_truncated<T: Widget>(
+/// Renders a widget into `buf`, clipping it if partially visible.
+fn render_clipped<T: Widget>(
     item: T,
     available_area: Rect,
     buf: &mut Buffer,
@@ -359,7 +353,11 @@ fn render_truncated<T: Widget>(
     base_style: Style,
     scroll_axis: ScrollAxis,
 ) {
-    // Create an hidden buffer for rendering the truncated element
+    if truncation.value() == 0 {
+        item.render(available_area, buf);
+        return;
+    }
+
     let (width, height) = match scroll_axis {
         ScrollAxis::Vertical => (available_area.width, untruncated_size),
         ScrollAxis::Horizontal => (untruncated_size, available_area.height),
