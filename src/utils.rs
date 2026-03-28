@@ -21,7 +21,7 @@ use crate::{view::Truncation, ListBuildContext, ListBuilder, ListState, ScrollAx
 ///      - If it is truncated, the viewport will be adjusted to bring the entire item into view.
 ///      - If it is out of bounds, the viewport will be scrolled downwards to make the selected item visible.
 #[allow(clippy::too_many_lines)]
-pub(crate) fn layout_on_viewport<T>(
+pub(crate) fn compute_viewport_layout<T>(
     state: &mut ListState,
     builder: &ListBuilder<T>,
     item_count: usize,
@@ -537,7 +537,7 @@ mod tests {
         ]);
 
         // when
-        let viewport = layout_on_viewport(
+        let viewport = compute_viewport_layout(
             &mut state,
             &ListBuilder::new(move |context| {
                 return (TestItem {}, given_sizes[context.index]);
@@ -598,7 +598,7 @@ mod tests {
         ]);
 
         // when
-        let viewport = layout_on_viewport(
+        let viewport = compute_viewport_layout(
             &mut state,
             &ListBuilder::new(move |context| {
                 return (TestItem {}, given_sizes[context.index]);
@@ -653,7 +653,7 @@ mod tests {
         ]);
 
         // when
-        let viewport = layout_on_viewport(
+        let viewport = compute_viewport_layout(
             &mut state,
             &ListBuilder::new(move |context| {
                 return (TestItem {}, given_sizes[context.index]);
@@ -712,7 +712,7 @@ mod tests {
         ]);
 
         // when
-        let viewport = layout_on_viewport(
+        let viewport = compute_viewport_layout(
             &mut state,
             &ListBuilder::new(move |context| {
                 return (TestItem {}, given_sizes[context.index]);
@@ -777,7 +777,7 @@ mod tests {
         ]);
 
         // when
-        let viewport = layout_on_viewport(
+        let viewport = compute_viewport_layout(
             &mut state,
             &ListBuilder::new(move |context| {
                 return (TestItem {}, given_sizes[context.index]);
@@ -838,7 +838,7 @@ mod tests {
         ]);
 
         // when
-        let viewport = layout_on_viewport(
+        let viewport = compute_viewport_layout(
             &mut state,
             &ListBuilder::new(move |context| {
                 return (TestItem {}, given_sizes[context.index]);
@@ -906,7 +906,7 @@ mod tests {
         ]);
 
         // when
-        let viewport = layout_on_viewport(
+        let viewport = compute_viewport_layout(
             &mut state,
             &ListBuilder::new(move |context| {
                 return (TestItem {}, given_sizes[context.index]);

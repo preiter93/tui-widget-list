@@ -10,7 +10,10 @@ use ratatui_widgets::block::Block;
 use ratatui_widgets::block::BlockExt;
 use ratatui_widgets::scrollbar::Scrollbar;
 
-use crate::{utils::layout_on_viewport, ListState};
+use crate::{
+    utils::{compute_viewport_layout, ViewportElement},
+    ListState,
+};
 
 /// A struct representing a list view.
 /// The widget displays a scrollable list of items.
@@ -213,6 +216,22 @@ pub enum ScrollAxis {
 }
 
 impl ScrollAxis {
+    /// Returns `(main_axis_size, cross_axis_size)` for the given area.
+    pub(crate) fn sizes(self, area: Rect) -> (u16, u16) {
+        match self {
+            Self::Vertical => (area.height, area.width),
+            Self::Horizontal => (area.width, area.height),
+        }
+    }
+
+    /// Returns `(scroll_axis_pos, cross_axis_pos)` for the given area.
+    pub(crate) fn origin(self, area: Rect) -> (u16, u16) {
+        match self {
+            Self::Vertical => (area.top(), area.left()),
+            Self::Horizontal => (area.left(), area.top()),
+        }
+    }
+
     /// Builds a `Rect` from axis-agnostic positions and sizes.
     pub(crate) fn rect(
         self,
@@ -253,41 +272,29 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
     type State = ListState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        state.set_num_elements(self.item_count);
-        state.set_infinite_scrolling(self.infinite_scrolling);
-
-        // Set the base style
+        // Render base style and optional surrounding block
         buf.set_style(area, self.style);
-
-        // Set the base block
         if let Some(ref block) = self.block {
             block.render(area, buf);
         }
         let inner_area = self.block.inner_if_some(area);
+
+        // Store layout information for post-render queries (e.g. hit testing)
+        state.set_num_elements(self.item_count);
+        state.set_infinite_scrolling(self.infinite_scrolling);
         state.set_inner_area(inner_area);
         state.set_scroll_axis(self.scroll_axis);
         state.set_scroll_direction(self.scroll_direction);
 
-        // List is empty
         if self.item_count == 0 {
             return;
         }
 
-        // Set the dimension along the scroll axis and the cross axis
-        let (main_axis_size, cross_axis_size) = match self.scroll_axis {
-            ScrollAxis::Vertical => (inner_area.height, inner_area.width),
-            ScrollAxis::Horizontal => (inner_area.width, inner_area.height),
-        };
+        // Resolve which items are visible and how they fit on the viewport
+        let (main_axis_size, cross_axis_size) = self.scroll_axis.sizes(inner_area);
+        let (mut scroll_axis_pos, cross_axis_pos) = self.scroll_axis.origin(inner_area);
 
-        // The coordinates of the first item with respect to the top left corner
-        let (mut scroll_axis_pos, cross_axis_pos) = match self.scroll_axis {
-            ScrollAxis::Vertical => (inner_area.top(), inner_area.left()),
-            ScrollAxis::Horizontal => (inner_area.left(), inner_area.top()),
-        };
-
-        // Determine which widgets to show on the viewport and how much space they
-        // get assigned to.
-        let mut viewport = layout_on_viewport(
+        let mut viewport = resolve_viewport(
             state,
             &self.builder,
             self.item_count,
@@ -296,20 +303,13 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             self.scroll_axis,
             self.scroll_padding,
         );
-        state.update_scrollbar_state(
-            &self.builder,
-            self.item_count,
-            main_axis_size,
-            cross_axis_size,
-            self.scroll_axis,
-        );
 
         let (start, end) = (
             state.view_state.offset,
             viewport.len() + state.view_state.offset,
         );
 
-        // For reversed scroll direction, align items to the end of the axis
+        // Backward direction: align items to the end of the axis
         if self.scroll_direction == ScrollDirection::Backward {
             let total_visible: u16 = (start..end)
                 .filter_map(|i| viewport.get(&i))
@@ -318,29 +318,27 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             scroll_axis_pos += main_axis_size.saturating_sub(total_visible);
         }
 
-        // Cache visible main-axis sizes for hit testing after render
-        let mut cached_sizes: std::collections::HashMap<usize, u16> = HashMap::new();
-
+        // Render each visible item and cache sizes for hit testing
+        let mut cached_sizes: HashMap<usize, u16> = HashMap::new();
         for i in start..end {
             let Some(element) = viewport.remove(&i) else {
                 break;
             };
+
             let visible_main_axis_size = element
                 .main_axis_size
                 .saturating_sub(element.truncation.value());
 
             cached_sizes.insert(i, visible_main_axis_size);
 
-            let area = self.scroll_axis.rect(
-                scroll_axis_pos,
-                cross_axis_pos,
-                visible_main_axis_size,
-                cross_axis_size,
-            );
-
             render_clipped(
                 element.widget,
-                area,
+                self.scroll_axis.rect(
+                    scroll_axis_pos,
+                    cross_axis_pos,
+                    visible_main_axis_size,
+                    cross_axis_size,
+                ),
                 buf,
                 element.main_axis_size,
                 &element.truncation,
@@ -351,14 +349,40 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
             scroll_axis_pos += visible_main_axis_size;
         }
 
-        // Save cached visible sizes for hit testing
         state.set_visible_main_axis_sizes(cached_sizes);
 
-        // Render the scrollbar
         if let Some(scrollbar) = self.scrollbar {
             scrollbar.render(area, buf, &mut state.scrollbar_state);
         }
     }
+}
+
+fn resolve_viewport<T>(
+    state: &mut ListState,
+    builder: &ListBuilder<T>,
+    item_count: usize,
+    main_axis_size: u16,
+    cross_axis_size: u16,
+    scroll_axis: ScrollAxis,
+    scroll_padding: u16,
+) -> HashMap<usize, ViewportElement<T>> {
+    let viewport = compute_viewport_layout(
+        state,
+        builder,
+        item_count,
+        main_axis_size,
+        cross_axis_size,
+        scroll_axis,
+        scroll_padding,
+    );
+    state.update_scrollbar_state(
+        builder,
+        item_count,
+        main_axis_size,
+        cross_axis_size,
+        scroll_axis,
+    );
+    viewport
 }
 
 /// Renders a widget into `buf`, clipping it if partially visible.
