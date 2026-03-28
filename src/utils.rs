@@ -12,9 +12,7 @@ use crate::{view::Truncation, ListBuildContext, ListBuilder, ListState, ScrollAx
 /// the new view state (offset and truncation of the first element) and returns the
 /// widgets that should be rendered in the current viewport.
 ///
-/// # There
 /// There are the following cases to consider:
-///
 /// - Selected item is on the viewport
 /// - Selected item is above the previous viewport, either truncated or out of bounds
 ///      - If it is truncated, the viewport will be adjusted to bring the entire item into view.

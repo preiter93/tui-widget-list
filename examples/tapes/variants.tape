@@ -41,4 +41,12 @@ Down@1.5s 1
 Right@0.5s 1
 Down@0.5s 10
 
+# Reversed
+Left@1.5s 1
+Down@1.5s 1
+
+Right@0.5s 1
+Up@0.2s 10
+Down@0.2s 10
+
 Sleep 1.5s

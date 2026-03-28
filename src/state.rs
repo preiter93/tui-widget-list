@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use ratatui_core::layout::Rect;
 use ratatui_widgets::scrollbar::ScrollbarState;
 
-use crate::{ListBuildContext, ListBuilder, ScrollAxis};
+use crate::{ListBuildContext, ListBuilder, ScrollAxis, ScrollDirection};
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone)]
@@ -47,6 +47,9 @@ pub(crate) struct ViewState {
 
     /// The scroll axis used during the last render.
     pub(crate) scroll_axis: ScrollAxis,
+
+    /// The scroll direction used during the last render.
+    pub(crate) scroll_direction: ScrollDirection,
 }
 
 impl Default for ViewState {
@@ -57,6 +60,7 @@ impl Default for ViewState {
             visible_main_axis_sizes: HashMap::new(),
             inner_area: Rect::default(),
             scroll_axis: ScrollAxis::Vertical,
+            scroll_direction: ScrollDirection::Forward,
         }
     }
 }
@@ -153,7 +157,7 @@ impl ListState {
                     i - 1
                 }
             }
-            None => 0,
+            None => self.num_elements - 1,
         };
         self.select(Some(i));
     }
@@ -249,5 +253,16 @@ impl ListState {
     #[must_use]
     pub(crate) fn last_scroll_axis(&self) -> ScrollAxis {
         self.view_state.scroll_axis
+    }
+
+    /// Set the scroll direction used during the last render.
+    pub(crate) fn set_scroll_direction(&mut self, scroll_direction: ScrollDirection) {
+        self.view_state.scroll_direction = scroll_direction;
+    }
+
+    /// Get the scroll direction used during the last render.
+    #[must_use]
+    pub(crate) fn last_scroll_direction(&self) -> ScrollDirection {
+        self.view_state.scroll_direction
     }
 }

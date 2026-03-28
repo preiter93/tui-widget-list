@@ -15,15 +15,17 @@ pub enum Variant {
     InfiniteScrolling,
     ScrollPadding,
     Horizontal,
+    Backward,
 }
 
 impl Variant {
-    pub const COUNT: usize = 4;
+    pub const COUNT: usize = 5;
     pub fn from_index(index: usize) -> Self {
         match index {
             1 => Variant::InfiniteScrolling,
             2 => Variant::ScrollPadding,
             3 => Variant::Horizontal,
+            4 => Variant::Backward,
             _ => Variant::Classic,
         }
     }
@@ -36,6 +38,7 @@ impl std::fmt::Display for Variant {
             Variant::InfiniteScrolling => write!(f, "Infinite Scrolling"),
             Variant::ScrollPadding => write!(f, "Scroll Padding"),
             Variant::Horizontal => write!(f, "Horizontal Scrolling"),
+            Variant::Backward => write!(f, "Backward Direction"),
         }
     }
 }
