@@ -66,6 +66,6 @@ impl VariantsListView {
 pub struct Controls;
 impl Widget for Controls {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
-        Line::from("k: Up | j: Down | Tab: Left/Right").render(area, buf);
+        Line::from("k: Up | j: Down | Tab: Left/Right | q: Quit").render(area, buf);
     }
 }

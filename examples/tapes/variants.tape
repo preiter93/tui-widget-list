@@ -3,8 +3,8 @@ Output "examples/tapes/variants.gif"
 Set Margin 10
 Set Padding 2
 Set BorderRadius 10
-Set Width 2000
-Set Height 1100
+Set Width 1800
+Set Height 800
 Set PlaybackSpeed 1.0
 
 Hide
@@ -14,39 +14,39 @@ Sleep 1.5s
 Show
 
 # Classic
-Sleep 1.5s
-Right@0.5s 1
-Down@0.2s 18
+Sleep 1.0s
+Right@0.2s 1
+Down@0.1s 17
 
 # Infinite
-Left@1.5s 1
-Down@1.5s 1
+Left@0.5s 1
+Down@0.5s 1
 
-Right@0.5s 1
-Down@0.2s 20
+Right@0.2s 1
+Down@0.15s 16
 Sleep 1.0s
 
 # Scroll padding
-Left@1.5s 1
-Down@1.5s 1
+Left@0.5s 1
+Down@0.5s 1
 
-Right@0.5s 1
-Down@0.2s 18
-Up@0.2s 18
+Right@0.2s 1
+Down@0.15s 14
+Up@0.15s 14
 
 # Horizontal
-Left@1.5s 1
-Down@1.5s 1
+Left@0.5s 1
+Down@0.5s 1
 
-Right@0.5s 1
-Down@0.5s 5
+Right@0.2s 1
+Down@0.2s 5
 
 # Reversed
-Left@1.5s 1
-Down@1.5s 1
+Left@0.5s 1
+Down@0.5s 1
 
-Right@0.5s 1
+Right@0.2s 1
 Up@0.2s 6
-Down@0.2s 6
+Down@0.2s 5
 
 Sleep 1.5s

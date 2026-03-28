@@ -11,14 +11,17 @@ mod config;
 mod fps;
 #[path = "variants/horizontal.rs"]
 mod horizontal;
+#[path = "variants/infinite.rs"]
+mod infinite;
 #[path = "variants/scroll_padding.rs"]
 mod scroll_padding;
 use backward::BackwardListView;
-use classic::PaddedListView;
+use classic::ClassicListView;
 use common::{Block, Colors, Result, Terminal};
 use config::{Controls, Variant, VariantsListView};
 use fps::FPSCounter;
 use horizontal::HorizontalListView;
+use infinite::InfiniteListView;
 use ratatui::crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
@@ -152,12 +155,13 @@ impl StatefulWidget for &App {
             _ => Colors::GRAY,
         };
         match Variant::from_index(state.variant_state.selected.unwrap_or(0)) {
-            Variant::Classic => PaddedListView::new(false).block(block).fg(fg).render(
-                right,
-                buf,
-                &mut state.list_state,
-            ),
-            Variant::InfiniteScrolling => PaddedListView::new(true).block(block).fg(fg).render(
+            Variant::Classic => {
+                ClassicListView::new()
+                    .block(block)
+                    .fg(fg)
+                    .render(right, buf, &mut state.list_state)
+            }
+            Variant::InfiniteScrolling => InfiniteListView::new().block(block).fg(fg).render(
                 right,
                 buf,
                 &mut state.list_state,

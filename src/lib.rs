@@ -25,63 +25,16 @@
 //! use ratatui::prelude::*;
 //! use tui_widget_list::{ListBuilder, ListState, ListView};
 //!
-//! #[derive(Debug, Clone)]
-//! pub struct ListItem {
-//!     text: String,
-//!     style: Style,
-//! }
-//!
-//! impl ListItem {
-//!     pub fn new<T: Into<String>>(text: T) -> Self {
-//!         Self {
-//!             text: text.into(),
-//!             style: Style::default(),
-//!         }
+//! let builder = ListBuilder::new(|context| {
+//!     let mut item = Line::from(format!("Item {}", context.index));
+//!     if context.is_selected {
+//!         item = item.style(Style::default().bg(Color::Rgb(255, 153, 0)));
 //!     }
-//! }
+//!     (item, 1)
+//! });
 //!
-//! impl Widget for ListItem {
-//!     fn render(self, area: Rect, buf: &mut Buffer) {
-//!         Line::from(self.text).style(self.style).render(area, buf);
-//!     }
-//! }
-//!
-//! pub struct App {
-//!     state: ListState,
-//! }
-//!
-//! impl Widget for &mut App {
-//!     fn render(self, area: Rect, buf: &mut Buffer) {
-//!         let builder = ListBuilder::new(|context| {
-//!            let mut item = ListItem::new(&format!("Item {:0}", context.index));
-//!
-//!            // Alternating styles
-//!            if context.index % 2 == 0 {
-//!                item.style = Style::default().bg(Color::Rgb(28, 28, 32));
-//!            } else {
-//!                item.style = Style::default().bg(Color::Rgb(0, 0, 0));
-//!            }
-//!
-//!            // Style the selected element
-//!            if context.is_selected {
-//!                item.style = Style::default()
-//!                    .bg(Color::Rgb(255, 153, 0))
-//!                    .fg(Color::Rgb(28, 28, 32));
-//!            };
-//!
-//!            // Return the size of the widget along the main axis.
-//!            let main_axis_size = 1;
-//!
-//!            (item, main_axis_size)
-//!         });
-//!
-//!         let item_count = 2;
-//!         let list = ListView::new(builder, item_count);
-//!         let state = &mut self.state;
-//!
-//!         list.render(area, buf, state);
-//!     }
-//! }
+//! let mut state = ListState::default();
+//! let list = ListView::new(builder, 20);
 //!```
 //!
 //! ## Mouse handling
@@ -119,8 +72,6 @@
 //! For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
 //!
 //! ## Demo
-//!
-//! ### Infinite scrolling, scroll padding, horizontal scrolling, backward direction
 //!
 //!![](examples/tapes/variants.gif?v=1)
 //!
