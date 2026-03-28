@@ -1,5 +1,4 @@
 use crate::ListState;
-use ratatui_core::layout::Rect;
 
 /// Result of a hit-test within the list's inner area.
 #[derive(Debug, PartialEq)]
@@ -61,20 +60,12 @@ impl ListState {
                 break;
             };
 
-            let rect = match scroll_axis {
-                crate::ScrollAxis::Vertical => Rect::new(
-                    cross_axis_pos,
-                    scroll_axis_pos,
-                    cross_axis_size,
-                    visible_main_axis_size,
-                ),
-                crate::ScrollAxis::Horizontal => Rect::new(
-                    scroll_axis_pos,
-                    cross_axis_pos,
-                    visible_main_axis_size,
-                    cross_axis_size,
-                ),
-            };
+            let rect = scroll_axis.rect(
+                scroll_axis_pos,
+                cross_axis_pos,
+                visible_main_axis_size,
+                cross_axis_size,
+            );
 
             if point_in_rect(rect, mouse_x, mouse_y) {
                 return Some(Hit::Item(index));

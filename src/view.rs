@@ -212,6 +212,32 @@ pub enum ScrollAxis {
     Horizontal,
 }
 
+impl ScrollAxis {
+    /// Builds a `Rect` from axis-agnostic positions and sizes.
+    pub(crate) fn rect(
+        self,
+        scroll_axis_pos: u16,
+        cross_axis_pos: u16,
+        main_axis_size: u16,
+        cross_axis_size: u16,
+    ) -> Rect {
+        match self {
+            Self::Vertical => Rect::new(
+                cross_axis_pos,
+                scroll_axis_pos,
+                cross_axis_size,
+                main_axis_size,
+            ),
+            Self::Horizontal => Rect::new(
+                scroll_axis_pos,
+                cross_axis_pos,
+                main_axis_size,
+                cross_axis_size,
+            ),
+        }
+    }
+}
+
 /// Represents the scroll direction of a list.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum ScrollDirection {
@@ -305,20 +331,12 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
 
             cached_sizes.insert(i, visible_main_axis_size);
 
-            let area = match self.scroll_axis {
-                ScrollAxis::Vertical => Rect::new(
-                    cross_axis_pos,
-                    scroll_axis_pos,
-                    cross_axis_size,
-                    visible_main_axis_size,
-                ),
-                ScrollAxis::Horizontal => Rect::new(
-                    scroll_axis_pos,
-                    cross_axis_pos,
-                    visible_main_axis_size,
-                    cross_axis_size,
-                ),
-            };
+            let area = self.scroll_axis.rect(
+                scroll_axis_pos,
+                cross_axis_pos,
+                visible_main_axis_size,
+                cross_axis_size,
+            );
 
             render_clipped(
                 element.widget,
