@@ -35,7 +35,7 @@ impl BackwardListView {
             };
 
             let text = Text::from(vec![
-                Line::from(author).style(ratatui::style::Style::default().fg(author_color)),
+                Line::from(author).style(ratatui::style::Style::default().fg(author_color).bold()),
                 Line::from(body),
             ]);
 
@@ -51,6 +51,8 @@ impl BackwardListView {
             (item, 2)
         });
 
-        ListView::new(builder, MESSAGES.len()).scroll_direction(ScrollDirection::Backward)
+        ListView::new(builder, MESSAGES.len())
+            .scroll_direction(ScrollDirection::Backward)
+            .bg(Colors::BLACK)
     }
 }
