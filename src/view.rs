@@ -292,6 +292,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
 
         // Resolve which items are visible and how they fit on the viewport
         let (main_axis_size, cross_axis_size) = self.scroll_axis.sizes(inner_area);
+        state.set_last_main_axis_size(main_axis_size);
         let (mut scroll_axis_pos, cross_axis_pos) = self.scroll_axis.origin(inner_area);
 
         let mut viewport = resolve_viewport(
@@ -320,12 +321,31 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
 
         // Render each visible item and cache sizes for hit testing
         let mut cached_sizes: HashMap<usize, u16> = HashMap::new();
+        let mut cached_total_sizes: HashMap<usize, u16> = HashMap::new();
+        let viewport_end = scroll_axis_pos + main_axis_size;
+
         for i in start..end {
             let Some(element) = viewport.remove(&i) else {
                 break;
             };
 
-            let visible_size = element.visible_size();
+            cached_total_sizes.insert(i, element.main_axis_size);
+
+            // If the selected item overflows the viewport, apply item_scroll as truncation
+            let truncation = if Some(i) == state.selected
+                && state.item_scroll() > 0
+                && element.main_axis_size > main_axis_size
+            {
+                Truncation::Top(state.item_scroll())
+            } else {
+                element.truncation
+            };
+
+            let visible_size = element
+                .main_axis_size
+                .saturating_sub(truncation.value())
+                .min(viewport_end.saturating_sub(scroll_axis_pos));
+
             cached_sizes.insert(i, visible_size);
 
             render_clipped(
@@ -338,7 +358,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
                 ),
                 buf,
                 element.main_axis_size,
-                &element.truncation,
+                &truncation,
                 self.style,
                 self.scroll_axis,
             );
@@ -347,6 +367,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
         }
 
         state.set_visible_main_axis_sizes(cached_sizes);
+        state.set_total_main_axis_sizes(cached_total_sizes);
 
         if let Some(scrollbar) = self.scrollbar {
             scrollbar.render(area, buf, &mut state.scrollbar_state);
@@ -627,6 +648,65 @@ mod test {
                 "└───┘",
             ]),
         )
+    }
+
+    #[test]
+    fn scroll_within_large_item() {
+        let area = Rect::new(0, 0, 5, 7);
+        let builder = ListBuilder::new(|ctx| {
+            let size = if ctx.index == 0 { 8 } else { 3 };
+            (TestItem {}, size)
+        });
+        let list = ListView::new(builder, 2);
+        let mut state = ListState::default();
+        state.select(Some(0));
+
+        // Render: shows top 7 rows
+        let mut buf = Buffer::empty(area);
+        list.render(area, &mut buf, &mut state);
+        assert_buffer_eq(
+            buf,
+            Buffer::with_lines(vec![
+                "┌───┐",
+                "│   │",
+                "│   │",
+                "│   │",
+                "│   │",
+                "│   │",
+                "│   │",
+            ]),
+        );
+
+        // next() scrolls within and content_offset becomes 1
+        state.next();
+        assert_eq!(state.selected, Some(0));
+        assert_eq!(state.item_scroll, 1);
+
+        // Render at offset 1: shows rows 1-7
+        let mut buf = Buffer::empty(area);
+        let builder = ListBuilder::new(|ctx| {
+            let size = if ctx.index == 0 { 8 } else { 3 };
+            (TestItem {}, size)
+        });
+        let list = ListView::new(builder, 2);
+        list.render(area, &mut buf, &mut state);
+        assert_buffer_eq(
+            buf,
+            Buffer::with_lines(vec![
+                "│   │",
+                "│   │",
+                "│   │",
+                "│   │",
+                "│   │",
+                "│   │",
+                "└───┘",
+            ]),
+        );
+
+        // next at max offset jumps to item 1
+        state.next();
+        assert_eq!(state.selected, Some(1));
+        assert_eq!(state.item_scroll, 0);
     }
 
     fn assert_buffer_eq(actual: Buffer, expected: Buffer) {

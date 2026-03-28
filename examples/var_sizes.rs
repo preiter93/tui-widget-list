@@ -4,20 +4,28 @@ use common::{Colors, Result, Terminal};
 use ratatui::crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::{
     prelude::*,
-    widgets::{Block, Borders, Widget},
+    widgets::{Block, Borders, Scrollbar, Widget},
 };
 use tui_widget_list::{ListBuilder, ListState, ListView};
 
-const SIZES: [u16; 19] = [32, 3, 4, 64, 6, 5, 4, 3, 3, 6, 5, 7, 3, 6, 9, 10, 4, 4, 6];
+const ITEMS: &[(&str, u16)] = &[
+    ("Header", 3),
+    ("Summary", 5),
+    ("Details", 30),
+    ("Note A", 4),
+    ("Note B", 4),
+    ("Body", 25),
+    ("Sidebar", 6),
+    ("Note C", 3),
+    ("Note D", 3),
+    ("Footer", 5),
+];
 
 fn main() -> Result<()> {
     let mut terminal = Terminal::init()?;
-
     App::default().run(&mut terminal)?;
-
     Terminal::reset()?;
     terminal.show_cursor()?;
-
     Ok(())
 }
 
@@ -29,7 +37,6 @@ impl App {
         let mut state = ListState::default();
         loop {
             terminal.draw_app(self, &mut state)?;
-
             if let Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
                     match key.code {
@@ -46,51 +53,61 @@ impl App {
 
 impl StatefulWidget for &App {
     type State = ListState;
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State)
-    where
-        Self: Sized,
-    {
-        let item_count = SIZES.len();
-
-        let block = Block::default().borders(Borders::ALL).title("Outer block");
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let builder = ListBuilder::new(move |context| {
-            let size = SIZES[context.index];
-            let mut widget = LineItem::new(format!("Size: {size}"));
+            let (title, size) = ITEMS[context.index];
+            let label = format!(" {} (h={})", title, size);
 
-            if context.is_selected {
-                widget.line.style = widget.line.style.bg(Color::White);
+            let style = if context.is_selected {
+                Style::default().bg(Colors::ORANGE).fg(Colors::CHARCOAL)
+            } else if context.index % 2 == 0 {
+                Style::default().bg(Colors::CHARCOAL).fg(Colors::WHITE)
+            } else {
+                Style::default().bg(Colors::BLACK).fg(Colors::WHITE)
             };
 
-            return (widget, size);
+            let block = Block::default().borders(Borders::ALL).style(style);
+            let inner = block.inner(Rect::new(0, 0, context.cross_axis_size, size));
+            let widget = SectionItem {
+                label,
+                block,
+                inner_height: inner.height,
+            };
+
+            (widget, size)
         });
-        let list = ListView::new(builder, item_count)
-            .bg(Color::Black)
-            .block(block);
+
+        let list = ListView::new(builder, ITEMS.len())
+            .infinite_scrolling(false)
+            .scrollbar(Scrollbar::default())
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(" Variable Sizes "),
+            );
         list.render(area, buf, state);
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct LineItem<'a> {
-    line: Line<'a>,
+struct SectionItem {
+    label: String,
+    block: Block<'static>,
+    inner_height: u16,
 }
 
-impl LineItem<'_> {
-    pub fn new(text: String) -> Self {
-        let span = Span::styled(text, Style::default().fg(Colors::TEAL));
-        let line = Line::from(span).bg(Colors::CHARCOAL);
-        Self { line }
-    }
-}
-
-impl Widget for LineItem<'_> {
+impl Widget for SectionItem {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let inner = {
-            let block = Block::default().borders(Borders::ALL);
-            block.clone().render(area, buf);
-            block.inner(area)
-        };
-
-        self.line.render(inner, buf);
+        let inner = self.block.inner(area);
+        self.block.render(area, buf);
+        if inner.height > 0 {
+            Line::from(self.label).render(inner, buf);
+        }
+        for row in 1..inner.height.min(self.inner_height) {
+            let y = inner.y + row;
+            let filler = format!("  line {}", row);
+            Line::from(filler)
+                .style(Style::default().fg(Colors::GRAY))
+                .render(Rect::new(inner.x, y, inner.width, 1), buf);
+        }
     }
 }
