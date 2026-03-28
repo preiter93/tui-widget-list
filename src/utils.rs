@@ -474,6 +474,10 @@ impl<T> ViewportElement<T> {
             truncation,
         }
     }
+
+    pub(crate) fn visible_size(&self) -> u16 {
+        self.main_axis_size.saturating_sub(self.truncation.value())
+    }
 }
 
 #[cfg(test)]

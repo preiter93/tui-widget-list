@@ -313,7 +313,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
         if self.scroll_direction == ScrollDirection::Backward {
             let total_visible: u16 = (start..end)
                 .filter_map(|i| viewport.get(&i))
-                .map(|e| e.main_axis_size.saturating_sub(e.truncation.value()))
+                .map(|e| e.visible_size())
                 .sum();
             scroll_axis_pos += main_axis_size.saturating_sub(total_visible);
         }
@@ -325,18 +325,15 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
                 break;
             };
 
-            let visible_main_axis_size = element
-                .main_axis_size
-                .saturating_sub(element.truncation.value());
-
-            cached_sizes.insert(i, visible_main_axis_size);
+            let visible_size = element.visible_size();
+            cached_sizes.insert(i, visible_size);
 
             render_clipped(
                 element.widget,
                 self.scroll_axis.rect(
                     scroll_axis_pos,
                     cross_axis_pos,
-                    visible_main_axis_size,
+                    visible_size,
                     cross_axis_size,
                 ),
                 buf,
@@ -346,7 +343,7 @@ impl<T: Widget> StatefulWidget for ListView<'_, T> {
                 self.scroll_axis,
             );
 
-            scroll_axis_pos += visible_main_axis_size;
+            scroll_axis_pos += visible_size;
         }
 
         state.set_visible_main_axis_sizes(cached_sizes);
