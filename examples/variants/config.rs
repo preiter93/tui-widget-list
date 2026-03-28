@@ -38,7 +38,7 @@ impl std::fmt::Display for Variant {
             Variant::InfiniteScrolling => write!(f, "Infinite Scrolling"),
             Variant::ScrollPadding => write!(f, "Scroll Padding"),
             Variant::Horizontal => write!(f, "Horizontal Scrolling"),
-            Variant::Backward => write!(f, "Backward Direction"),
+            Variant::Backward => write!(f, "Bottom to Top"),
         }
     }
 }

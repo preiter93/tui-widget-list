@@ -10,6 +10,8 @@
 //! The associated `ListState`, offers functionalities such as navigating to the next and previous items.
 //! The list view support both horizontal and vertical scrolling.
 //!
+//!![](https://raw.githubusercontent.com/preiter93/tui-widget-list/main/examples/tapes/variants.gif?v=1)
+//!
 //! ## Configuration
 //! The `ListView` can be customized with the following options:
 //! - `ListView::scroll_axis`: Vertical or horizontal scrolling.
@@ -69,14 +71,8 @@
 //! }
 //!```
 //!
-//! For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
-//!
-//! ## Demo
-//!
-//!![](https://raw.githubusercontent.com/preiter93/tui-widget-list/main/examples/tapes/variants.gif?v=1)
-//!
 //! ## Documentation
-//! [docs.rs](https://docs.rs/tui-widget-list/)
+//! For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples). For documentation see [docs.rs](https://docs.rs/tui-widget-list/).
 //!
 //! [Crate Badge]: https://img.shields.io/crates/v/tui-widget-list?logo=rust&style=flat-square&logoColor=E05D44&color=E05D44
 //! [License Badge]: https://img.shields.io/crates/l/tui-widget-list?style=flat-square&color=1370D3

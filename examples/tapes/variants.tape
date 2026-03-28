@@ -16,7 +16,7 @@ Show
 # Classic
 Sleep 1.0s
 Right@0.2s 1
-Down@0.1s 17
+Down@0.1s 32
 
 # Infinite
 Left@0.5s 1
@@ -39,7 +39,7 @@ Left@0.5s 1
 Down@0.5s 1
 
 Right@0.2s 1
-Down@0.2s 5
+Down@0.2s 7
 
 # Reversed
 Left@0.5s 1
