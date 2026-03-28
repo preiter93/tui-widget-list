@@ -16,14 +16,14 @@ Show
 # Classic
 Sleep 1.5s
 Right@0.5s 1
-Down@0.2s 40
+Down@0.2s 18
 
 # Infinite
 Left@1.5s 1
 Down@1.5s 1
 
 Right@0.5s 1
-Down@0.2s 50
+Down@0.2s 20
 Sleep 1.0s
 
 # Scroll padding
@@ -31,22 +31,22 @@ Left@1.5s 1
 Down@1.5s 1
 
 Right@0.5s 1
-Down@0.2s 40
-Up@0.2s 40
+Down@0.2s 18
+Up@0.2s 18
 
 # Horizontal
 Left@1.5s 1
 Down@1.5s 1
 
 Right@0.5s 1
-Down@0.5s 10
+Down@0.5s 5
 
 # Reversed
 Left@1.5s 1
 Down@1.5s 1
 
 Right@0.5s 1
-Up@0.2s 10
-Down@0.2s 10
+Up@0.2s 6
+Down@0.2s 6
 
 Sleep 1.5s

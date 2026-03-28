@@ -22,6 +22,6 @@ impl PaddedListView {
             return (line, 3);
         });
 
-        return ListView::new(builder, 30).infinite_scrolling(infinite_scrolling);
+        return ListView::new(builder, 18).infinite_scrolling(infinite_scrolling);
     }
 }

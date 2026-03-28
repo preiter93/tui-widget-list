@@ -118,14 +118,14 @@
 //!
 //! For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples).
 //!
-//! ## Documentation
-//! [docs.rs](https://docs.rs/tui-widget-list/)
-//!
 //! ## Demo
 //!
-//! ### Infinite scrolling, scroll padding, horizontal scrolling
+//! ### Infinite scrolling, scroll padding, horizontal scrolling, backward direction
 //!
 //!![](examples/tapes/variants.gif?v=1)
+//!
+//! ## Documentation
+//! [docs.rs](https://docs.rs/tui-widget-list/)
 //!
 //! [Crate Badge]: https://img.shields.io/crates/v/tui-widget-list?logo=rust&style=flat-square&logoColor=E05D44&color=E05D44
 //! [License Badge]: https://img.shields.io/crates/l/tui-widget-list?style=flat-square&color=1370D3
