@@ -91,6 +91,30 @@ impl Default for ListState {
 }
 
 impl ListState {
+    /// Creates a new `ListState` with the given initial index.
+    ///
+    /// # Example
+    /// ```rust
+    /// # use tui_widget_list::ListState;
+    ///
+    /// // this...
+    /// let list_state1 = {
+    ///     let mut state = ListState::default();
+    ///     state.select(Some(0));
+    ///     state
+    /// };
+    ///
+    /// // ... is equal to this
+    /// let list_state2 = ListState::new_with_index(Some(0));
+    ///
+    /// assert_eq!(list_state1.selected, list_state2.selected);
+    /// ```
+    pub fn new_with_index(index: Option<usize>) -> Self {
+        let mut state = Self::default();
+        state.select(index);
+        state
+    }
+
     pub(crate) fn set_infinite_scrolling(&mut self, infinite_scrolling: bool) {
         self.infinite_scrolling = infinite_scrolling;
     }
