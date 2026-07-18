@@ -45,11 +45,7 @@ impl ListState {
         let start_index = self.scroll_offset_index();
         let mut index = start_index;
 
-        loop {
-            let Some(visible_main_axis_size) = sizes.get(&index).copied() else {
-                break;
-            };
-
+        while let Some(visible_main_axis_size) = sizes.get(&index).copied() {
             let rect = scroll_axis.rect(
                 scroll_axis_pos,
                 cross_axis_pos,
