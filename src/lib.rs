@@ -6,21 +6,21 @@
 //!
 //! </div>
 //!
-//! This crate provides a stateful widget `ListView` implementation for `Ratatui`.
-//! The associated `ListState`, offers functionalities such as navigating to the next and previous items.
-//! The list view support both horizontal and vertical scrolling.
+//! This crate provides a stateful `ListView` widget for `Ratatui`.
+//! The associated `ListState` handles navigation.
+//! The list view supports both horizontal and vertical scrolling.
 //!
 //!![](https://raw.githubusercontent.com/preiter93/tui-widget-list/main/examples/tapes/variants.gif?v=1)
 //!
 //! ## Configuration
-//! The `ListView` can be customized with the following options:
-//! - `ListView::scroll_axis`: Vertical or horizontal scrolling.
-//! - `ListView::scroll_direction`: Forward or backward layout direction.
-//! - `ListView::scroll_padding`: Padding preserved around the selected item while scrolling.
-//! - `ListView::infinite_scrolling`: Wrap around when scrolling past the first or last element.
-//! - `ListView::style`: Base style of the list.
-//! - `ListView::block`: Optional outer block.
-//! - `ListView::scrollbar`: Optional scrollbar.
+//! `ListView` can be customized with the following options:
+//! - `ListView::scroll_axis`: Scroll vertically or horizontally.
+//! - `ListView::scroll_direction`: Lay items out forward or in reverse.
+//! - `ListView::scroll_padding`: Keep a number of items visible around the selected item while scrolling.
+//! - `ListView::infinite_scrolling`: Wrap around when scrolling past the first or last item.
+//! - `ListView::style`: Base style applied to the entire list.
+//! - `ListView::block`: Optional surrounding block.
+//! - `ListView::scrollbar`: Optional scrollbar overlay.
 //!
 //! ## Example
 //!```
@@ -41,7 +41,7 @@
 //!
 //! ## Mouse handling
 //!
-//! You can handle mouse clicks using `ListState` via `hit_test`:
+//! Handle mouse clicks and scroll events using `ListState::hit_test`:
 //!```ignore
 //! use tui_widget_list::hit_test::Hit;
 //!
@@ -72,7 +72,7 @@
 //!```
 //!
 //! ## Documentation
-//! For more examples see [tui-widget-list](https://github.com/preiter93/tui-widget-list/tree/main/examples). For documentation see [docs.rs](https://docs.rs/tui-widget-list/).
+//! For more examples see the [examples directory](https://github.com/preiter93/tui-widget-list/tree/main/examples). Full API documentation is available on [docs.rs](https://docs.rs/tui-widget-list/).
 //!
 //! [Crate Badge]: https://img.shields.io/crates/v/tui-widget-list?logo=rust&style=flat-square&logoColor=E05D44&color=E05D44
 //! [License Badge]: https://img.shields.io/crates/l/tui-widget-list?style=flat-square&color=1370D3

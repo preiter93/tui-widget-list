@@ -15,8 +15,9 @@ pub struct ListState {
     /// handle item selection.
     pub(crate) num_elements: usize,
 
-    /// Indicates if the selection is circular. If true, calling `next` on the last
-    /// element returns the first, and calling `previous` on the first returns the last.
+    /// Indicates if infinite scrolling is enabled.
+    /// If true, calling `next` on the last element returns the first,
+    /// and calling `previous` on the first returns the last.
     ///
     /// True by default.
     pub(crate) infinite_scrolling: bool,
@@ -128,8 +129,8 @@ impl ListState {
         }
     }
 
-    /// Selects the next element of the list. If circular is true,
-    /// calling next on the last element selects the first.
+    /// Selects the next element of the list. If `inifinite_scrolling`
+    /// is true, calling next on the last element selects the first.
     ///
     /// # Example
     ///
@@ -168,8 +169,8 @@ impl ListState {
         self.select(Some(i));
     }
 
-    /// Selects the previous element of the list. If circular is true,
-    /// calling previous on the first element selects the last.
+    /// Selects the previous element of the list. If `infinite_scrolling`
+    /// is true, calling previous on the first element selects the last.
     ///
     /// # Example
     ///
