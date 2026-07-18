@@ -97,17 +97,9 @@ impl ListState {
     /// ```rust
     /// # use tui_widget_list::ListState;
     ///
-    /// // this...
-    /// let list_state1 = {
-    ///     let mut state = ListState::default();
-    ///     state.select(Some(0));
-    ///     state
-    /// };
+    /// let list_state = ListState::new_with_index(Some(1));
     ///
-    /// // ... is equal to this
-    /// let list_state2 = ListState::new_with_index(Some(0));
-    ///
-    /// assert_eq!(list_state1.selected, list_state2.selected);
+    /// assert_eq!(list_state.selected, Some(1));
     /// ```
     pub fn new_with_index(index: Option<usize>) -> Self {
         let mut state = Self::default();
