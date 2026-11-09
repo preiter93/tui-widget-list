@@ -709,6 +709,50 @@ mod test {
         assert_eq!(state.item_scroll, 0);
     }
 
+    #[test]
+    fn refill_viewport_after_resize() {
+        // given: 4 items of 3 rows, the last one is selected (like a chat list)
+        let large = Rect::new(0, 0, 5, 9);
+        let small = Rect::new(0, 0, 5, 4);
+        let full_viewport = Buffer::with_lines(vec![
+            "┌───┐",
+            "│   │",
+            "└───┘",
+            "┌───┐",
+            "│   │",
+            "└───┘",
+            "┌───┐",
+            "│   │",
+            "└───┘",
+        ]);
+
+        for direction in [ScrollDirection::Forward, ScrollDirection::Backward] {
+            let make_list = || {
+                ListView::new(ListBuilder::new(|_| (TestItem {}, 3)), 4).scroll_direction(direction)
+            };
+            let mut state = ListState::default();
+            state.select(Some(3));
+
+            // Render with a large viewport
+            let mut buf = Buffer::empty(large);
+            make_list().render(large, &mut buf, &mut state);
+            assert_buffer_eq(buf, full_viewport.clone());
+
+            // Shrink the terminal: only the last two items are visible now
+            let mut buf = Buffer::empty(small);
+            make_list().render(small, &mut buf, &mut state);
+            assert_buffer_eq(
+                buf,
+                Buffer::with_lines(vec!["└───┘", "┌───┐", "│   │", "└───┘"]),
+            );
+
+            // Enlarge the terminal again: the viewport must be filled completely
+            let mut buf = Buffer::empty(large);
+            make_list().render(large, &mut buf, &mut state);
+            assert_buffer_eq(buf, full_viewport.clone());
+        }
+    }
+
     fn assert_buffer_eq(actual: Buffer, expected: Buffer) {
         if actual.area != expected.area {
             panic!(

@@ -57,7 +57,7 @@ pub(crate) fn compute_viewport_layout<T>(
     );
 
     // Begin a forward pass, starting from `view_state.offset`.
-    let found_selected = forward_pass(
+    let (found_selected, remaining_space) = forward_pass(
         &mut viewport,
         state,
         &mut cacher,
@@ -68,7 +68,9 @@ pub(crate) fn compute_viewport_layout<T>(
         &effective_scroll_padding_by_index,
     );
 
-    if found_selected {
+    // The forward pass is sufficient if the selected item is visible and the
+    // viewport has been filled completely.
+    if found_selected && remaining_space == 0 {
         return viewport;
     }
 
@@ -76,15 +78,24 @@ pub(crate) fn compute_viewport_layout<T>(
         cacher.insert(key, value.widget, value.main_axis_size);
     }
 
-    // Perform a backward pass, starting from the `selected` item.
-    // This step is only necessary if the forward pass did not
-    // locate the selected item.
+    // Perform a backward pass. This is necessary if the forward pass did not
+    // locate the selected item, or if the viewport was not filled completely,
+    // e.g. because the terminal has been enlarged while the list was scrolled
+    // to the end. In the latter case, the layout is anchored at the last item
+    // so that preceding items fill the empty space instead of leaving a gap.
+    let anchor = if found_selected {
+        item_count - 1
+    } else {
+        selected
+    };
+
     backward_pass(
         &mut viewport,
         state,
         &mut cacher,
         item_count,
         total_main_axis_size,
+        anchor,
         selected,
         &effective_scroll_padding_by_index,
     );
@@ -142,7 +153,9 @@ fn update_offset<T>(
 
 /// Iterate forward through the list of widgets.
 ///
-/// Returns true if the selected widget is inside the viewport.
+/// Returns `(found_selected, remaining_space)`, where `found_selected` indicates
+/// whether the selected widget is inside the viewport and `remaining_space` is the
+/// number of rows/columns that are still unused on the viewport after the pass.
 #[allow(clippy::too_many_arguments)]
 fn forward_pass<T>(
     viewport: &mut HashMap<usize, ViewportElement<T>>,
@@ -153,7 +166,7 @@ fn forward_pass<T>(
     total_main_axis_size: u16,
     selected: usize,
     scroll_padding_by_index: &HashMap<usize, u16>,
-) -> bool {
+) -> (bool, u16) {
     // Check if the selected item is in the current view
     let mut found_last = false;
     let mut found_selected = false;
@@ -219,18 +232,20 @@ fn forward_pass<T>(
             ViewportElement::new(widget, total_main_axis_size, truncation.clone()),
         );
 
+        available_size = available_size.saturating_sub(main_axis_size);
+
         if found_last {
             break;
         }
-
-        available_size -= main_axis_size;
     }
 
-    found_selected
+    (found_selected, available_size)
 }
 
-// The selected item is out of bounds. We iterate backwards from the selected
-// item and determine the first widget that still fits on the screen.
+// We iterate backwards from the `anchor` item and determine the first widget that
+// still fits on the screen. The anchor is either the selected item (which is out of
+// bounds) or the last item of the list (if the viewport still has unused space, e.g.
+// after the terminal has been enlarged).
 #[allow(clippy::too_many_arguments)]
 fn backward_pass<T>(
     viewport: &mut HashMap<usize, ViewportElement<T>>,
@@ -238,13 +253,22 @@ fn backward_pass<T>(
     cacher: &mut WidgetCacher<T>,
     item_count: usize,
     total_main_axis_size: u16,
+    anchor: usize,
     selected: usize,
     scroll_padding_by_index: &HashMap<usize, u16>,
 ) {
     let mut found_first = false;
     let mut available_size = total_main_axis_size;
-    let scroll_padding_effective = *scroll_padding_by_index.get(&selected).unwrap_or(&0);
-    for index in (0..=selected).rev() {
+
+    // Scroll padding is only applied when the viewport is anchored at the
+    // selected item, not when it is filled from the end of the list.
+    let scroll_padding_effective = if anchor == selected {
+        *scroll_padding_by_index.get(&selected).unwrap_or(&0)
+    } else {
+        0
+    };
+
+    for index in (0..=anchor).rev() {
         let (widget, main_axis_size) = cacher.get(index);
 
         let available_effective = available_size.saturating_sub(scroll_padding_effective);
@@ -264,7 +288,7 @@ fn backward_pass<T>(
                 state.view_state.first_truncated =
                     main_axis_size.saturating_sub(available_effective);
                 // Truncate from the bottom if there is only one element on the viewport
-                if index == selected {
+                if index == anchor && anchor == selected {
                     Truncation::Bot(state.view_state.first_truncated)
                 } else {
                     Truncation::Top(state.view_state.first_truncated)
@@ -281,6 +305,14 @@ fn backward_pass<T>(
         }
 
         available_size -= main_axis_size;
+    }
+
+    // All items from the top of the list fit into the viewport. Make sure the
+    // offset points to the first item again, otherwise stale offsets (e.g. from a
+    // previous render with a smaller terminal) would leave the viewport empty.
+    if !found_first {
+        state.view_state.offset = 0;
+        state.view_state.first_truncated = 0;
     }
 
     // Append elements to the list to fill the viewport after the selected item.
@@ -907,6 +939,105 @@ mod tests {
             (0, ViewportElement::new(TestItem {}, 2, Truncation::Top(1))),
             (1, ViewportElement::new(TestItem {}, 2, Truncation::None)),
             (2, ViewportElement::new(TestItem {}, 2, Truncation::None)),
+        ]);
+
+        // when
+        let viewport = compute_viewport_layout(
+            &mut state,
+            &ListBuilder::new(move |context| {
+                return (TestItem {}, given_sizes[context.index]);
+            }),
+            given_item_count,
+            given_total_size,
+            1,
+            ScrollAxis::Vertical,
+            0,
+        );
+
+        // then
+        assert_eq!(viewport, expected_viewport);
+        assert_eq!(state.view_state, expected_view_state);
+    }
+
+    // The terminal was enlarged again after it had been shrunk. The viewport
+    // must be filled with the preceding items instead of leaving a gap.
+    #[test]
+    fn grow_viewport_fills_with_preceding_items() {
+        // given
+        let view_state = ViewState {
+            offset: 2,
+            first_truncated: 2,
+            ..Default::default()
+        };
+        let mut state = ListState {
+            num_elements: 4,
+            selected: Some(3),
+            view_state,
+            ..ListState::default()
+        };
+        let given_sizes = vec![2, 2, 2, 2];
+        let given_item_count = given_sizes.len();
+        let given_total_size = 6;
+
+        let expected_view_state = ViewState {
+            offset: 1,
+            first_truncated: 0,
+            ..Default::default()
+        };
+        let expected_viewport = HashMap::from([
+            (1, ViewportElement::new(TestItem {}, 2, Truncation::None)),
+            (2, ViewportElement::new(TestItem {}, 2, Truncation::None)),
+            (3, ViewportElement::new(TestItem {}, 2, Truncation::None)),
+        ]);
+
+        // when
+        let viewport = compute_viewport_layout(
+            &mut state,
+            &ListBuilder::new(move |context| {
+                return (TestItem {}, given_sizes[context.index]);
+            }),
+            given_item_count,
+            given_total_size,
+            1,
+            ScrollAxis::Vertical,
+            0,
+        );
+
+        // then
+        assert_eq!(viewport, expected_viewport);
+        assert_eq!(state.view_state, expected_view_state);
+    }
+
+    // The terminal was enlarged so that the entire list fits again. The stale
+    // offset must be reset, otherwise the viewport would be rendered empty.
+    #[test]
+    fn grow_viewport_beyond_content_resets_offset() {
+        // given
+        let view_state = ViewState {
+            offset: 2,
+            first_truncated: 0,
+            ..Default::default()
+        };
+        let mut state = ListState {
+            num_elements: 4,
+            selected: Some(3),
+            view_state,
+            ..ListState::default()
+        };
+        let given_sizes = vec![2, 2, 2, 2];
+        let given_item_count = given_sizes.len();
+        let given_total_size = 10;
+
+        let expected_view_state = ViewState {
+            offset: 0,
+            first_truncated: 0,
+            ..Default::default()
+        };
+        let expected_viewport = HashMap::from([
+            (0, ViewportElement::new(TestItem {}, 2, Truncation::None)),
+            (1, ViewportElement::new(TestItem {}, 2, Truncation::None)),
+            (2, ViewportElement::new(TestItem {}, 2, Truncation::None)),
+            (3, ViewportElement::new(TestItem {}, 2, Truncation::None)),
         ]);
 
         // when
