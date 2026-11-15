@@ -1,6 +1,10 @@
 Released
 --------
 
+0.15.4 - 15 Nov 2026
+===================
+- fix: fill empty gaps after resizing terminal (@provaleriy@gmail.com)
+
 0.15.2 - 28 Mar 2026
 ===================
 - feat: Scroll within large items before selecting the next (co-authored by @orlandohohmeier)
